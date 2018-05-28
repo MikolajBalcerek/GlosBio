@@ -38,3 +38,13 @@ def record_and_recognize():
     AudioData, Recognizer = record_till_end_of_voice()
     return AudioData, str(recognize_speech(AudioData, Recognizer))
 
+def convert_AudioData_to_Numpy_array_and_fs(AudioData : sr.AudioData):
+    """
+    this converts AudioData from speech_recognition to Numpy Array and fs int that is used by
+    our own pure_recording, and external soundfile, sounddevice
+    :param AudioData:
+    :return:
+    """
+    flac = io.BytesIO(AudioData.get_flac_data())
+    data, fs = soundfile.read(flac)
+    return {"NumpyArray" : data, "fs" : fs}
