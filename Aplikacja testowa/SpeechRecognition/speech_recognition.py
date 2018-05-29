@@ -18,10 +18,6 @@ def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
         # BING
         return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY, language="pl-PL")
 
-    #     print("Google Speech Recognition could not understand audio")
-    # except sr.RequestError as e:
-    #     print("Could not request results from Google Speech Recognition service; {0}".format(e))
-
 def record_and_recognize():
     """
     Records voice and return AudioData and string with recognized text
@@ -37,5 +33,3 @@ def record_and_recognize():
             print("Audio wasn't recognized")
 
     raise Exception("Couldn't recognize any of the samples: connection or recording issue")
-
-    return AudioData, str(recognize_speech(AudioData, Recognizer))
