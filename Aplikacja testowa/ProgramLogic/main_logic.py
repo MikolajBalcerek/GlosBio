@@ -2,6 +2,7 @@ import sys
 sys.path.append('..')
 import RecordingPackage.speech_recognition_recording
 import RecordingPackage.simple_audio
+import SpeechRecognition.speech_recognition
 import speech_recognition
 import io
 
@@ -14,7 +15,7 @@ def startup():
 def register_user(database):
     while(True):
         print("Przedstaw się do programu: ")
-        AudioData, text = RecordingPackage.speech_recognition_recording.record_and_recognize()
+        AudioData, text = SpeechRecognition.speech_recognition.record_and_recognize()
         print(text)
         flac = io.BytesIO(AudioData.get_flac_data())
         RecordingPackage.simple_audio.play_from_file(flac)
