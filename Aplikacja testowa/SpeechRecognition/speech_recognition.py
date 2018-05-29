@@ -26,7 +26,7 @@ def record_and_recognize():
     Records voice and return AudioData and string with recognized text
     :return Audiodata, str recognized Text
     """
-    while(True):
+    for tries in range(2):
         try:
             AudioData, Recognizer = RecordingPackage.speech_recognition_recording.record_till_end_of_voice()
             return AudioData, str(recognize_speech(AudioData, Recognizer))
@@ -35,3 +35,4 @@ def record_and_recognize():
         except sr.UnknownValueError as e:
             print("Audio wasn't recognized")
 
+    raise Exception("Couldn't recognize any of the samples: connection or recording issue")
