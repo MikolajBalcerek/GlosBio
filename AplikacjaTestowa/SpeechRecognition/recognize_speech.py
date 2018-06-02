@@ -1,8 +1,8 @@
 import speech_recognition as sr
 import sys
 sys.path.append('..')
-import RecordingPackage.speech_recognition_recording
-import secret_keys
+import AplikacjaTestowa.RecordingPackage.speech_recognition_recording
+import AplikacjaTestowa.secret_keys
 #this file handles speech recognition
 
 def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
@@ -16,7 +16,7 @@ def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
         return r.recognize_google(audio, language="pl-PL")
     except:
         # BING
-        return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY, language="pl-PL")
+        return r.recognize_bing(audio, key=AplikacjaTestowa.secret_keys.SECRET_BING_KEY, language="pl-PL")
 
 def record_and_recognize():
     """
@@ -25,7 +25,7 @@ def record_and_recognize():
     """
     for tries in range(2):
         try:
-            AudioData, Recognizer = RecordingPackage.speech_recognition_recording.record_till_end_of_voice()
+            AudioData, Recognizer = AplikacjaTestowa.RecordingPackage.speech_recognition_recording.record_till_end_of_voice()
             return AudioData, str(recognize_speech(AudioData, Recognizer))
         except sr.RequestError as e:
             print("Could not request results {0}".format(e))
