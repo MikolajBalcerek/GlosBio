@@ -3,16 +3,18 @@ import io
 import soundfile
 #This file handles smart voice recording
 
-def record_till_end_of_voice():
+def record_till_end_of_voice(vc):
     """
     this records audio until significant noise has begun and ended
     :return: AudioData
     """
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        print("LOG: adjusting for noise...")
+        vc.view.setKom1Text("LOG: adjusting for noise...")
+        vc.parent.update()
         r.adjust_for_ambient_noise(source)
-        print("LOG: recording...")
+        vc.view.setKom2Text("LOG: recording...")
+        vc.parent.update()
         audio = r.listen(source)
     return audio, r
 
