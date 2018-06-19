@@ -18,14 +18,14 @@ def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
         # BING
         return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY, language="pl-PL")
 
-def record_and_recognize():
+def record_and_recognize(vc):
     """
     Records voice and return AudioData and string with recognized text
     :return Audiodata, str recognized Text
     """
     for tries in range(2):
         try:
-            AudioData, Recognizer = RecordingPackage.speech_recognition_recording.record_till_end_of_voice()
+            AudioData, Recognizer = RecordingPackage.speech_recognition_recording.record_till_end_of_voice(vc)
             return AudioData, str(recognize_speech(AudioData, Recognizer))
         except sr.RequestError as e:
             print("Could not request results {0}".format(e))
