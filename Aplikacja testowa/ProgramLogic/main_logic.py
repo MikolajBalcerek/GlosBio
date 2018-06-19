@@ -85,11 +85,12 @@ class MyModel():
 
     def register_user(self):
         AudioData, text = SpeechRecognition.speech_recognition.record_and_recognize(self.vc)
-        return(text)
-        #flac = io.BytesIO(AudioData.get_flac_data())
-        #RecordingPackage.simple_audio.play_from_file(flac)
-        #if(str(input("Czy jesteś zadowolony? T/N: ")) == "T"):
+        self.vc.view.setOutputText(text)
+        self.vc.parent.update()
+        flac = io.BytesIO(AudioData.get_flac_data())
+        RecordingPackage.simple_audio.play_from_file(flac)
+        if(str(input("Czy jesteś zadowolony? T/N: ")) == "T"):
 
-        #    database[text] = {"name" : text, "AudioData" : AudioData, "flac" : flac,
-        #                         "NumpyArray": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['NumpyArray'],
-        #                         "fs": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['fs']};
+            self.users_database[text] = {"name" : text, "AudioData" : AudioData, "flac" : flac,
+                                 "NumpyArray": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['NumpyArray'],
+                                 "fs": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['fs']};
