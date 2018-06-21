@@ -97,4 +97,5 @@ class MyModel():
                                  "NumpyArray": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['NumpyArray'],
                                  "fs": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['fs']};
 
-            plot_spectrum(self.users_database[text]["NumpyArray"], self.users_database[text]["fs"])
+            # plot_raw_signal(self.users_database[text]["NumpyArray"])
+            plot_mel_scale()
