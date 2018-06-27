@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 import RecordingPackage.speech_recognition_recording
 import RecordingPackage.simple_audio
-import SpeechRecognition.speech_recognition
+import SpeechRecognition.speech_recognition_wrapper
 import speech_recognition
 import io
 from tkinter import *
@@ -84,7 +84,7 @@ class MyModel():
         self.users_database = {}
 
     def register_user(self):
-        AudioData, text = SpeechRecognition.speech_recognition.record_and_recognize(self.vc)
+        AudioData, text = SpeechRecognition.speech_recognition_wrapper.record_and_recognize(self.vc)
         self.vc.view.setOutputText(text)
         self.vc.parent.update()
         flac = io.BytesIO(AudioData.get_flac_data())
