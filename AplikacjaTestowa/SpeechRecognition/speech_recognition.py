@@ -18,7 +18,7 @@ def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
         # BING
         return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY, language="pl-PL")
 
-def record_and_recognize(vc):
+def record_and_recognize(vc=None):
     """
     Records voice and return AudioData and string with recognized text
     :return Audiodata, str recognized Text
