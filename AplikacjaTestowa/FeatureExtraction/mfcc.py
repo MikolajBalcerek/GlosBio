@@ -67,7 +67,9 @@ def calculate_mfcc(data, verbose=False):
 
 
 if __name__ == "__main__":
-    from AplikacjaTestowa.DataPreparation.load_data import get_data
+    import sys
+    sys.path.append('..')
+    from DataPreparation.load_data import get_data
     train, test = get_data()
     X, y = calculate_mfcc(train)
     print(X.shape)
