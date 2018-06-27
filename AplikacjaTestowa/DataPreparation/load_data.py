@@ -22,7 +22,7 @@ def load_paths():
     """
     id = 0
     data = {}
-    for catalogue in glob.iglob('../small/*'):
+    for catalogue in glob.iglob('../dataset/*'):
         for vid in glob.glob(catalogue + '/*'):
             # i am not sure if all the recordings in id[0-9]{5}
             # belong to the same person
@@ -40,7 +40,7 @@ def load_paths_if_same__person():
     """
     id = 0
     data = {}
-    for catalogue in glob.iglob('../small/*'):
+    for catalogue in glob.iglob('../dataset/*'):
         data[id] = []
         for vid in glob.glob(catalogue + '/*'):
             parts  = glob.glob(vid + '/*.wav')
