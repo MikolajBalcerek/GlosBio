@@ -11,8 +11,10 @@ def train_gmm(features, labels):
     return gmm
 
 if __name__ == "__main__":
-    from AplikacjaTestowa.DataPreparation.load_data import get_data
-    from AplikacjaTestowa.FeatureExtraction.mfcc import calculate_mfcc
+    import sys
+    sys.path.append('..')
+    from DataPreparation.load_data import get_data
+    from FeatureExtraction.mfcc import calculate_mfcc
 
     train, test = get_data()
     Xtrain, Ytrain = calculate_mfcc(train, verbose=True)
