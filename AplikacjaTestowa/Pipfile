@@ -10,6 +10,8 @@ scipy = "*"
 speechrecognition = "*"
 pyaudio = "*"
 soundfile = "*"
+sklearn = "*"
+python-speech-features = "*"
 
 [dev-packages]
 
