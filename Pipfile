@@ -4,12 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-sounddevice = "*"
-numpy = "*"
-scipy = "*"
-speechrecognition = "*"
-pyaudio = "*"
-soundfile = "*"
 
 [dev-packages]
 
