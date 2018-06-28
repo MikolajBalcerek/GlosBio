@@ -12,7 +12,7 @@ def record_till_end_of_voice(vc=None):
     with sr.Microphone() as source:
         #graficzne rzeczy
         if(vc):
-            vc.view.setKom1Text("LOG: adjusting for noise...")
+            vc.view.setKom1Text("Zaczekaj, trwa rozeznanie środowiska")
             vc.parent.update()
 
         r.adjust_for_ambient_noise(source, 2)
@@ -20,7 +20,7 @@ def record_till_end_of_voice(vc=None):
 
         #graficzne rzeczy
         if(vc):
-            vc.view.setKom2Text("LOG: recording...")
+            vc.view.setKom2Text("Nagrywanie...")
             vc.parent.update()
 
         audio = r.listen(source)
