@@ -10,11 +10,11 @@ def record_till_end_of_voice(vc):
     """
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        vc.view.setKom1Text("LOG: adjusting for noise...")
+        vc.view.setKom1Text("Zaczekaj, trwa rozeznanie środowiska")
         vc.parent.update()
         r.adjust_for_ambient_noise(source, 2)
         r.energy_threshold *= 3
-        vc.view.setKom2Text("LOG: recording...")
+        vc.view.setKom2Text("Nagrywanie...")
         vc.parent.update()
         audio = r.listen(source)
     return audio, r
