@@ -38,8 +38,11 @@ class MyController():
         self.view.output_text.set('')
         self.view.setKom0Text("Przedstaw się do programu: ")
 
-        text = self.model.register_user()
-        self.view.setOutputText(text)
+        # text = self.model.register_user()
+        # self.view.setOutputText(text)
+        temp = np.load('sample.npy')
+        basic_plots(temp[0], temp[1])
+
         self.parent.update()
 
 class MyView(Frame):
@@ -96,6 +99,3 @@ class MyModel():
             self.users_database[text] = {"name" : text, "AudioData" : AudioData, "flac" : flac,
                                  "NumpyArray": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['NumpyArray'],
                                  "fs": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(AudioData)['fs']};
-
-            # plot_raw_signal(self.users_database[text]["NumpyArray"])
-            plot_spectogram(self.users_database[text]["NumpyArray"], self.users_database[text][fs], 512)

@@ -1,36 +1,24 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.fft import rfft, rfftfreq
+from scipy import signal
 
-class Spectrum:
-    def __init__(self, hs, fs, framerate):
-        self.hs = np.asarray(hs)
-        self.fs = np.asarray(fs)
-        self.framerate = framerate
-
-    def plot(self):
-        plt.plot(self.fs, self.hs, 'r')
-        plt.show()
-
-
-def plot_raw_signal(signal):
+def plot_raw_signal(sig):
     """ plot signal over time """
     plt.title('Signal Wave')
-    plt.xlabel('time')
-    plt.ylabel('aplitude')
-    plt.plot(np.arange(len(signal)),signal)
+    plt.xlabel('Time')
+    plt.ylabel('Amplitude')
+    plt.plot(np.arange(len(sig)),signal)
     plt.show()
 
-def plot_spectrum(signal, samplerate):
-    """ plot spectrum of given signal using FFT """
-    n = len(signal)
-    hs = np.absolute(rfft(signal))
-    fs = rfftfreq(n)
-    plt.title('Spectrum')
-    plt.xlabel('frequency (Hz)')
-    plt.ylabel('aplitude')
-    plt.plot(fs, hs, 'r')
+def plot_spectogram(sig, samplerate):
+    """-"""
+    f, t, Sxx = signal.spectrogram(sig, samplerate)
+    plt.pcolormesh(t, f, Sxx)
+    plt.ylabel('Frequency [Hz]')
+    plt.xlabel('Time [sec]')
     plt.show()
+
 
 def plot_mel_scale():
     """ plot Mel scale to Hertz scale ratio """
@@ -44,30 +32,20 @@ def plot_mel_scale():
     plt.show()
     pass
 
-def plot_spectogram(signal, samplerate, segment_length):
-    """-"""
-    window = np.hamming(segment_length)
-    ys = signal.copy()
-    ts = np.linspace(len(ys))
-    i = 0
-    j = segment_length
-    step = segment_length / 2
+def basic_plots(sig, samplerate):
+    plt.figure(1)
+    plt.subplot(211)
+    plt.title('Signal Wave')
+    plt.xlabel('Time')
+    plt.ylabel('Amplitude')
+    plt.plot(np.arange(len(sig)),sig)
 
-    spec_map = {}
-
-    while j < len(ys):
-        segment_ys = ys[i:j].copy()
-        segment_ys *= window
-        temp_ts = ts[i:j].copy()
-        segment_ts = np.linspace(len(temp_ts))
-
-        temp_fft_hs = np.fft.rfft(self.ys)
-        temp_fft_fs = np.fft.rfftfreq(len(segment_ys), 1 / samplerate)
-
-        t = (temp_ts[0] + temp_ts[-1]) / 2
-
-        spec_map[t] = Spectrum(temp_fft_hs, temp_fft_hs, samplerate)
-        spec_map[t].plot()
-
-        i += step
-        j += step
+    plt.subplot(212)
+    plt.title('Spectogram')
+    plt.ylabel('Frequency [Hz]')
+    plt.xlabel('Time [sec]')
+    f, t, Sxx = signal.spectrogram(sig, samplerate, nperseg=1024)
+    # plt.ylim(5000)
+    plt.pcolormesh(t, f, Sxx)
+    #
+    plt.show()
