@@ -5,7 +5,9 @@ import RecordingPackage.speech_recognition_recording
 import secret_keys
 #this file handles speech recognition
 
-def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
+def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer = None):
+    if(Recognizer == None):
+        Recognizer = sr.Recognizer()
     r = Recognizer
     audio = AudioData
     try:
