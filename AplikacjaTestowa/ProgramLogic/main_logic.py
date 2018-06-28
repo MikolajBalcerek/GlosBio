@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 import RecordingPackage.speech_recognition_recording
 import RecordingPackage.simple_audio
-import SpeechRecognition.speech_recognition
+import SpeechRecognition.speech_recognition_wrapper
 import speech_recognition
 import io
 from tkinter import *
@@ -117,7 +117,7 @@ class MyModel():
         self.users_database = {}
 
     def register_user(self):
-        self.AudioData, self.text = SpeechRecognition.speech_recognition.record_and_recognize(self.vc)
+        self.AudioData, self.text = SpeechRecognition.speech_recognition_wrapper.record_and_recognize(self.vc)
         self.vc.view.setOutputText(self.text)
         self.vc.view.setQuestion("Czy jesteś zadowolony z efektu?")
         self.vc.parent.update()
