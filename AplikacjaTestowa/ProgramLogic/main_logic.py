@@ -7,6 +7,7 @@ import speech_recognition
 import io
 from tkinter import *
 from tkinter.font import Font
+from Plots.plots import basic_plots
 
 def startup():
 
@@ -16,10 +17,6 @@ def startup():
     root.title('Głos Biometryczny')
     app = MyController(root)
     root.mainloop()
-    #####################3
-
-    #register_user(users_database)
-    #print(users_database)
 
 
 class MyController():
@@ -43,10 +40,8 @@ class MyController():
         self.parent.update()
 
     def wykresBtnPressed(self):
-        self.img = PhotoImage(file = "./wykres.gif")
-        labelImg = Label(image=self.img)
-        labelImg.grid(row=0, column=2)
-        labelImg.image = self.img
+        audio = RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(self.model.AudioData)
+        basic_plots(audio['NumpyArray'], audio['fs'])
 
     def questionYes(self):
         self.view.kom0_text.set('')

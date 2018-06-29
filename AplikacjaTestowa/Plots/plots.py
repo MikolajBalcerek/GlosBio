@@ -53,6 +53,9 @@ def plot_mel_scale():
 
 def basic_plots(sig, samplerate):
 
+
+    plot_mfcc(samplerate, sig)
+
     plt.figure(1)
     plt.subplot(211)
     plt.title('Signal Wave')
@@ -65,18 +68,7 @@ def basic_plots(sig, samplerate):
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
     f, t, Sxx = signal.spectrogram(sig, samplerate, nperseg=1024)
+    # plt.ylim(5000)
     plt.pcolormesh(t, f, Sxx)
-
-    plt.subplot(213)
-    mfcc_feat = psf.mfcc(sig, samplerate=sample_rate)
-    ig, ax = plt.subplots()
-    mfcc_data= np.swapaxes(mfcc_feat, 0 ,1)
-    cax = ax.imshow(mfcc_data, interpolation='nearest', cmap=cm.coolwarm, origin='lower', aspect='auto')
-    ax.set_title('MFCC')
-    
-    plt.show()
-
-
-
-
+    #
     plt.show()
