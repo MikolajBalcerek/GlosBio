@@ -5,7 +5,9 @@ import RecordingPackage.speech_recognition_recording
 import secret_keys
 #this file handles speech recognition
 
-def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
+def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer = None):
+    if(Recognizer == None):
+        Recognizer = sr.Recognizer()
     r = Recognizer
     audio = AudioData
     try:
@@ -18,7 +20,7 @@ def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer):
         # BING
         return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY, language="pl-PL")
 
-def record_and_recognize(vc):
+def record_and_recognize(vc=None):
     """
     Records voice and return AudioData and string with recognized text
     :return Audiodata, str recognized Text

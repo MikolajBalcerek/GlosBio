@@ -3,19 +3,26 @@ import io
 import soundfile
 #This file handles smart voice recording
 
-def record_till_end_of_voice(vc):
+def record_till_end_of_voice(vc=None):
     """
     this records audio until significant noise has begun and ended
     :return: AudioData
     """
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        vc.view.setKom1Text("Zaczekaj, trwa rozeznanie środowiska")
-        vc.parent.update()
+        #graficzne rzeczy
+        if(vc):
+            vc.view.setKom1Text("Zaczekaj, trwa rozeznanie środowiska")
+            vc.parent.update()
+
         r.adjust_for_ambient_noise(source, 2)
         r.energy_threshold *= 3
-        vc.view.setKom2Text("Nagrywanie...")
-        vc.parent.update()
+
+        #graficzne rzeczy
+        if(vc):
+            vc.view.setKom2Text("Nagrywanie...")
+            vc.parent.update()
+
         audio = r.listen(source)
     return audio, r
 
