@@ -53,3 +53,6 @@ class MyController():
         self.view.kom2_text.set('')
         self.view.output_text.set('')
         self.view.question.set('')
+        self.view.yesBtn.destroy()
+        self.view.noBtn.destroy()
+        self.parent.update()
