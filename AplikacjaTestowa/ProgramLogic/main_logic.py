@@ -49,8 +49,8 @@ class MyController():
         self.view.kom2_text.set('')
         self.view.output_text.set('')
         self.view.question.set('')
-        self.model.yesBtn.destroy()
-        self.model.noBtn.destroy()
+        self.view.yesBtn.destroy()
+        self.view.noBtn.destroy()
         self.model.users_database[self.model.text] = {"name" : self.model.text, "AudioData" : self.model.AudioData, "flac" : self.model.flac,
                              "NumpyArray": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(self.model.AudioData)['NumpyArray'],
                              "fs": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(self.model.AudioData)['fs']};
@@ -105,6 +105,20 @@ class MyView(Frame):
 
     def setQuestion(self, text):
         self.question.set(text)
+        self.vc.parent.update()
+
+    def setQuestionYesNo(self, text):
+        """
+        Sets a Yes/No question with text string and Yes/No buttons
+        :param text: string text
+        :return:
+        """
+        self.setQuestion(text)
+        self.yesBtn = Button(self.vc.view.frame, text ="Tak", command = self.vc.questionYes, relief='flat', bg="#999999", font=("Helvetica", 14))
+        self.yesBtn.grid(row = 6,column = 0, pady=20, sticky = EW, padx=30)
+        self.noBtn = Button(self.vc.view.frame, text ="Nie", command = self.vc.questionNo, relief='flat', bg="#999999", font=("Helvetica", 14))
+        self.noBtn.grid(row = 6,column = 1, pady=20, sticky = EW, padx=30)
+        self.vc.parent.update()
 
 class MyModel():
     def __init__(self,vc):
@@ -114,12 +128,7 @@ class MyModel():
     def register_user(self):
         self.AudioData, self.text = SpeechRecognition.speech_recognition_wrapper.record_and_recognize(self.vc)
         self.vc.view.setOutputText(self.text)
-        self.vc.view.setQuestion("Czy jesteś zadowolony z efektu?")
-        self.yesBtn = Button(self.vc.view.frame, text ="Tak", command = self.vc.questionYes, relief='flat', bg="#999999", font=("Helvetica", 14))
-        self.yesBtn.grid(row = 6,column = 0, pady=20, sticky = EW, padx=30)
-        self.noBtn = Button(self.vc.view.frame, text ="Nie", command = self.vc.questionNo, relief='flat', bg="#999999", font=("Helvetica", 14))
-        self.noBtn.grid(row = 6,column = 1, pady=20, sticky = EW, padx=30)
-        self.vc.parent.update()
+        self.vc.view.setQuestionYesNo("Czy jesteś zadowolony z efektu?")
         self.flac = io.BytesIO(self.AudioData.get_flac_data())
         RecordingPackage.simple_audio.play_from_file(self.flac)
         self.vc.view.setOutputText(self.text)
