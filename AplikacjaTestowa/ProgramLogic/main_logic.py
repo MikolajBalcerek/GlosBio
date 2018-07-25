@@ -1,4 +1,5 @@
 import sys
+import copy
 sys.path.append('..')
 import RecordingPackage.speech_recognition_recording
 import RecordingPackage.simple_audio
@@ -35,9 +36,13 @@ class MyController():
         self.view.output_text.set('')
         self.view.question.set('')
         self.view.setKom0Text("Start programu: ")
-        self.model.register_user()
+        self.model.record_user()
         RecordingPackage.simple_audio.play_from_file(self.model.flac)
+        self.view.setOutputText(self.model.recorded_text)
+        self.view.setQuestionYesNo("Czy jesteś zadowolony z efektu?")
         self.parent.update()
+
+
 
     def wykresBtnPressed(self):
         audio = RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(self.model.AudioData)
@@ -51,9 +56,8 @@ class MyController():
         self.view.question.set('')
         self.view.yesBtn.destroy()
         self.view.noBtn.destroy()
-        self.model.users_database[self.model.text] = {"name" : self.model.text, "AudioData" : self.model.AudioData, "flac" : self.model.flac,
-                             "NumpyArray": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(self.model.AudioData)['NumpyArray'],
-                             "fs": RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(self.model.AudioData)['fs']};
+        self.model.register_user()
+        self.parent.update()
 
     def questionNo(self):
         self.view.kom0_text.set('')
@@ -125,9 +129,31 @@ class MyModel():
         self.vc = vc
         self.users_database = {}
 
-    def register_user(self):
-        self.AudioData, self.text = SpeechRecognition.speech_recognition_wrapper.record_and_recognize(self.vc)
-        self.vc.view.setOutputText(self.text)
-        self.vc.view.setQuestionYesNo("Czy jesteś zadowolony z efektu?")
+    def record_user(self):
+        """
+        this method records user
+        :return:
+        """
+        self.AudioData, self.recorded_text = SpeechRecognition.speech_recognition_wrapper.record_and_recognize(self.vc)
         self.flac = io.BytesIO(self.AudioData.get_flac_data())
-        self.vc.view.setOutputText(self.text)
+
+    def register_user(self, name=None, audiodata = None, flac = None):
+        """
+        this registers the user, with no arguments passed registers the last recorded user
+        :return:
+        """
+        if name == None:
+            name = self.recorded_text
+        if audiodata == None:
+            audiodata = self.AudioData
+        if flac == None:
+            flac = self.flac
+        self.users_database[name] = {"name": name, "AudioData": audiodata,
+                                                      "flac": flac,
+                                                      "NumpyArray":
+                                                          RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(
+                                                              audiodata)['NumpyArray'],
+                                                      "fs":
+                                                          RecordingPackage.speech_recognition_recording.convert_AudioData_to_Numpy_array_and_fs(
+                                                              audiodata)['fs']}
+        print(self.users_database)
