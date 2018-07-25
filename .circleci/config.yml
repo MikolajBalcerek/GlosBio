@@ -28,6 +28,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
+            pip install pipenv
             cd AplikacjaTestowa
             pipenv sync --dev
       - save_cache:
