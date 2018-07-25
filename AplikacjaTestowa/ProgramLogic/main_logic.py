@@ -36,6 +36,7 @@ class MyController():
         self.view.question.set('')
         self.view.setKom0Text("Start programu: ")
         self.model.register_user()
+        RecordingPackage.simple_audio.play_from_file(self.model.flac)
         self.parent.update()
 
     def wykresBtnPressed(self):
