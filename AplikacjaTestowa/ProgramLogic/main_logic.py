@@ -35,8 +35,7 @@ class MyController():
         self.view.output_text.set('')
         self.view.question.set('')
         self.view.setKom0Text("Start programu: ")
-        text = self.model.register_user()
-        self.view.setOutputText(text)
+        self.model.register_user()
         self.parent.update()
 
     def wykresBtnPressed(self):
@@ -130,5 +129,4 @@ class MyModel():
         self.vc.view.setOutputText(self.text)
         self.vc.view.setQuestionYesNo("Czy jesteś zadowolony z efektu?")
         self.flac = io.BytesIO(self.AudioData.get_flac_data())
-        RecordingPackage.simple_audio.play_from_file(self.flac)
         self.vc.view.setOutputText(self.text)
