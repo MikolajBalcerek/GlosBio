@@ -12,6 +12,7 @@ pyaudio = "*"
 soundfile = "*"
 sklearn = "*"
 python-speech-features = "*"
+matplotlib = "*"
 
 [dev-packages]
 
