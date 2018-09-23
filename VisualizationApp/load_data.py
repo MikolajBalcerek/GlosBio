@@ -118,7 +118,7 @@ def get_data(verbose=False):
     return train, test
 
 def load_raw_file(file_name):
-	return scipy.io.wavfile.read('./smallDataSet/' + file_name + '.wav')
+	return scipy.io.wavfile.read('./VisualizationApp/smallDataSet' + file_name + '.wav')
 
 def load_file(file_name, relative_window_width):
 	sample_rate, file = load_raw_file(file_name)
@@ -127,7 +127,7 @@ def load_file(file_name, relative_window_width):
 
 def get_file_names():
 	from os import listdir
-	file_names = listdir('./smallDataSet')
+	file_names = listdir('./VisualizationApp/smallDataSet')
 	return [file_name.split('.')[0] for file_name in file_names]
 
 if __name__ == "__main__":
