@@ -118,7 +118,7 @@ def get_data(verbose=False):
     return train, test
 
 def load_raw_file(file_name):
-	return scipy.io.wavfile.read('./VisualizationApp/smallDataSet' + file_name + '.wav')
+	return scipy.io.wavfile.read('./VisualizationApp/smallDataSet/' + file_name + '.wav')
 
 def load_file(file_name, relative_window_width):
 	sample_rate, file = load_raw_file(file_name)
