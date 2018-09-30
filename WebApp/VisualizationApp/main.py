@@ -5,10 +5,9 @@ import numpy as np
 import python_speech_features as psf
 from bokeh.io import curdoc
 from bokeh.layouts import row, column, widgetbox
-from bokeh.models import ColumnDataSource, Slider, Div
-from bokeh.models.widgets import Slider, TextInput, Select
+from bokeh.models import ColumnDataSource, Div
+from bokeh.models.widgets import Slider, Select
 from bokeh.plotting import figure
-from bokeh.palettes import YlGn3
 
 import audio
 from audio import MAX_FREQ, TIMESLICE, NUM_BINS
