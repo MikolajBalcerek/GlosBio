@@ -12,8 +12,56 @@ from bokeh.plotting import figure
 import audio
 from audio import MAX_FREQ, TIMESLICE, NUM_BINS
 from waterfall import WaterfallRenderer
-
 import load_data
+
+def update_plot_raw_signal():
+	new_file_name = file_menu.value
+	data = load_data.load_file(new_file_name, _WINDOW_SCALING)
+	data_raw_signal.data = dict(x=np.arange(0, _SPARSNESS*len(data), step=_SPARSNESS), y=data)
+	# plot_raw_signal.y_range = [min(data), max(data)]
+	# plot_raw_signal.x_range = [0, len(data)]
+
+def update_plot_mfcc():
+	new_file_name = file_menu.value
+	data = load_data.load_raw_file(new_file_name)
+	data_mfcc = np.swapaxes(psf.mfcc(data[1], data[0]), 0, 1)
+	plot_mfcc.image(image=[data_mfcc], x=[0], y=[0], dw=[10], dh=[10])
+
+
+def update_data(attrname, old, new):
+	update_plot_raw_signal()
+	update_plot_mfcc()
+
+def update():
+    signal, spectrum, bins = audio.data['values']
+
+    # seems to be a problem with Array property, using List for now
+    waterfall_renderer.latest = spectrum.tolist()
+    waterfall_plot.y_range.end = freq.value*0.001
+
+    # the if-elses below are small optimization: avoid computing and sending
+    # all the x-values, if the length has not changed
+
+    if len(signal) == len(signal_source.data['y']):
+        signal_source.data['y'] = signal*gain.value
+    else:
+        t = np.linspace(0, TIMESLICE, len(signal))
+        signal_source.data = dict(t=t, y=signal*gain.value)
+
+    if len(spectrum) == len(spectrum_source.data['y']):
+        spectrum_source.data['y'] = spectrum
+    else:
+        f = np.linspace(0, MAX_FREQ_KHZ, len(spectrum))
+        spectrum_source.data = dict(f=f, y=spectrum)
+    spectrum_plot.x_range.end = freq.value*0.001
+
+    alphas = []
+    for x in bins:
+        a = np.zeros_like(eq_range)
+        N = int(ceil(x))
+        a[:N] = (1 - eq_range[:N]*0.05)
+        alphas.append(a)
+    eq_source.data['alpha'] = np.hstack(alphas)
 
 
 
@@ -44,23 +92,6 @@ file_menu = Select(title="Wybierz plik", value=_BASE_FILE_NAME, options=load_dat
 
 
 
-def update_plot_raw_signal():
-	new_file_name = file_menu.value
-	data = load_data.load_file(new_file_name, _WINDOW_SCALING)
-	data_raw_signal.data = dict(x=np.arange(0, _SPARSNESS*len(data), step=_SPARSNESS), y=data)
-	# plot_raw_signal.y_range = [min(data), max(data)]
-	# plot_raw_signal.x_range = [0, len(data)]
-
-def update_plot_mfcc():
-	new_file_name = file_menu.value
-	data = load_data.load_raw_file(new_file_name)
-	data_mfcc = np.swapaxes(psf.mfcc(data[1], data[0]), 0, 1)
-	plot_mfcc.image(image=[data_mfcc], x=[0], y=[0], dw=[10], dh=[10])
-
-
-def update_data(attrname, old, new):
-	update_plot_raw_signal()
-	update_plot_mfcc()
 
 file_menu.on_change('value', update_data)
 
@@ -127,36 +158,7 @@ freq = Slider(start=1, end=MAX_FREQ, value=MAX_FREQ, step=1, title="Frequency")
 
 gain = Slider(start=1, end=20, value=1, step=1, title="Gain")
 
-def update():
-    signal, spectrum, bins = audio.data['values']
 
-    # seems to be a problem with Array property, using List for now
-    waterfall_renderer.latest = spectrum.tolist()
-    waterfall_plot.y_range.end = freq.value*0.001
-
-    # the if-elses below are small optimization: avoid computing and sending
-    # all the x-values, if the length has not changed
-
-    if len(signal) == len(signal_source.data['y']):
-        signal_source.data['y'] = signal*gain.value
-    else:
-        t = np.linspace(0, TIMESLICE, len(signal))
-        signal_source.data = dict(t=t, y=signal*gain.value)
-
-    if len(spectrum) == len(spectrum_source.data['y']):
-        spectrum_source.data['y'] = spectrum
-    else:
-        f = np.linspace(0, MAX_FREQ_KHZ, len(spectrum))
-        spectrum_source.data = dict(f=f, y=spectrum)
-    spectrum_plot.x_range.end = freq.value*0.001
-
-    alphas = []
-    for x in bins:
-        a = np.zeros_like(eq_range)
-        N = int(ceil(x))
-        a[:N] = (1 - eq_range[:N]*0.05)
-        alphas.append(a)
-    eq_source.data['alpha'] = np.hstack(alphas)
 curdoc().add_periodic_callback(update, 80)
 
 controls = row(widgetbox(gain), widgetbox(freq))
