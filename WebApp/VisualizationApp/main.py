@@ -14,23 +14,26 @@ from audio import MAX_FREQ, TIMESLICE, NUM_BINS
 from waterfall import WaterfallRenderer
 import load_data
 
+
 def update_plot_raw_signal():
-	new_file_name = file_menu.value
-	data = load_data.load_file(new_file_name, _WINDOW_SCALING)
-	data_raw_signal.data = dict(x=np.arange(0, _SPARSNESS*len(data), step=_SPARSNESS), y=data)
-	# plot_raw_signal.y_range = [min(data), max(data)]
-	# plot_raw_signal.x_range = [0, len(data)]
+    new_file_name = file_menu.value
+    data = load_data.load_file(new_file_name, _WINDOW_SCALING)
+    data_raw_signal.data = dict(x=np.arange(0, _SPARSNESS*len(data), step=_SPARSNESS), y=data)
+    # plot_raw_signal.y_range = [min(data), max(data)]
+    # plot_raw_signal.x_range = [0, len(data)]
+
 
 def update_plot_mfcc():
-	new_file_name = file_menu.value
-	data = load_data.load_raw_file(new_file_name)
-	data_mfcc = np.swapaxes(psf.mfcc(data[1], data[0]), 0, 1)
-	plot_mfcc.image(image=[data_mfcc], x=[0], y=[0], dw=[10], dh=[10])
+    new_file_name = file_menu.value
+    data = load_data.load_raw_file(new_file_name)
+    data_mfcc = np.swapaxes(psf.mfcc(data[1], data[0]), 0, 1)
+    plot_mfcc.image(image=[data_mfcc], x=[0], y=[0], dw=[10], dh=[10])
 
 
 def update_data(attrname, old, new):
-	update_plot_raw_signal()
-	update_plot_mfcc()
+    update_plot_raw_signal()
+    update_plot_mfcc()
+
 
 def update():
     signal, spectrum, bins = audio.data['values']
@@ -58,11 +61,10 @@ def update():
     alphas = []
     for x in bins:
         a = np.zeros_like(eq_range)
-        N = int(ceil(x))
-        a[:N] = (1 - eq_range[:N]*0.05)
+        n = int(ceil(x))
+        a[:n] = (1 - eq_range[:n]*0.05)
         alphas.append(a)
     eq_source.data['alpha'] = np.hstack(alphas)
-
 
 
 _SPARSNESS = 3
@@ -73,11 +75,11 @@ _BASE_FILE_RAW = load_data.load_raw_file(_BASE_FILE_NAME)
 
 
 data_raw_signal = ColumnDataSource(data=
-	dict(x=np.arange(0, _SPARSNESS*len(_BASE_FILE), step=_SPARSNESS), y=_BASE_FILE))
+    dict(x=np.arange(0, _SPARSNESS*len(_BASE_FILE), step=_SPARSNESS), y=_BASE_FILE))
 
 plot_raw_signal = figure(plot_height=400, plot_width=400, title="Raw signal",
-              tools="crosshair,pan,reset,save,wheel_zoom")
-              # ,x_range=[0, len(_BASE_FILE)], y_range=[min(_BASE_FILE), max(_BASE_FILE)])
+                        tools="crosshair,pan,reset,save,wheel_zoom")
+# x_range=[0, len(_BASE_FILE)], y_range=[min(_BASE_FILE), max(_BASE_FILE)])
 plot_raw_signal.line('x', 'y', source=data_raw_signal, line_width=3, line_alpha=0.6)
 
 
@@ -86,18 +88,11 @@ plot_mfcc = figure(plot_height=400, plot_width=400, title="Raw signal",
               tools="crosshair,pan,reset,save,wheel_zoom")
 plot_mfcc.image(image=[data_mfcc], x=[0], y=[0], dw=[10], dh=[10])
 
-
-
 file_menu = Select(title="Wybierz plik", value=_BASE_FILE_NAME, options=load_data.get_file_names())
-
-
-
 
 file_menu.on_change('value', update_data)
 
-
 inputs = widgetbox(file_menu)
-
 
 curdoc().add_root(row(inputs, plot_raw_signal, plot_mfcc, width=1200))
 curdoc().title = "Visualization"
