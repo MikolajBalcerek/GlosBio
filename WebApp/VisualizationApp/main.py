@@ -72,6 +72,13 @@ _WINDOW_SCALING = 2
 _BASE_FILE_NAME = load_data.get_file_names()[0]
 _BASE_FILE = load_data.load_file(_BASE_FILE_NAME, _WINDOW_SCALING)
 _BASE_FILE_RAW = load_data.load_raw_file(_BASE_FILE_NAME)
+MAX_FREQ_KHZ = MAX_FREQ*0.001
+NUM_GRAMS = 800
+GRAM_LENGTH = 512
+TILE_WIDTH = 200
+EQ_CLAMP = 20
+PALETTE = ['#081d58', '#253494', '#225ea8', '#1d91c0', '#41b6c4', '#7fcdbb', '#c7e9b4', '#edf8b1', '#ffffd9']
+PLOTARGS = dict(tools="", toolbar_location=None, outline_line_color='#595959')
 
 
 data_raw_signal = ColumnDataSource(data=
@@ -96,15 +103,6 @@ inputs = widgetbox(file_menu)
 
 curdoc().add_root(row(inputs, plot_raw_signal, plot_mfcc, width=1200))
 curdoc().title = "Visualization"
-
-MAX_FREQ_KHZ = MAX_FREQ*0.001
-NUM_GRAMS = 800
-GRAM_LENGTH = 512
-TILE_WIDTH = 200
-EQ_CLAMP = 20
-
-PALETTE = ['#081d58', '#253494', '#225ea8', '#1d91c0', '#41b6c4', '#7fcdbb', '#c7e9b4', '#edf8b1', '#ffffd9']
-PLOTARGS = dict(tools="", toolbar_location=None, outline_line_color='#595959')
 
 filename = join(dirname(__file__), "description.html")
 desc = Div(text=open(filename).read(),
