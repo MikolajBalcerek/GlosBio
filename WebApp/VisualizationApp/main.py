@@ -1,12 +1,18 @@
+from math import ceil
+from os.path import dirname, join
+
 import numpy as np
 import python_speech_features as psf
-
 from bokeh.io import curdoc
-from bokeh.layouts import row, widgetbox
-from bokeh.models import ColumnDataSource
+from bokeh.layouts import row, column, widgetbox
+from bokeh.models import ColumnDataSource, Slider, Div
 from bokeh.models.widgets import Slider, TextInput, Select
 from bokeh.plotting import figure
 from bokeh.palettes import YlGn3
+
+import audio
+from audio import MAX_FREQ, TIMESLICE, NUM_BINS
+from waterfall import WaterfallRenderer
 
 import load_data
 
@@ -65,20 +71,6 @@ inputs = widgetbox(file_menu)
 
 curdoc().add_root(row(inputs, plot_raw_signal, plot_mfcc, width=1200))
 curdoc().title = "Visualization"
-
-from os.path import dirname, join
-from math import ceil
-
-import numpy as np
-
-from bokeh.io import curdoc
-from bokeh.layouts import row, column, widgetbox
-from bokeh.models import ColumnDataSource, Slider, Div
-from bokeh.plotting import figure
-
-import audio
-from audio import MAX_FREQ, TIMESLICE, NUM_BINS
-from waterfall import WaterfallRenderer
 
 MAX_FREQ_KHZ = MAX_FREQ*0.001
 NUM_GRAMS = 800
