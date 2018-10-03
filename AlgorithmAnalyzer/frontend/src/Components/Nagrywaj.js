@@ -24,7 +24,7 @@ class Nagrywaj extends Component {
     }
     render(){
         return(
-            <Paper style={{paddingLeft: 200, paddingRight: 200, paddingTop: 30, paddingBottom: 30, margin: 20}} elevation='12'>   
+            <Paper style={{paddingLeft: 200, paddingRight: 200, paddingTop: 30, paddingBottom: 30, margin: 20}} elevation={12}>   
             <Grid item xs={12} style={{display: 'flex',  justifyContent:'center', alignItems:'center'}}>       
                 <KeyboardVoice style={{ fontSize: 100 }}/>
             </Grid>    
@@ -35,7 +35,7 @@ class Nagrywaj extends Component {
                     variant="outlined"
                     />
             </Grid>          
-        <Grid container spacing={12} style={{paddingLeft: 220, paddingRight: 220, paddingTop: 30}}>     
+        <Grid container spacing={24} style={{paddingLeft: 220, paddingRight: 220, paddingTop: 30}}>     
             <Grid item xs={4} style={{display: 'flex',  justifyContent:'center', alignItems:'center'}}>
                 <Button variant="fab" color="secondary" aria-label="Add">
                     <FiberManualRecord />
