@@ -8,6 +8,10 @@ import Tab from '@material-ui/core/Tab';
 import Nagrywaj from './Nagrywaj'
 import Przeglad from './Przeglad'
 import Trenuj from './Trenuj'
+import Testuj1 from './Testuj1'
+import Testuj2 from './Testuj2'
+import Avatar from '@material-ui/core/Avatar';
+import logo from '../img/GLOSBIO.png'
 
 class MainPage extends Component {
     state = {
@@ -24,6 +28,7 @@ class MainPage extends Component {
             <div>
                 <AppBar position="static" color="primary">
                     <Toolbar>
+                    <Avatar alt="Głos Bio" src={logo} style={{ marginRight: 15 }}/>
                     <Typography variant="title" color="inherit">
                         Głos Biometryczny
                     </Typography>
@@ -47,6 +52,8 @@ class MainPage extends Component {
             {value === 0 && <Nagrywaj />}
             {value === 1 && <Przeglad />}
             {value === 2 && <Trenuj />}
+            {value === 3 && <Testuj1 />}
+            {value === 4 && <Testuj2 />}
           </div>
         )
     }
