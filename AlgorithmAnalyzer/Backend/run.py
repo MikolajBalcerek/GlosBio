@@ -6,8 +6,8 @@
 import subprocess
 
 try:
-    subprocess.call("python main.py")
+    subprocess.call("pipenv run python main.py".split(" "))
 except FileNotFoundError:
     subprocess.call("pip install pipenv")
     subprocess.call("pipenv install")
-    subprocess.call("pipenv run python main.py")
+    subprocess.call("pipenv run python main.py".split(" "))
