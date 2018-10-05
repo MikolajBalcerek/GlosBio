@@ -1,5 +1,6 @@
 from flask import request, url_for, redirect, Flask
 from flask_api import FlaskAPI, status, exceptions
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 import os
@@ -8,6 +9,7 @@ UPLOAD_TRAIN_PATH  = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
 app = FlaskAPI(__name__)
 
+CORS(app)
 
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
@@ -37,11 +39,15 @@ def handling_audio_train_endpoint():
             return ['No file part'], status.HTTP_400_BAD_REQUEST
         if 'username' not in request.data:
             return ['No username'], status.HTTP_400_BAD_REQUEST
-
+        
         username = request.data.get('username')
-        file = request.files['file']
-
-        #TODO zapisywanie pliku do folderu username/cos
+        file = request.files.get('file')
+        
+        #TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
+        #TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
+        path = "./data/" + username + ".wav"
+        file.save(path)
+        print("#LOG File saved to: " + path)
         final_file_name = ''
         # if file and allowed_file(file.filename): # and username is a secure string
         #     # final_file_name = /
