@@ -17,7 +17,7 @@ def landing_documentation_page():
     """ Landing page for browsable API """
 
     def list_routes():
-        """ helper function that returns all routes in a list"""
+        """ helper function that returns all routes in a list """
         output = []
         for rule in app.url_map.iter_rules():
             methods = ', '.join(rule.methods)
