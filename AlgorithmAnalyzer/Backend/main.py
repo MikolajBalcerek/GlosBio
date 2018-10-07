@@ -12,7 +12,6 @@ app = FlaskAPI(__name__)
 
 CORS(app)
 
-
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
     """ Landing page for browsable API """
@@ -97,5 +96,4 @@ def handling_audio_train_endpoint():
 
 
 if __name__ == "__main__":
-    FLASK_DEBUG = 1
     app.run(debug=True)
