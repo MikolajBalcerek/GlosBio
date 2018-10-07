@@ -9,7 +9,7 @@ class audio_train_endpoint_test(unittest.TestCase):
     def setUp(self):
         """ setup for tests """
         sys.path.append('..')
-        subprocess.call("python main.py")
+        subprocess.Popen("python main.py")
 
     def test_get_list_audio(self):
         r = requests.get('http://127.0.0.1:5000/audio/train')

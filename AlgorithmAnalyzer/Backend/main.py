@@ -1,8 +1,9 @@
 from flask import request, url_for, redirect, Flask
-from flask_api import FlaskAPI, status, exceptions
+from flask_api import FlaskAPI, status, exceptions, renderers, decorators
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
+import urllib
 import os
 
 UPLOAD_TRAIN_PATH  = './train'
@@ -14,8 +15,22 @@ CORS(app)
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
     """ Landing page for browsable API """
+
+    def list_routes():
+        """ helper function that returns all routes in a list """
+        output = []
+        for rule in app.url_map.iter_rules():
+            methods = ', '.join(rule.methods)
+            line = urllib.parse.unquote(
+                "{} {} {}".format(rule.endpoint, methods,
+                                  str(request.host_url))[0:-1]+str(rule))
+            output.append(line)
+
+        return output
+
     if request.method == 'GET':
-        return ["go to specific /endpoint_name to see documentation"]
+        """ this will list on routes the default endpoint """
+        return list_routes()
 
 
 @app.route("/audio/train", methods=['GET', 'POST'])

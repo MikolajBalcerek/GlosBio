@@ -8,9 +8,11 @@ import Paper from "@material-ui/core/Paper";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import Button from "@material-ui/core/Button";
 import FiberManualRecord from "@material-ui/icons/FiberManualRecord";
+import PlayArrow from "@material-ui/icons/PlayArrow";
 import Stop from "@material-ui/icons/Stop";
 import KeyboardVoice from "@material-ui/icons/KeyboardVoice";
 import Grid from "@material-ui/core/Grid";
+import Pause from "@material-ui/icons/Pause";
 
 class Recorder extends Component {
 	constructor(props) {
@@ -29,10 +31,14 @@ class Recorder extends Component {
 
 	onPressButtonRecord() {
 		console.log("record", this.state);
-		this.setState({
-			isRecording: true,
-			recorded: false,
-		});
+		if (this.state.username) {
+			this.setState({
+				isRecording: true,
+				recorded: false,
+			});
+		} else {
+			//#TODO: user feedback: nie wypełniono wymaganego pola!
+		}
 	}
 	onPressButtonStop() {
 		console.log("stop", this.state);
@@ -41,7 +47,7 @@ class Recorder extends Component {
 		});
 	}
 	onPressButtonUpload() {
-		if (this.state.recorded && this.state.username) {
+		if (this.state.recorded) {
 			console.log("upload", this.state);
 			let fd = new FormData();
 			fd.append("username", this.state.username);
@@ -63,12 +69,7 @@ class Recorder extends Component {
 					console.log(error);
 				});
 		} else {
-			if (!this.state.recorded) {
-				//#TODO: user feedback: jeszcze nic nie nagrano!
-			}
-			if (!this.state.username) {
-				//#TODO: user feedback: nie wypełniono wymaganego pola!
-			}
+			//#TODO: user feedback: jeszcze nic nie nagrano!
 		}
 	}
 	onInputChange(e) {
@@ -113,62 +114,61 @@ class Recorder extends Component {
 						alignItems: "center",
 					}}
 				>
-					{this.state.recorded && !this.state.username ? (
-						<TextField
-							error
-							label="Podaj imię i nazwisko"
-							margin="normal"
-							variant="outlined"
-							outliner="red"
-							onChange={event => {
-								this.onInputChange(event);
-							}}
-						/>
-					) : (
-						<TextField
-							label="Podaj imię i nazwisko"
-							margin="normal"
-							variant="outlined"
-							outliner="red"
-							onChange={event => {
-								this.onInputChange(event);
-							}}
-						/>
-					)}
+					<TextField
+						label="Podaj imię i nazwisko"
+						margin="normal"
+						variant="outlined"
+						outliner=""
+						onChange={event => {
+							this.onInputChange(event);
+						}}
+					/>
 				</Grid>
 				<Grid
 					container
+					spacing={12}
 					style={{
 						display: "flex",
 						justifyContent: "center",
 						alignItems: "center",
 					}}
 				>
-					<Button
-						variant="fab"
-						color={this.state.isRecording ? "default" : "secondary"}
-						aria-label="Add"
-						onClick={
-							this.state.isRecording
-								? this.onPressButtonStop
-								: this.onPressButtonRecord
-						}
+					<Grid
+						item
+						xs={4}
+						style={{
+							display: "flex",
+							justifyContent: "center",
+							alignItems: "center",
+						}}
 					>
-						{this.state.isRecording ? (
-							<Stop />
-						) : (
-							<FiberManualRecord />
-						)}
-					</Button>
+						<Button
+							variant="fab"
+							color={
+								this.state.isRecording ? "default" : "secondary"
+							}
+							aria-label="Add"
+							onClick={
+								this.state.isRecording
+									? this.onPressButtonStop
+									: this.onPressButtonRecord
+							}
+						>
+							{this.state.isRecording ? (
+								<Stop />
+							) : (
+								<FiberManualRecord />
+							)}
+						</Button>
+					</Grid>
 				</Grid>
 				<Grid
 					item
-					xs={12}
+					xs={4}
 					style={{
 						display: "flex",
 						justifyContent: "center",
 						alignItems: "center",
-						paddingTop: 20,
 					}}
 				>
 					{this.state.recorded ? (
@@ -183,8 +183,8 @@ class Recorder extends Component {
 							className="sound-wave"
 							onStop={this.onStop}
 							onData={this.onData}
-							strokeColor="#2e7d32"
-							backgroundColor="#ffffff"
+							strokeColor="yellow"
+							backgroundColor="black"
 							mimeType="audio/wav; codecs=opus"
 						/>
 					)}
@@ -205,7 +205,7 @@ class Recorder extends Component {
 						style={{ display: "block" }}
 						onClick={this.onPressButtonUpload}
 					>
-						Save
+						Upload
 						<CloudUploadIcon />
 					</Button>
 				</Grid>
