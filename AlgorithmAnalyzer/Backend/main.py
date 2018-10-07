@@ -1,9 +1,10 @@
-from flask import request, url_for, redirect, Flask
+from flask import request, url_for, redirect, Flask, current_app
 from flask_api import FlaskAPI, status, exceptions, renderers, decorators
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 import urllib
+import string
 import os
 
 UPLOAD_TRAIN_PATH  = './train'
@@ -23,9 +24,10 @@ def landing_documentation_page():
             methods = ', '.join(rule.methods)
             output[urllib.parse.unquote(rule.endpoint)] = {
                 "name": urllib.parse.unquote(rule.endpoint),
+                "description": " ".join(current_app.view_functions[rule.endpoint].__doc__.split()),
                 "methods": urllib.parse.unquote(methods),
                 "url": urllib.parse.unquote(str(request.host_url))[0:-1]
-                       + str(rule)
+                       +str(rule)
             }
 
         return output
