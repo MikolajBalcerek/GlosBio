@@ -18,13 +18,15 @@ def landing_documentation_page():
 
     def list_routes():
         """ helper function that returns all routes in a list """
-        output = []
+        output = {}
         for rule in app.url_map.iter_rules():
             methods = ', '.join(rule.methods)
-            line = urllib.parse.unquote(
-                "{} {} {}".format(rule.endpoint, methods,
-                                  str(request.host_url))[0:-1]+str(rule))
-            output.append(line)
+            output[urllib.parse.unquote(rule.endpoint)] = {
+                "name": urllib.parse.unquote(rule.endpoint),
+                "methods": urllib.parse.unquote(methods),
+                "url": urllib.parse.unquote(str(request.host_url))[0:-1]
+                       + str(rule)
+            }
 
         return output
 
