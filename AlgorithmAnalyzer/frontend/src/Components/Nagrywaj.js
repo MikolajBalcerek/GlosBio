@@ -185,7 +185,7 @@ class Recorder extends Component {
 							onData={this.onData}
 							strokeColor="#2e7d32"
 							backgroundColor="#ffffff"
-							mimeType="audio/wav; codecs=opus"
+							mimeType="audio/flac; codecs=opus"
 						/>
 					)}
 				</Grid>

@@ -13,6 +13,7 @@ app = FlaskAPI(__name__)
 
 CORS(app)
 
+
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
     """ Landing page for browsable API """
@@ -64,7 +65,7 @@ def handling_audio_train_endpoint():
         
         #TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         #TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
-        path = "./data/" + username + ".wav"
+        path = "./data/" + username + ".flac"
         file.save(path)
         print("#LOG File saved to: " + path)
         final_file_name = ''
