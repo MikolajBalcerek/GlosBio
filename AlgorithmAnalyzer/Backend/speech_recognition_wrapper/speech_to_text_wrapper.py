@@ -8,10 +8,12 @@ from GlosBio.AlgorithmAnalyzer.Backend import secret_keys
 def recognize_speech(audio_file, language="pl-PL"):
     """
     speech to text from the audio_file
+
     :param audio_file: audiofile in standard WAV or FLAC format
     :param language: language in the "pl-PL" style, default polish
     :return: string of recognized text
     """
+
     r = sr.Recognizer()
     # converting to audioData
     audio = r.record(audio_file)

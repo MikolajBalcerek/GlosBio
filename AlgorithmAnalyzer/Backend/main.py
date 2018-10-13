@@ -4,18 +4,32 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from pydub import AudioSegment
-
+import speech_recognition as sr
 import urllib
 import string
 import os
 
 
+from speech_recognition_wrapper import speech_to_text_wrapper
 
 UPLOAD_TRAIN_PATH = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
 app = FlaskAPI(__name__)
 
 CORS(app)
+
+
+def convert_webm_to_wav(source_path: str, destination_path: str):
+    """ Helper function converting webm to wav so it can be handled
+    by mainstream libraries
+
+    :param source_path: str path to source
+    :param destination_path: str path to save to
+    """
+    sound = AudioSegment.from_file(
+        source_path,
+        codec="opus"
+    ).export(destination_path, format="wav")
 
 
 @app.route("/", methods=['GET'])
@@ -75,19 +89,6 @@ def handling_audio_train_endpoint():
         file.save(path)
         print("#LOG File saved to: " + path)
 
-        def convert_webm_to_wav(source_path: str, destination_path: str):
-            """
-            :param source_path: str path to source
-            :param destination_path: str path to save to
-            """
-            sound = AudioSegment.from_file(
-                source_path,
-                codec="opus"
-            ).export(destination_path, format="wav")
-
-        convert_webm_to_wav(path, path.replace(".webm", ".wav"))
-
-        print("#LOG File converted to to: " + path)
         final_file_name = ''
         # if file and allowed_file(file.filename): # and username is a secure string
         #     # final_file_name = /
@@ -95,9 +96,18 @@ def handling_audio_train_endpoint():
         #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
         #     pass
 
+        convert_webm_to_wav(path, path.replace(".webm", ".wav"))
+
+        print("#LOG File converted to to: " + path)
+
+        with sr.AudioFile(open(path.replace(".webm", ".wav"), 'r')) as converted_file:
+            recognized_speech = speech_to_text_wrapper.recognize_speech(converted_file)
+            print("recognized_speech")
+
         return {"username": username,
                 "text": f"Uploaded file for {username},"
                         f" of name {final_file_name}"}, status.HTTP_201_CREATED
+
 
 if __name__ == "__main__":
     app.run(debug=True)

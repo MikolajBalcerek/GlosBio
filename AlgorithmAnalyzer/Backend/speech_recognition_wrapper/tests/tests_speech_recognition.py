@@ -11,7 +11,6 @@ class TestSpeechToText(unittest.TestCase):
         self.AUDIO_Mikolaj_Balcerek = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Mikolaj_Balcerek_CLEAR.flac")
         self.AUDIO_Robert_Lewandowski = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Robert_Lewandowski_NOISE.flac")
 
-
     #tests just for speech recognition in Polish, not recording and noise detection
     def test_recognize_speech_google_bing_CLEAR_POLISH(self):
         with sr.AudioFile(self.AUDIO_Mikolaj_Balcerek) as audio:
