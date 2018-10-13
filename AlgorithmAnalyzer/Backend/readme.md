@@ -1,4 +1,11 @@
-# Algorithm Analazyer backend
+# Algorithm Analyzer backend
+
+
+### Installing
+You have to install [ffmpeg](http://ffmpeg.org) on your system.  
+It is available on apt (Linux), brew (MacOS) and a binary is available on the website (Windows).  
+After installing make sure that you added the executables to your PATH.  
+Verify by running ffmpeg in the console.
 
 ### Running
 Use the one-step solution:
