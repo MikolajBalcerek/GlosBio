@@ -1,5 +1,7 @@
 import os
 import re
+from scipy.io import wavfile
+
 ''''''''''''''''
 #to jest na razie propozycja, jeśli taka struktura nie zagra to będzie trzeba zmienić
 
@@ -64,6 +66,7 @@ class SampleManager:
 
     def add_sample(self, username, sample):
         samples = self.get_samples(username)
+        username = self.username_to_dirname(username)
         if samples:
             last_sample = max(
                 int(name.split('.')[0]) for name in samples
@@ -73,6 +76,14 @@ class SampleManager:
         new_path = os.path.join(self.path, username, str(last_sample + 1))
         with open('{}.wav'.format(new_path), 'wb') as new:
             new.write(sample)
+
+    def get_sample(self, username, sample_number):
+        username = self.username_to_dirname(username)
+        sample_path = os.path.join(
+            self.path, username,
+            '{}.wav'.format(sample_number)
+        )
+        return wavfile.read(sample_path)
 
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
