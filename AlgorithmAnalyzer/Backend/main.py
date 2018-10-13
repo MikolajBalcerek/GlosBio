@@ -7,6 +7,8 @@ import urllib
 import string
 import os
 
+from .convert_audio import convert_webm_to_wav
+
 UPLOAD_TRAIN_PATH  = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
 app = FlaskAPI(__name__)
@@ -78,26 +80,6 @@ def handling_audio_train_endpoint():
         return {"username" : username,
                 "text": f"Uploaded file for {username},"
                         f" of name {final_file_name}"}, status.HTTP_201_CREATED
-
-
-# @app.route("/<int:key>/", methods=['GET', 'PUT', 'DELETE'])
-# def notes_detail(key):
-#     """
-#     Retrieve, update or delete note instances.
-#     """
-#     if request.method == 'PUT':
-#         note = str(request.data.get('text', ''))
-#         notes[key] = note
-#         return note_repr(key)
-#
-#     elif request.method == 'DELETE':
-#         notes.pop(key, None)
-#         return '', status.HTTP_204_NO_CONTENT
-#
-#     # request.method == 'GET'
-#     if key not in notes:
-#         raise exceptions.NotFound()
-#     return note_repr(key)
 
 
 if __name__ == "__main__":
