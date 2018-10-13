@@ -64,8 +64,8 @@ def handling_audio_train_endpoint():
         file = request.files.get('file')
         
         #TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
-        #TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
-        path = "./data/" + username + ".flac"
+        #TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.webm) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
+        path = "./data/" + username + ".webm"
         file.save(path)
         print("#LOG File saved to: " + path)
         final_file_name = ''
