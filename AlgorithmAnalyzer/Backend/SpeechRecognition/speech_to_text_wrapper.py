@@ -8,7 +8,7 @@ from GlosBio.AlgorithmAnalyzer.Backend import secret_keys
 def recognize_speech(audio_file, language="pl-PL"):
     """
     speech to text from the audio_file
-    :param audio_file: audiofile
+    :param audio_file: audiofile in standard WAV or FLAC format
     :param language: language in the "pl-PL" style, default polish
     :return: string of recognized text
     """
@@ -23,4 +23,7 @@ def recognize_speech(audio_file, language="pl-PL"):
         return r.recognize_google(audio, language="pl-PL")
     except:
         # BING
-        return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY, language="pl-PL")
+        #TODO: NEW API KEY
+        print("BING api key is outdated")
+        return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY,
+                                language="pl-PL")

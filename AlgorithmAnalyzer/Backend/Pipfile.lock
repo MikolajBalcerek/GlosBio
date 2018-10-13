@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9c64016b869bf5f27e1516267abdc3a642c91a3a1c6a17b6b121d7809af694f1"
+            "sha256": "1790db7b6ab637e77357e7a0104c1cae565f49fcad81973ea07dfddc05fc79d0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -21,8 +21,14 @@
                 "sha256:2335065e6395b9e67ca716de5f7526736bfa6ceead690adf616d925bdc622b13",
                 "sha256:5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7"
             ],
-            "markers": "python_version != '3.2.*' and python_version >= '2.7' and python_version != '3.3.*' and python_version != '3.1.*' and python_version != '3.0.*'",
             "version": "==7.0"
+        },
+        "ffmpy": {
+            "hashes": [
+                "sha256:65abdddfa2561bb86b6c9ecfced53c7a15ea5080db4ddad08da7de5a348929f1"
+            ],
+            "index": "pypi",
+            "version": "==0.2.2"
         },
         "flask": {
             "hashes": [
@@ -67,12 +73,27 @@
             ],
             "version": "==1.0"
         },
+        "pydub": {
+            "hashes": [
+                "sha256:07d5eec305110cf1dfe1a0c45eed84bc31f889b1b19feab3859a05dc45b70e7b",
+                "sha256:c703e220917be686fc83d24231849a11c95ba540963ffb3ae5bb322788974d79"
+            ],
+            "index": "pypi",
+            "version": "==0.23.0"
+        },
         "six": {
             "hashes": [
                 "sha256:70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9",
                 "sha256:832dc0e10feb1aa2c68dcc57dbb658f1c7e65b9b61af69048abc87a2db00a0eb"
             ],
             "version": "==1.11.0"
+        },
+        "speechrecognition": {
+            "hashes": [
+                "sha256:4d8f73a0c05ec70331c3bacaa89ecc06dfa8d9aba0899276664cda06ab597e8e"
+            ],
+            "index": "pypi",
+            "version": "==3.8.1"
         },
         "werkzeug": {
             "hashes": [
