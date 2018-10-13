@@ -3,13 +3,15 @@ from flask_api import FlaskAPI, status, exceptions, renderers, decorators
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
+from pydub import AudioSegment
+
 import urllib
 import string
 import os
 
-from .convert_audio import convert_webm_to_wav
 
-UPLOAD_TRAIN_PATH  = './train'
+
+UPLOAD_TRAIN_PATH = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
 app = FlaskAPI(__name__)
 
@@ -27,10 +29,11 @@ def landing_documentation_page():
             methods = ', '.join(rule.methods)
             output[urllib.parse.unquote(rule.endpoint)] = {
                 "name": urllib.parse.unquote(rule.endpoint),
-                "description": " ".join(current_app.view_functions[rule.endpoint].__doc__.split()),
+                "description": " ".join(
+                    current_app.view_functions[rule.endpoint].__doc__.split()),
                 "methods": urllib.parse.unquote(methods),
                 "url": urllib.parse.unquote(str(request.host_url))[0:-1]
-                       +str(rule)
+                       + str(rule)
             }
 
         return output
@@ -47,6 +50,7 @@ def handling_audio_train_endpoint():
 
     POST to send a new audio file
     GET to get a list of existing files """
+
     def allowed_file(name):
         """ some function to see if a name could be used as a file name"""
         return '.' in name and \
@@ -61,15 +65,29 @@ def handling_audio_train_endpoint():
             return ['No file part'], status.HTTP_400_BAD_REQUEST
         if 'username' not in request.data:
             return ['No username'], status.HTTP_400_BAD_REQUEST
-        
+
         username = request.data.get('username')
         file = request.files.get('file')
-        
-        #TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
-        #TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.webm) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
+
+        # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
+        # TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
         path = "./data/" + username + ".webm"
         file.save(path)
         print("#LOG File saved to: " + path)
+
+        def convert_webm_to_wav(source_path: str, destination_path: str):
+            """
+            :param source_path: str path to source
+            :param destination_path: str path to save to
+            """
+            sound = AudioSegment.from_file(
+                source_path,
+                codec="opus"
+            ).export(destination_path, format="wav")
+
+        convert_webm_to_wav(path, path.replace(".webm", ".wav"))
+
+        print("#LOG File converted to to: " + path)
         final_file_name = ''
         # if file and allowed_file(file.filename): # and username is a secure string
         #     # final_file_name = /
@@ -77,10 +95,9 @@ def handling_audio_train_endpoint():
         #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
         #     pass
 
-        return {"username" : username,
+        return {"username": username,
                 "text": f"Uploaded file for {username},"
                         f" of name {final_file_name}"}, status.HTTP_201_CREATED
-
 
 if __name__ == "__main__":
     app.run(debug=True)
