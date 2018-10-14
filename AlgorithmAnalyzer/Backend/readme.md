@@ -27,5 +27,5 @@ After the slash enter the endpoint's name
 ### Tests only
 From ./Backend run:
 ```
-pipenv run python -m unittest discover tests
+pipenv run python -m unittest
 ```
