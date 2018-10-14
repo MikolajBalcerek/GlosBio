@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# this just runs the tests + flask server, you can also use the command line as well
-# python main.py
+# this just runs the tests + flask server, you can also use the command line
+# python main.py for run
+# python -m unittest for tests (run from ./Backend)
 
 import subprocess
 
