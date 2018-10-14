@@ -83,7 +83,6 @@ def handling_audio_train_endpoint():
         #     pass
 
         convert_webm.convert_webm_to_format(path, path.replace(".webm", ""), "wav")
-
         print("#LOG File converted to to: " + path)
 
         with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
