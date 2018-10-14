@@ -100,13 +100,16 @@ def handling_audio_train_endpoint():
 
         print("#LOG File converted to to: " + path)
 
-        with sr.AudioFile(open(path.replace(".webm", ".wav"), 'r')) as converted_file:
+        with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
             recognized_speech = speech_to_text_wrapper.recognize_speech(converted_file)
-            print("recognized_speech")
+            print(f"#LOG Recognized words: {recognized_speech}")
 
         return {"username": username,
                 "text": f"Uploaded file for {username},"
-                        f" of name {final_file_name}"}, status.HTTP_201_CREATED
+                        f" of name {final_file_name}, "
+                        f"recognized: {recognized_speech}",\
+               "recognized_speech": str(recognized_speech)}, \
+               status.HTTP_201_CREATED
 
 
 if __name__ == "__main__":

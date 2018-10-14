@@ -5,11 +5,11 @@ from GlosBio.AlgorithmAnalyzer.Backend import secret_keys
 
 #this file handles speech to text
 
-def recognize_speech(audio_file, language="pl-PL"):
+def recognize_speech(audio_file : sr.AudioFile, language="pl-PL"):
     """
     speech to text from the audio_file
 
-    :param audio_file: audiofile in standard WAV or FLAC format
+    :param audio_file: sr.AudioFile format, init by sr.AudioFile(path : str)
     :param language: language in the "pl-PL" style, default polish
     :return: string of recognized text
     """
