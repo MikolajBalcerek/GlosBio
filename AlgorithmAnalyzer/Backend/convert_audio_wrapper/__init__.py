@@ -1,4 +1,4 @@
-# instructions to be run when speech_recognition is imported
+# instructions to be run when convert_audio_wrapper is imported
 
 from .convert_webm import *
 
