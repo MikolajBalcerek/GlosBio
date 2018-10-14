@@ -19,10 +19,10 @@ CORS(app)
 
 
 @app.route("/", methods=['GET'])
-def landing_documentation_page(method = request.method):
+def landing_documentation_page():
     """ Landing page for browsable API """
 
-    if method == 'GET':
+    if request.method == 'GET':
         """ this will list on routes the default endpoint """
 
         def list_routes():
@@ -46,7 +46,7 @@ def landing_documentation_page(method = request.method):
 
 
 @app.route("/audio/train", methods=['GET', 'POST'])
-def handling_audio_train_endpoint(method = request.method):
+def handling_audio_train_endpoint():
     """ This handles generic operations that have to do with audio
     being sent/received from test files
 
@@ -58,11 +58,11 @@ def handling_audio_train_endpoint(method = request.method):
         return '.' in name and \
                name.rsplit('.', 1)[1].lower() in ALLOWED_AUDIO_EXTENSIONS
 
-    if method == 'GET':
+    if request.method == 'GET':
         # TODO: return all audio train list
         return ["hellothere"]
 
-    if method == 'POST':
+    if request.method == 'POST':
         if 'file' not in request.files:
             return ['No file part'], status.HTTP_400_BAD_REQUEST
         if 'username' not in request.data:
