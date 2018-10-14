@@ -3,33 +3,19 @@ from flask_api import FlaskAPI, status, exceptions, renderers, decorators
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-from pydub import AudioSegment
 import speech_recognition as sr
 import urllib
 import string
 import os
 
-
 from speech_recognition_wrapper import speech_to_text_wrapper
+from convert_audio_wrapper import convert_webm
 
 UPLOAD_TRAIN_PATH = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
 app = FlaskAPI(__name__)
 
 CORS(app)
-
-
-def convert_webm_to_wav(source_path: str, destination_path: str):
-    """ Helper function converting webm to wav so it can be handled
-    by mainstream libraries
-
-    :param source_path: str path to source
-    :param destination_path: str path to save to
-    """
-    sound = AudioSegment.from_file(
-        source_path,
-        codec="opus"
-    ).export(destination_path, format="wav")
 
 
 @app.route("/", methods=['GET'])
@@ -96,7 +82,7 @@ def handling_audio_train_endpoint():
         #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
         #     pass
 
-        convert_webm_to_wav(path, path.replace(".webm", ".wav"))
+        convert_webm.convert_webm_to_format(path, path.replace(".webm", ""), "wav")
 
         print("#LOG File converted to to: " + path)
 
