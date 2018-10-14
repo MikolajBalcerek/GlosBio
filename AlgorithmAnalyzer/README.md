@@ -1,7 +1,9 @@
 ### Jak wszystko odpalić?  
 Potrzebne są:  
+* Python 3
 * pipenv
 * npm
+*  [ffmpeg](http://ffmpeg.org) - dodany do PATH na systemie
 
 #### API
 wchodzimy w folder `Backend`
