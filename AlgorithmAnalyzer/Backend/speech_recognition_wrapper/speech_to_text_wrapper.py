@@ -1,6 +1,4 @@
 import speech_recognition as sr
-import sys
-sys.path.append('..')
 import secret_keys
 
 
