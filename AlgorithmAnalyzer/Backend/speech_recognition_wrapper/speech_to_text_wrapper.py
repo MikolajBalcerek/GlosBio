@@ -1,6 +1,7 @@
 import speech_recognition as sr
 import sys
-from GlosBio.AlgorithmAnalyzer.Backend import secret_keys
+sys.path.append('..')
+import secret_keys
 
 
 #this file handles speech to text
@@ -29,3 +30,4 @@ def recognize_speech(audio_file : sr.AudioFile, language="pl-PL"):
         print("BING api key is outdated")
         return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY,
                                 language="pl-PL")
+

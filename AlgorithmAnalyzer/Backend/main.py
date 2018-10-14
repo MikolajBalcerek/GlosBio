@@ -91,8 +91,7 @@ def handling_audio_train_endpoint():
             print(f"#LOG Recognized words: {recognized_speech}")
 
         return {"username": username,
-                "text": f"Uploaded file for {username},"
-                        f" of name {final_file_name}, "
+                "text": f"Uploaded file for {username}, "
                         f"recognized: {recognized_speech}",\
                "recognized_speech": str(recognized_speech)}, \
                status.HTTP_201_CREATED
