@@ -12,7 +12,7 @@ from speech_recognition_wrapper import speech_to_text_wrapper
 from convert_audio_wrapper import convert_webm
 
 UPLOAD_TRAIN_PATH = './train'
-ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
+ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'flac', 'webm'])
 app = FlaskAPI(__name__)
 
 CORS(app)
@@ -22,24 +22,26 @@ CORS(app)
 def landing_documentation_page():
     """ Landing page for browsable API """
 
-    def list_routes():
-        """ helper function that returns all routes in a list """
-        output = {}
-        for rule in app.url_map.iter_rules():
-            methods = ', '.join(rule.methods)
-            output[urllib.parse.unquote(rule.endpoint)] = {
-                "name": urllib.parse.unquote(rule.endpoint),
-                "description": " ".join(
-                    current_app.view_functions[rule.endpoint].__doc__.split()),
-                "methods": urllib.parse.unquote(methods),
-                "url": urllib.parse.unquote(str(request.host_url))[0:-1]
-                       + str(rule)
-            }
-
-        return output
-
     if request.method == 'GET':
         """ this will list on routes the default endpoint """
+
+        def list_routes():
+            """ helper function that returns all routes in a list """
+            output = {}
+            for rule in app.url_map.iter_rules():
+                methods = ', '.join(rule.methods)
+                output[urllib.parse.unquote(rule.endpoint)] = {
+                    "name": urllib.parse.unquote(rule.endpoint),
+                    "description": " ".join(
+                        current_app.view_functions[
+                            rule.endpoint].__doc__.split()),
+                    "methods": urllib.parse.unquote(methods),
+                    "url": urllib.parse.unquote(str(request.host_url))[0:-1]
+                           + str(rule)
+                }
+
+            return output
+
         return list_routes()
 
 
@@ -69,13 +71,12 @@ def handling_audio_train_endpoint():
         username = request.data.get('username')
         file = request.files.get('file')
 
-        # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
-        # TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
+        # TODO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
+        # TODO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
         path = "./data/" + username + ".webm"
         file.save(path)
         print("#LOG File saved to: " + path)
 
-        final_file_name = ''
         # if file and allowed_file(file.filename): # and username is a secure string
         #     # final_file_name = /
         #     # filename = secure_filename(jakasnazwastring)
