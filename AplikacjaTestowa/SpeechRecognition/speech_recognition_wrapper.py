@@ -2,7 +2,9 @@ import speech_recognition as sr
 import sys
 sys.path.append('..')
 import RecordingPackage.speech_recognition_recording
-import secret_keys
+from GlosBio.AlgorithmAnalyzer.Backend import secret_keys
+
+
 #this file handles speech recognition
 
 def recognize_speech(AudioData : sr.AudioData, Recognizer : sr.Recognizer = None):
