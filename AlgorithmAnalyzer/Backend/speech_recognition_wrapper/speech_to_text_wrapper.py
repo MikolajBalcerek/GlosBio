@@ -1,5 +1,5 @@
 import speech_recognition as sr
-import secret_keys
+from Backend import secret_keys
 
 
 #this file handles speech to text
