@@ -8,7 +8,6 @@ flask = "*"
 flask-api = "*"
 flask-cors = "*"
 SpeechRecognition = "*"
-ffmpy = "*"
 pydub = "*"
 
 [dev-packages]
