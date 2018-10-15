@@ -1,5 +1,7 @@
 import os
 import re
+
+from werkzeug.utils import secure_filename
 from scipy.io import wavfile
 
 ''''''''''''''''
@@ -64,7 +66,7 @@ class SampleManager:
         user = self.username_to_dirname(username)
         return list(os.listdir(os.path.join(self.path, user)))
 
-    def add_sample(self, username, sample):
+    def get_new_sample_path(self, username):
         samples = self.get_samples(username)
         username = self.username_to_dirname(username)
         if samples:
@@ -73,7 +75,14 @@ class SampleManager:
             )
         else:
             last_sample = 0
-        new_path = os.path.join(self.path, username, str(last_sample + 1))
+        return os.path.join(self.path, username, str(last_sample + 1))
+
+    def add_sample(self, username, sample):
+        '''
+            this method serves to save samples
+            for now it's not used
+        '''
+        new_path = self.get_new_sample_path(username)
         with open('{}.wav'.format(new_path), 'wb') as new:
             new.write(sample)
 
@@ -112,4 +121,4 @@ class SampleManager:
             raise UsernameException(
                 'Incorrect username "{}" !'.format(temp)
             )
-        return temp
+        return secure_filename(temp)
