@@ -1,17 +1,17 @@
+import urllib
+
 from flask import request, url_for, redirect, Flask, current_app
 from flask_api import FlaskAPI, status, exceptions, renderers, decorators
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 
-import urllib
-import string
-import os
+from utils import SampleManager
 
-UPLOAD_TRAIN_PATH  = './train'
+UPLOAD_TRAIN_PATH = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
 app = FlaskAPI(__name__)
 
 CORS(app)
+
 
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
@@ -24,10 +24,13 @@ def landing_documentation_page():
             methods = ', '.join(rule.methods)
             output[urllib.parse.unquote(rule.endpoint)] = {
                 "name": urllib.parse.unquote(rule.endpoint),
-                "description": " ".join(current_app.view_functions[rule.endpoint].__doc__.split()),
+                "description": " ".join(
+                    current_app.view_functions[rule.endpoint].__doc__.split()
+                ),
                 "methods": urllib.parse.unquote(methods),
-                "url": urllib.parse.unquote(str(request.host_url))[0:-1]
-                       +str(rule)
+                "url":
+                    urllib.parse.unquote(str(request.host_url))[0:-1]
+                    + str(rule)
             }
 
         return output
@@ -58,25 +61,25 @@ def handling_audio_train_endpoint():
             return ['No file part'], status.HTTP_400_BAD_REQUEST
         if 'username' not in request.data:
             return ['No username'], status.HTTP_400_BAD_REQUEST
-        
+
         username = request.data.get('username')
         file = request.files.get('file')
-        
-        #TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
-        #TO DO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
-        path = "./data/" + username + ".wav"
+
+        # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
+        sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
+        path = sample_manager.get_new_sample_path(username)
         file.save(path)
         print("#LOG File saved to: " + path)
-        final_file_name = ''
-        # if file and allowed_file(file.filename): # and username is a secure string
+        # if file and allowed_file(file.filename):
         #     # final_file_name = /
         #     # filename = secure_filename(jakasnazwastring)
         #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
         #     pass
 
-        return {"username" : username,
-                "text": f"Uploaded file for {username},"
-                        f" of name {final_file_name}"}, status.HTTP_201_CREATED
+        return {
+                    "username": username,
+                    "text": f"Uploaded file for {username}"
+                }, status.HTTP_201_CREATED
 
 
 # @app.route("/<int:key>/", methods=['GET', 'PUT', 'DELETE'])
