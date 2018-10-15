@@ -75,7 +75,7 @@ class SampleManager:
             )
         else:
             last_sample = 0
-        return os.path.join(self.path, username, str(last_sample + 1))
+        return os.path.join(self.path, username, str(last_sample + 1) + '.wav')
 
     def add_sample(self, username, sample):
         '''

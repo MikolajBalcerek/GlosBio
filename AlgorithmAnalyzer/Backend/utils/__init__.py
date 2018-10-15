@@ -1,3 +1,3 @@
-from .manager import SampleManager
+from .manager import SampleManager, UsernameException
 
-__all__ = [SampleManager]
+__all__ = [SampleManager, UsernameException]

@@ -4,7 +4,7 @@ from flask import request, url_for, redirect, Flask, current_app
 from flask_api import FlaskAPI, status, exceptions, renderers, decorators
 from flask_cors import CORS
 
-from utils import SampleManager
+from utils import SampleManager, UsernameException
 
 UPLOAD_TRAIN_PATH = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
@@ -67,6 +67,10 @@ def handling_audio_train_endpoint():
 
         # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
+        try:
+            sample_manager.create_user(username)
+        except UsernameException:
+            return ['Bad username'], status.HTTP_400_BAD_REQUEST
         path = sample_manager.get_new_sample_path(username)
         file.save(path)
         print("#LOG File saved to: " + path)
