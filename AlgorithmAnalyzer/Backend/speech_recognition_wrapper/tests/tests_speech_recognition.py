@@ -2,10 +2,8 @@ import os
 import sys
 import unittest
 import speech_recognition as sr
-sys.path.append('../..')
-import secret_keys
-sys.path.append('..')
-import speech_to_text_wrapper as wrapper
+
+from speech_recognition_wrapper import speech_to_text_wrapper as wrapper
 
 
 
