@@ -37,7 +37,6 @@ class SampleManager:
         '''path:  string or path; path to root directory'''
 
         self.path = os.path.normpath(path)
-        print(self.path)
 
     def _mkdir(self, name):
         if self._user_directory_exists(name):
@@ -83,7 +82,7 @@ class SampleManager:
             for now it's not used
         '''
         new_path = self.get_new_sample_path(username)
-        with open('{}.wav'.format(new_path), 'wb') as new:
+        with open(new_path, 'wb') as new:
             new.write(sample)
 
     def get_sample(self, username, sample_number):

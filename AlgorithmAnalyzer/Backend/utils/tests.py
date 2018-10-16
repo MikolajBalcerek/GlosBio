@@ -1,7 +1,7 @@
 import unittest
 import shutil
 
-from manager import SampleManager, UsernameException
+from .manager import SampleManager, UsernameException
 
 
 class TestSampleManager(unittest.TestCase):
