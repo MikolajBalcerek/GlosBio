@@ -72,6 +72,8 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
                           data = {"username" : 'testPerson'})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                              "wrong status code for lack of file upload")
+        self.assertEqual(r.data, b'["No file part"]',
+                         "wrong string for lack of file upload")
 
     def test_post_file_no_username(self):
         """ test for endpoint send without an username """
@@ -80,4 +82,6 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
                               data = {'file': f})
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                              "wrong status code for no username file upload")
+            self.assertEqual(r.data, b'["No username"]',
+                             "wrong string for lack of username")
 
