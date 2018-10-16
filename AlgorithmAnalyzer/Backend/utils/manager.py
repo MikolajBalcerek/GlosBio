@@ -38,6 +38,7 @@ class SampleManager:
 
         self.path = os.path.normpath(path)
 
+
     def _mkdir(self, name):
         if self._user_directory_exists(name):
             return
@@ -65,7 +66,7 @@ class SampleManager:
         user = self.username_to_dirname(username)
         return list(os.listdir(os.path.join(self.path, user)))
 
-    def get_new_sample_path(self, username):
+    def get_new_sample_path(self, username, filetype="wav"):
         samples = self.get_samples(username)
         username = self.username_to_dirname(username)
         if samples:
@@ -74,7 +75,7 @@ class SampleManager:
             )
         else:
             last_sample = 0
-        return os.path.join(self.path, username, str(last_sample + 1) + '.wav')
+        return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
 
     def add_sample(self, username, sample):
         '''

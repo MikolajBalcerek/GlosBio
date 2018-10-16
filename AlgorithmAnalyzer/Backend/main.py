@@ -4,10 +4,17 @@ from flask import request, url_for, redirect, Flask, current_app
 from flask_api import FlaskAPI, status, exceptions, renderers, decorators
 from flask_cors import CORS
 
+import speech_recognition as sr
+import urllib
+import string
+import os
+
 from utils import SampleManager, UsernameException
+from speech_recognition_wrapper import speech_to_text_wrapper
+from convert_audio_wrapper import convert_webm
 
 UPLOAD_TRAIN_PATH = './train'
-ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'mp3'])
+ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'flac', 'webm'])
 app = FlaskAPI(__name__)
 
 CORS(app)
@@ -17,26 +24,26 @@ CORS(app)
 def landing_documentation_page():
     """ Landing page for browsable API """
 
-    def list_routes():
-        """ helper function that returns all routes in a list """
-        output = {}
-        for rule in app.url_map.iter_rules():
-            methods = ', '.join(rule.methods)
-            output[urllib.parse.unquote(rule.endpoint)] = {
-                "name": urllib.parse.unquote(rule.endpoint),
-                "description": " ".join(
-                    current_app.view_functions[rule.endpoint].__doc__.split()
-                ),
-                "methods": urllib.parse.unquote(methods),
-                "url":
-                    urllib.parse.unquote(str(request.host_url))[0:-1]
-                    + str(rule)
-            }
-
-        return output
-
     if request.method == 'GET':
         """ this will list on routes the default endpoint """
+
+        def list_routes():
+            """ helper function that returns all routes in a list """
+            output = {}
+            for rule in app.url_map.iter_rules():
+                methods = ', '.join(rule.methods)
+                output[urllib.parse.unquote(rule.endpoint)] = {
+                    "name": urllib.parse.unquote(rule.endpoint),
+                    "description": " ".join(
+                        current_app.view_functions[
+                            rule.endpoint].__doc__.split()),
+                    "methods": urllib.parse.unquote(methods),
+                    "url": urllib.parse.unquote(str(request.host_url))[0:-1]
+                           + str(rule)
+                }
+
+            return output
+
         return list_routes()
 
 
@@ -47,6 +54,7 @@ def handling_audio_train_endpoint():
 
     POST to send a new audio file
     GET to get a list of existing files """
+
     def allowed_file(name):
         """ some function to see if a name could be used as a file name"""
         return '.' in name and \
@@ -71,7 +79,7 @@ def handling_audio_train_endpoint():
             sample_manager.create_user(username)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
-        path = sample_manager.get_new_sample_path(username)
+        path = sample_manager.get_new_sample_path(username, filetype="webm")
         file.save(path)
         print("#LOG File saved to: " + path)
         # if file and allowed_file(file.filename):
@@ -80,30 +88,18 @@ def handling_audio_train_endpoint():
         #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
         #     pass
 
-        return {
-                    "username": username,
-                    "text": f"Uploaded file for {username}"
-                }, status.HTTP_201_CREATED
+        convert_webm.convert_webm_to_format(path, path.replace(".webm", ""), "wav")
+        print("#LOG File copy converted to wav")
 
+        with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
+            recognized_speech = speech_to_text_wrapper.recognize_speech(converted_file)
+            print(f"#LOG Recognized words: {recognized_speech}")
 
-# @app.route("/<int:key>/", methods=['GET', 'PUT', 'DELETE'])
-# def notes_detail(key):
-#     """
-#     Retrieve, update or delete note instances.
-#     """
-#     if request.method == 'PUT':
-#         note = str(request.data.get('text', ''))
-#         notes[key] = note
-#         return note_repr(key)
-#
-#     elif request.method == 'DELETE':
-#         notes.pop(key, None)
-#         return '', status.HTTP_204_NO_CONTENT
-#
-#     # request.method == 'GET'
-#     if key not in notes:
-#         raise exceptions.NotFound()
-#     return note_repr(key)
+        return {"username": username,
+                "text": f"Uploaded file for {username}, "
+                        f"recognized: {recognized_speech}",\
+               "recognized_speech": str(recognized_speech)}, \
+               status.HTTP_201_CREATED
 
 
 if __name__ == "__main__":

@@ -100,3 +100,5 @@ ENV/
 # mypy
 .mypy_cache/
 AplikacjaTestowa/secret_keys.py
+*.xml
+*.iml
