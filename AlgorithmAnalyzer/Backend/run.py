@@ -7,7 +7,7 @@
 import subprocess
 
 try:
-    subprocess.call("python -m unittest".split(" "))
+    subprocess.call("pipenv run python -m unittest".split(" "))
     subprocess.call("pipenv run python main.py".split(" "))
 except FileNotFoundError:
     subprocess.call("pip install pipenv")
