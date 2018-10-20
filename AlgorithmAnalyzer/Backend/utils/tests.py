@@ -42,13 +42,13 @@ class TestSampleManager(unittest.TestCase):
         self.assertTrue(yes)
 
     def test_get_all_usernames(self):
-        uname1 = "asd asd"
-        uname2 = "dasd dasd"
+        uname1 = "Aud asd"
+        uname2 = "śćą Źą"
         unames = [uname1, uname2, self.username]
         for uname in unames:
             self.sample_manager.create_user(uname)
-        dirnames = ['asd_asd', 'dasd_dasd', 'qwe_rty']
-        self.assertEqual(dirnames, self.sample_manager.get_all_usernames())
+        dirnames = set(['aud_asd', 'sca_za', 'qwe_rty'])
+        self.assertEqual(dirnames, set(self.sample_manager.get_all_usernames()))
 
     def test_add_sample_without_user_should_not_pass(self):
         sample = b'aaaaaaaa'

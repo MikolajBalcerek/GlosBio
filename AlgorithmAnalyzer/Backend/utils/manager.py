@@ -1,5 +1,6 @@
 import os
 import re
+import unicodedata
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -106,26 +107,14 @@ class SampleManager:
         file.save(path)
         return path
 
-    def username_to_dirname(self, username):
-        '''username: string'''
-        '''Convert username, which could include spaces,
-         big letters and diacritical marks, to valid directory name'''
-
-        temp = username.lower()
-        d = {
-            "ą": "a",
-            "ć": "c",
-            "ę": "e",
-            "ł": "l",
-            "ó": "o",
-            "ś": "s",
-            "ź": "z",
-            "ż": "z"
-        }
-        for diac, normal in d.items():
-            temp = temp.replace(diac, normal)
+    def username_to_dirname(self, username: str):
+        '''
+        Convert username, which could include spaces,
+        big letters and diacritical marks, to valid directory name
+        '''
+        temp = unicodedata.normalize('NFD', username.lower()).encode('ascii', 'ignore').decode('utf-8')
         temp = temp.replace(" ", "_")
-
+        
         if self._invalid_username(temp):
             raise UsernameException(
                 'Incorrect username "{}" !'.format(temp)
