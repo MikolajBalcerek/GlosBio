@@ -72,21 +72,15 @@ def handling_audio_train_endpoint():
         # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
         try:
-            sample_manager.create_user(username)
+            path = sample_manager.save_new_sample(username, file)
+            print("#LOG: .webm file saved to: " + path)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
-        path = sample_manager.get_new_sample_path(username, filetype="webm")
-        file.save(path)
-        print("#LOG File saved to: " + path)
-        # if file and allowed_file(file.filename):
-        #     # final_file_name = /
-        #     # filename = secure_filename(jakasnazwastring)
-        #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
-        #     pass
 
+        # TO DO: zawinąć konwerter w try - catch
         convert_webm.convert_webm_to_format(
             path, path.replace(".webm", ""), "wav")
-        print("#LOG File copy converted to wav")
+        print("#LOG: file copy converted to wav")
 
         with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
             recognized_speech = speech_to_text_wrapper.recognize_speech(

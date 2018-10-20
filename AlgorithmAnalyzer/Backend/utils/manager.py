@@ -1,6 +1,7 @@
 import os
 import re
 
+from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from scipy.io import wavfile
 
@@ -96,6 +97,14 @@ class SampleManager:
 
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
+
+    def save_new_sample(self, username: str, file: FileStorage) -> str:
+        print("LOG: username: {}".format(username))
+        if not self.user_exists(username):
+            self.create_user(username)
+        path = self.get_new_sample_path(username, filetype=".webm")
+        file.save(path)
+        return path
 
     def username_to_dirname(self, username):
         '''username: string'''
