@@ -1,13 +1,9 @@
-import urllib
-
-from flask import request, url_for, redirect, Flask, current_app
-from flask_api import FlaskAPI, status, exceptions, renderers, decorators
+from flask import request, current_app
+from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
 import speech_recognition as sr
 import urllib
-import string
-import os
 
 from utils import SampleManager, UsernameException
 from speech_recognition_wrapper import speech_to_text_wrapper
@@ -39,7 +35,7 @@ def landing_documentation_page():
                             rule.endpoint].__doc__.split()),
                     "methods": urllib.parse.unquote(methods),
                     "url": urllib.parse.unquote(str(request.host_url))[0:-1]
-                           + str(rule)
+                    + str(rule)
                 }
 
             return output
@@ -88,18 +84,20 @@ def handling_audio_train_endpoint():
         #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
         #     pass
 
-        convert_webm.convert_webm_to_format(path, path.replace(".webm", ""), "wav")
+        convert_webm.convert_webm_to_format(
+            path, path.replace(".webm", ""), "wav")
         print("#LOG File copy converted to wav")
 
         with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
-            recognized_speech = speech_to_text_wrapper.recognize_speech(converted_file)
+            recognized_speech = speech_to_text_wrapper.recognize_speech(
+                converted_file)
             print(f"#LOG Recognized words: {recognized_speech}")
 
         return {"username": username,
                 "text": f"Uploaded file for {username}, "
-                        f"recognized: {recognized_speech}",\
-               "recognized_speech": str(recognized_speech)}, \
-               status.HTTP_201_CREATED
+                        f"recognized: {recognized_speech}",
+                "recognized_speech": str(recognized_speech)},
+        status.HTTP_201_CREATED
 
 
 if __name__ == "__main__":
