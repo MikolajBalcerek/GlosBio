@@ -100,7 +100,6 @@ class SampleManager:
         return not re.match('^\w+$', username)
 
     def save_new_sample(self, username: str, file: FileStorage) -> str:
-        print("LOG: username: {}".format(username))
         if not self.user_exists(username):
             self.create_user(username)
         path = self.get_new_sample_path(username, filetype="webm")
@@ -112,9 +111,22 @@ class SampleManager:
         Convert username, which could include spaces,
         big letters and diacritical marks, to valid directory name
         '''
-        temp = unicodedata.normalize('NFD', username.lower()).encode('ascii', 'ignore').decode('utf-8')
+
+        temp = username.lower()
+        d = {
+            "ą": "a",
+            "ć": "c",
+            "ę": "e",
+            "ł": "l",
+            "ó": "o",
+            "ś": "s",
+            "ź": "z",
+            "ż": "z"
+        }
+        for diac, normal in d.items():
+            temp = temp.replace(diac, normal)
         temp = temp.replace(" ", "_")
-        
+        temp = unicodedata.normalize('NFKD', temp).encode('ascii', 'ignore').decode('ascii')
         if self._invalid_username(temp):
             raise UsernameException(
                 'Incorrect username "{}" !'.format(temp)
