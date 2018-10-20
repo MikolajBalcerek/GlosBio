@@ -102,7 +102,7 @@ class SampleManager:
         print("LOG: username: {}".format(username))
         if not self.user_exists(username):
             self.create_user(username)
-        path = self.get_new_sample_path(username, filetype=".webm")
+        path = self.get_new_sample_path(username, filetype="webm")
         file.save(path)
         return path
 
