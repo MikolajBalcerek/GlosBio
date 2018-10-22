@@ -73,16 +73,20 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
 
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
-        r = self.client.post('http://127.0.0.1:5000/audio/train',
+        r = self.client.post('/audio/train',
                           data = {"username" : 'testPerson'})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                              "wrong status code for lack of file upload")
+        self.assertEqual(r.data, b'["No file part"]',
+                         "wrong string for lack of file upload")
 
     def test_post_file_no_username(self):
         """ test for endpoint send without an username """
         with open('./tests/trzynascie.webm', 'rb') as f:
-            r = self.client.post('http://127.0.0.1:5000/audio/train',
+            r = self.client.post('/audio/train',
                               data = {'file': f})
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                              "wrong status code for no username file upload")
+            self.assertEqual(r.data, b'["No username"]',
+                             "wrong string for lack of username")
 
