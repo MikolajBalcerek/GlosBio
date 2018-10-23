@@ -2,7 +2,6 @@ from flask import request, current_app
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
-import speech_recognition as sr
 import urllib
 
 from utils import SampleManager, UsernameException
