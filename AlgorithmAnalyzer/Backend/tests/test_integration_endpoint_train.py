@@ -1,11 +1,9 @@
 from pathlib import Path
-import os
 import unittest
 import shutil
 
 
 from flask_api import status
-from flask import wrappers
 from utils import SampleManager
 
 from main import app
@@ -26,7 +24,7 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
         """ cleanup after each test """
         # delete files made during testing
         # my_wav = Path(f"./train/{self.test_person_name})
-        test_person_dir = Path(f"./train/{self.test_person_name}.webm")
+        test_person_dir = Path(f"./train/{self.test_person_name}")
 
         paths_to_be_deleted = [test_person_dir]
         for _path in paths_to_be_deleted:
