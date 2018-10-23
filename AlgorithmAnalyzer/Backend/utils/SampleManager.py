@@ -139,7 +139,8 @@ class SampleManager:
 
         return wav_path, recognized_speech
 
-    def create_a_new_sample_properties_json(self, username, data: typing.Dict[str, str], audio_path : str) -> str:
+    @staticmethod
+    def create_a_new_sample_properties_json(username, data: typing.Dict[str, str], audio_path : str) -> str:
         """
         this creates a json file for the newest sample for the username given
         e.g: 5.json
@@ -150,7 +151,7 @@ class SampleManager:
         :param audio_path: str path to audio
         :return: str path to json
         """
-        json_path = self.get_new_json_path(audio_path)
+        json_path = SampleManager.get_new_json_path(audio_path)
         with open(json_path, 'w', encoding='utf8') as json_file:
             recording_properties = {"name": username, **data}
             string_json = str(json.dumps(recording_properties, ensure_ascii=False).encode('utf8'), encoding='utf8')

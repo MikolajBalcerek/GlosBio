@@ -1,5 +1,8 @@
+import json
 import unittest
 import shutil
+import os
+from pathlib import Path
 
 from .SampleManager import SampleManager, UsernameException
 
@@ -85,7 +88,24 @@ class TestSampleManager(unittest.TestCase):
         suggested_json_path_wav = self.sample_manager.get_new_json_path(
             audio_path=example_path_webm)
         self.assertEquals(suggested_json_path_wav, "/home/train/5.json")
-        
+
+    def test_create_json_with_content(self):
+        """ test for creating a new sample properties json"""
+        self.sample_manager.create_user("Mikołaj Balcerek")
+        json_Path = Path(SampleManager.create_a_new_sample_properties_json("Mikołaj Balcerek",
+                                                          {"recognized_speech": "test"},
+                                                        self.sample_manager.path+"/mikolaj_balcerek/1.wav"))
+
+        self.assertTrue(json_Path.exists(), "Example JSON file was not created")
+
+        with json_Path.open(encoding='utf8') as _json_file:
+            json_dict = json.loads(_json_file.read(), encoding='utf8')
+            self.assertIn(json_dict["recognized_speech"],
+                          ["test", 13, '13'],
+                          "incorrect recognized_speech in JSON")
+
+            self.assertEqual(json_dict["name"], "Mikołaj Balcerek",
+                              "incorrect name in JSON")
 
 
 
