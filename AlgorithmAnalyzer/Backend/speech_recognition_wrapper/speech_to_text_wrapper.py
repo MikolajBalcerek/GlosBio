@@ -46,3 +46,4 @@ def recognize_speech_from_path(path : str, language="pl-PL"):
     # recognize speech
     with sr.AudioFile(path) as _file:
         recognized_speech = recognize_speech(_file)
+    return recognized_speech

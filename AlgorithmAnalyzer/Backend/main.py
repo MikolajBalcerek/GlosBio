@@ -70,7 +70,7 @@ def handling_audio_train_endpoint():
         # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
         try:
-            path = sample_manager.save_new_sample(username, file)
+            path, recognized_speech = sample_manager.save_new_sample(username, file)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 

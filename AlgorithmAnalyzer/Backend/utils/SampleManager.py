@@ -113,28 +113,29 @@ class SampleManager:
         saves new sample as both .webm and wav with a JSON file
         :param username: str
         :param file: FileStorage
-        :return: str path
+        :return: str webm_path
         """
         if not self.user_exists(username):
             self.create_user(username)
-        path = self.get_new_sample_path(username, filetype="webm")
-        file.save(path)
-        print("#LOG: .webm file saved to: " + path)
+        webm_path = self.get_new_sample_path(username, filetype="webm")
+        file.save(webm_path)
+        print("#LOG: .webm file saved to: " + webm_path)
 
         # convert to webm
         convert_webm.convert_webm_to_format(
-            path, path.replace(".webm", ""), "wav")
-        path = path.replace(".webm", ".wav")
+            webm_path, webm_path.replace(".webm", ""), "wav")
+        wav_path = webm_path.replace(".webm", ".wav")
         print("#LOG: file copy converted to wav")
 
         # recognize speech
-        recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(path)
+        recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(wav_path)
         print(f"#LOG Recognized words: {recognized_speech}")
 
         # save the new sample json
-        self.create_a_new_sample_properties_json(username, data={"recognized_speech": recognized_speech})
+        json_path = self.create_a_new_sample_properties_json(username, data={"recognized_speech": recognized_speech})
+        print(f"#LOG Created a JSON file: {json_path}")
 
-        return path
+        return webm_path, recognized_speech
 
     def create_a_new_sample_properties_json(self, username, data: typing.Dict[str, str]) -> str:
         """
