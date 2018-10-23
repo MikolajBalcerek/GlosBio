@@ -110,20 +110,6 @@ class SampleManager:
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
 
-    @staticmethod
-    def is_allowed_file(file: FileStorage) -> bool:
-        """
-        checks whether mimetype of the file is allowed
-        :param file: FileStorage
-        :return: True/False
-        """
-        if file.mimetype == "audio/wav":
-            return True
-        # elif file.mimetype == "video/webm" or file.mimetype == "audio/webm":
-        #     print("mimetype wav")
-        #     return False
-        return False
-
     def save_new_sample(self, username: str, file: FileStorage) -> typing.Tuple[str, str]:
         """
         saves new sample as both .webm and wav with a JSON file
@@ -133,12 +119,11 @@ class SampleManager:
         """
         if not self.user_exists(username):
             self.create_user(username)
-        if not self.is_allowed_file(file)
         webm_path = self.get_new_sample_path(username, filetype="webm")
         file.save(webm_path)
         print("#LOG: .webm file saved to: " + webm_path)
 
-        # convert from webm
+        # convert to webm
         convert_webm.convert_webm_to_format(
             webm_path, webm_path.replace(".webm", ""), "wav")
         wav_path = webm_path.replace(".webm", ".wav")
