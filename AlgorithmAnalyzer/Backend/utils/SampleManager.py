@@ -83,10 +83,12 @@ class SampleManager:
             last_sample = 0
         return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
 
-    def get_new_json_path(self, username) -> str:
+    @staticmethod
+    def get_new_json_path(audio_path : str) -> str:
         """ this gets path for a new recording's json file
-        uses get_new_sample_path """
-        return self.get_new_sample_path(username, filetype="json")
+         based on str audio_path
+         e.g C:/aasda/a.wav -> C:/aasda/a.json"""
+        return audio_path.rsplit('.', 1)[0]+".json"
 
     def add_sample(self, username, sample):
         '''
@@ -132,21 +134,23 @@ class SampleManager:
         print(f"#LOG Recognized words: {recognized_speech}")
 
         # save the new sample json
-        json_path = self.create_a_new_sample_properties_json(username, data={"recognized_speech": recognized_speech})
+        json_path = self.create_a_new_sample_properties_json(username, audio_path=wav_path, data={"recognized_speech": recognized_speech})
         print(f"#LOG Created a JSON file: {json_path}")
 
         return wav_path, recognized_speech
 
-    def create_a_new_sample_properties_json(self, username, data: typing.Dict[str, str]) -> str:
+    def create_a_new_sample_properties_json(self, username, data: typing.Dict[str, str], audio_path : str) -> str:
         """
         this creates a json file for the newest sample for the username given
         e.g: 5.json
-        takes data in the form of dict[string, string]
+        takes data to be saved in the form of dict[string, string]
+        audio_path is a path to the audio file to be accompanied by json file
         :param username: str
         :param data: typing.Dict[str, str]
+        :param audio_path: str path to audio
         :return: str path to json
         """
-        json_path = self.get_new_json_path(username)
+        json_path = self.get_new_json_path(audio_path)
         with open(json_path, 'w', encoding='utf8') as json_file:
             recording_properties = {"name": username, **data}
             string_json = str(json.dumps(recording_properties, ensure_ascii=False).encode('utf8'), encoding='utf8')
