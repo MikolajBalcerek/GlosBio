@@ -10,9 +10,10 @@ def convert_webm_to_format(source_path: str, destination_path: str,
    :param destination_path: str path to save to without format
    :param format: intended format without ., e.g. wav
    """
-
+    export_path = destination_path+"."+format
     sound = AudioSegment.from_file(
         source_path,
         codec="opus"
-    ).export(destination_path+"."+format, format=format)
+    ).export(export_path, format=format)
+    return export_path
 

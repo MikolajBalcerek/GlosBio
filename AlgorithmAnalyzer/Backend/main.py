@@ -8,7 +8,6 @@ from utils import SampleManager, UsernameException
 from speech_recognition_wrapper import speech_to_text_wrapper
 
 UPLOAD_TRAIN_PATH = './train'
-ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'flac', 'webm'])
 app = FlaskAPI(__name__)
 
 CORS(app)
@@ -66,7 +65,6 @@ def handling_audio_train_endpoint():
         username = request.data.get('username')
         file = request.files.get('file')
 
-        # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
         try:
             path, recognized_speech = sample_manager.save_new_sample(username, file)

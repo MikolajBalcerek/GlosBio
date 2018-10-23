@@ -72,7 +72,7 @@ class SampleManager:
         user = self.username_to_dirname(username)
         return list(os.listdir(os.path.join(self.path, user)))
 
-    def get_new_sample_path(self, username, filetype="wav"):
+    def get_new_sample_path(self, username, filetype='wav', no_file_type=False):
         samples = self.get_samples(username)
         username = self.username_to_dirname(username)
         if samples:
@@ -81,7 +81,11 @@ class SampleManager:
             )
         else:
             last_sample = 0
-        return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
+        if not no_file_type:
+            return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
+        else:
+            return os.path.join(self.path, username, str(last_sample + 1))
+
 
     @staticmethod
     def get_new_json_path(audio_path : str) -> str:
@@ -111,7 +115,7 @@ class SampleManager:
         return not re.match('^\w+$', username)
 
     @staticmethod
-    def is_allowed_file(file: FileStorage) -> bool:
+    def is_allowed_file_extension(file: FileStorage) -> bool:
         """
         checks whether mimetype of the file is allowed
         :param file: FileStorage
@@ -119,9 +123,6 @@ class SampleManager:
         """
         if file.mimetype == "audio/wav":
             return True
-        # elif file.mimetype == "video/webm" or file.mimetype == "audio/webm":
-        #     print("mimetype wav")
-        #     return False
         return False
 
     def save_new_sample(self, username: str, file: FileStorage) -> typing.Tuple[str, str]:
@@ -134,19 +135,18 @@ class SampleManager:
         if not self.user_exists(username):
             self.create_user(username)
 
-        if self.is_allowed_file(file):
+        if self.is_allowed_file_extension(file):
             wav_path = self.get_new_sample_path(username, filetype="wav")
             file.save(wav_path)
             print("#LOG: .wav file saved to: " + wav_path)
         else:
             # not-wav file is temporarily saved
-            temp_path = self.get_new_sample_path(username, filetype="")
+            temp_path = self.get_new_sample_path(username, no_file_type=True)
             file.save(temp_path)
 
             # convert to webm
-            convert_webm.convert_webm_to_format(
+            wav_path = convert_webm.convert_webm_to_format(
                 temp_path, temp_path,  "wav")
-            wav_path = temp_path +".wav"
             print("#LOG: .wav file converted and saved to: " + wav_path)
 
             # delete temp file

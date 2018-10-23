@@ -23,7 +23,6 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
     def tearDown(self):
         """ cleanup after each test """
         # delete files made during testing
-        # my_wav = Path(f"./train/{self.test_person_name})
         test_person_dir = Path(f"./train/{self.test_person_name}")
 
         paths_to_be_deleted = [test_person_dir]
