@@ -1,13 +1,11 @@
-from flask import request, url_for, redirect, Flask, current_app
-from flask_api import FlaskAPI, status, exceptions, renderers, decorators
+from flask import request, current_app
+from flask_api import FlaskAPI, status
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 
 import speech_recognition as sr
 import urllib
-import string
-import os
 
+from utils import SampleManager, UsernameException
 from speech_recognition_wrapper import speech_to_text_wrapper
 from convert_audio_wrapper import convert_webm
 
@@ -37,7 +35,7 @@ def landing_documentation_page():
                             rule.endpoint].__doc__.split()),
                     "methods": urllib.parse.unquote(methods),
                     "url": urllib.parse.unquote(str(request.host_url))[0:-1]
-                           + str(rule)
+                    + str(rule)
                 }
 
             return output
@@ -71,30 +69,29 @@ def handling_audio_train_endpoint():
         username = request.data.get('username')
         file = request.files.get('file')
 
-        # TODO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
-        # TODO: zapisywanie z odpowiednią nazwą (np. stanislaw_01.wav) do odpowiedniego folderu, sprawdzanie czy folder istnieje, ew. tworzenie folderu
-        path = "./data/" + username + ".webm"
-        file.save(path)
-        print("#LOG File saved to: " + path)
+        # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
+        sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
+        try:
+            path = sample_manager.save_new_sample(username, file)
+            print("#LOG: .webm file saved to: " + path)
+        except UsernameException:
+            return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
-        # if file and allowed_file(file.filename): # and username is a secure string
-        #     # final_file_name = /
-        #     # filename = secure_filename(jakasnazwastring)
-        #     # file.save(os.path.join(app.config['UPLOAD_TRAIN_PATH'], filename))
-        #     pass
-
-        convert_webm.convert_webm_to_format(path, path.replace(".webm", ""), "wav")
-        print("#LOG File copy converted to wav")
+        # TO DO: zawinąć konwerter w try - catch
+        convert_webm.convert_webm_to_format(
+            path, path.replace(".webm", ""), "wav")
+        print("#LOG: file copy converted to wav")
 
         with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
-            recognized_speech = speech_to_text_wrapper.recognize_speech(converted_file)
+            recognized_speech = speech_to_text_wrapper.recognize_speech(
+                converted_file)
             print(f"#LOG Recognized words: {recognized_speech}")
 
         return {"username": username,
                 "text": f"Uploaded file for {username}, "
-                        f"recognized: {recognized_speech}",\
-               "recognized_speech": str(recognized_speech)}, \
-               status.HTTP_201_CREATED
+                        f"recognized: {recognized_speech}",
+                "recognized_speech": str(recognized_speech)
+        }, status.HTTP_201_CREATED
 
 
 if __name__ == "__main__":

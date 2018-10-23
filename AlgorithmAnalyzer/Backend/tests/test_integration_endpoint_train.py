@@ -1,12 +1,17 @@
 from pathlib import Path
 import os
 import unittest
+import shutil
+
 
 from flask_api import status
 from flask import wrappers
+from utils import SampleManager
 
 from main import app
 
+UPLOAD_TRAIN_PATH = './train'
+sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
 
 class Audio_Train_Unit_Tests(unittest.TestCase):
 
@@ -20,13 +25,13 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
     def tearDown(self):
         """ cleanup after each test """
         # delete files made during testing
-        my_wav = Path(f"./data/{self.test_person_name}.wav")
-        my_webm = Path(f"./data/{self.test_person_name}.webm")
+        # my_wav = Path(f"./train/{self.test_person_name})
+        test_person_dir = Path(f"./train/{self.test_person_name}.webm")
 
-        paths_to_be_deleted = [my_wav, my_webm]
+        paths_to_be_deleted = [test_person_dir]
         for _path in paths_to_be_deleted:
             try:
-                os.remove(_path)
+                shutil.rmtree(_path)
             except:
                 pass
 
@@ -57,12 +62,12 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
             self.assertEqual(r.json["username"], self.test_person_name,
                              "wrong username returned for correct upload")
 
-            # check for recognized_speech
+            #check for recognized_speech
             self.assertIn(r.json["recognized_speech"], ["trzynaście" , 13, '13'],
                              "wrong recognized speech returned for trzynascie")
 
             # check whether webm was converted and saved to wav
-            my_wav = Path(f"./data/{self.test_person_name}.wav")
+            my_wav = Path(f"./train/{sample_manager.username_to_dirname(self.test_person_name)}/1.wav")
             self.assertEqual(my_wav.exists(), True, "File was not converted and saved as .wav")
 
 
