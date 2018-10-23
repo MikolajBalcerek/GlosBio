@@ -1,9 +1,9 @@
 import json
 import unittest
 import shutil
-import os
 from pathlib import Path
 
+from werkzeug.datastructures import FileStorage
 from .SampleManager import SampleManager, UsernameException
 
 
@@ -107,6 +107,16 @@ class TestSampleManager(unittest.TestCase):
             self.assertEqual(json_dict["name"], "Mikołaj Balcerek",
                               "incorrect name in JSON")
 
+    def test_is_extension_allowed_wav(self):
+        file = FileStorage(content_type="audio/wav")
+        self.assertTrue(SampleManager.is_allowed_file_extension(file),
+                        "file with content type audio/wav was not allowed")
+
+    def test_is_extension_allowed_webm_disallowed(self):
+        file = FileStorage(content_type="audio/webm")
+        self.assertFalse(SampleManager.is_allowed_file_extension(file),
+                        "file with content type audio/webm was allowed"
+                        " (should fail the test to be later converted)")
 
 
 if __name__ == '__main__':
