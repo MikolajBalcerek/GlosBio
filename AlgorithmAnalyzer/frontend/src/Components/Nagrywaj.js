@@ -67,11 +67,9 @@ class Recorder extends Component {
 					headers: { "Content-Type": "multipart/form-data" },
 				})
 				.then(function(response) {
-					self.setState({
-						openSuccess: true
-					})
 					console.log(response);
 					self.setState({
+						openSuccess: true,
 						isRecording: false,
 						recorded: false,
 						blob_audio_data: null,
