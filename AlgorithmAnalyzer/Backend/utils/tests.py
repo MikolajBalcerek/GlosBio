@@ -83,11 +83,11 @@ class TestSampleManager(unittest.TestCase):
 
         suggested_json_path_wav = self.sample_manager.get_new_json_path(
             audio_path=example_path_wav)
-        self.assertEquals(suggested_json_path_wav, "C:/a.json")
+        self.assertEqual(suggested_json_path_wav, "C:/a.json")
 
         suggested_json_path_wav = self.sample_manager.get_new_json_path(
             audio_path=example_path_webm)
-        self.assertEquals(suggested_json_path_wav, "/home/train/5.json")
+        self.assertEqual(suggested_json_path_wav, "/home/train/5.json")
 
     def test_create_json_with_content(self):
         """ test for creating a new sample properties json"""

@@ -78,7 +78,7 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
                 self.assertIn(json_dict["recognized_speech"], ["trzynaście" , 13, '13'],
                                   "incorrect recognized_speech in JSON")
 
-                self.assertEquals(json_dict["name"], self.test_person_name,
+                self.assertEqual(json_dict["name"], self.test_person_name,
                                   "incorrect name in JSON")
 
             # check whether webm was converted and saved to wav
