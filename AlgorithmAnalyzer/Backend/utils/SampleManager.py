@@ -108,12 +108,12 @@ class SampleManager:
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
 
-    def save_new_sample(self, username: str, file: FileStorage) -> str:
+    def save_new_sample(self, username: str, file: FileStorage) -> typing.Tuple[str, str]:
         """
         saves new sample as both .webm and wav with a JSON file
         :param username: str
         :param file: FileStorage
-        :return: str webm_path
+        :return: str wav_path, str recognized_speech
         """
         if not self.user_exists(username):
             self.create_user(username)
@@ -135,7 +135,7 @@ class SampleManager:
         json_path = self.create_a_new_sample_properties_json(username, data={"recognized_speech": recognized_speech})
         print(f"#LOG Created a JSON file: {json_path}")
 
-        return webm_path, recognized_speech
+        return wav_path, recognized_speech
 
     def create_a_new_sample_properties_json(self, username, data: typing.Dict[str, str]) -> str:
         """
