@@ -154,11 +154,11 @@ class SampleManager:
 
         # recognize speech
         recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(wav_path)
-        print(f"#LOG Recognized words: {recognized_speech}")
+        print(f"#LOG: Recognized words: {recognized_speech}")
 
         # save the new sample json
         json_path = self.create_a_new_sample_properties_json(username, audio_path=wav_path, data={"recognized_speech": recognized_speech})
-        print(f"#LOG Created a JSON file: {json_path}")
+        print(f"#LOG: Created a JSON file: {json_path}")
 
         return wav_path, recognized_speech
 
