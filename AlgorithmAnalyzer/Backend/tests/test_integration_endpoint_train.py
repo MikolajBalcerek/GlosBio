@@ -70,7 +70,6 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
             my_wav = Path(f"./train/{sample_manager.username_to_dirname(self.test_person_name)}/1.wav")
             self.assertEqual(my_wav.exists(), True, "File was not converted and saved as .wav")
 
-
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
         r = self.client.post('/audio/train',
