@@ -31,6 +31,12 @@ class TestSpeechToText(unittest.TestCase):
                           [wrapper.recognize_speech(audio)],
                           "Failed test to recognize speech \"Kornelia Ćwik\" in a noisy polish wav ALREADY PREPARED recording")
 
+    # test recognize speech from path
+    def test_recognize_speech_from_path(self):
+        self.assertIn("Kornelia Ćwik",
+                      wrapper.recognize_speech_from_path(
+                          self.AUDIO_Kornelia_Cwik),
+                      "Failed test to recognize speech \"Kornelia Ćwik\" in a noisy polish wav ALREADY PREPARED recording taking from PATH (instead of file)")
 
 if __name__ == '__main__':
     unittest.main()
