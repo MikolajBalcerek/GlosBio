@@ -14,7 +14,6 @@ app = FlaskAPI(__name__)
 
 CORS(app)
 
-
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
     """ Landing page for browsable API """
@@ -75,10 +74,6 @@ def handling_audio_train_endpoint():
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
-        with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
-            recognized_speech = speech_to_text_wrapper.recognize_speech(
-                converted_file)
-            print(f"#LOG Recognized words: {recognized_speech}")
 
         return {"username": username,
                 "text": f"Uploaded file for {username}, "

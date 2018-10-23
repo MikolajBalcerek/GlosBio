@@ -1,13 +1,15 @@
 import os
 import re
 import unicodedata
+import json
+import typing
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from scipy.io import wavfile
-import json
 
 from Backend.convert_audio_wrapper import convert_webm
+from Backend.speech_recognition_wrapper import speech_to_text_wrapper
 
 ''''''''''''''''
 #to jest na razie propozycja, jeśli taka struktura nie zagra to będzie trzeba zmienić
@@ -119,28 +121,36 @@ class SampleManager:
         file.save(path)
         print("#LOG: .webm file saved to: " + path)
 
+        # convert to webm
         convert_webm.convert_webm_to_format(
             path, path.replace(".webm", ""), "wav")
         path = path.replace(".webm", ".wav")
         print("#LOG: file copy converted to wav")
 
-        json_path = self.get_new_json_path(username)
-        with open(json_path, 'w', encoding='utf8') as json_file:
-            recording_properties = {"name": username,
-                                    "recognized_speech": "asdasd"}
-            string_json = json.dumps(recording_properties, ensure_ascii=False).encode('utf8')
-            json_file.writelines(string_json)
+        # recognize speech
+        recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(path)
+        print(f"#LOG Recognized words: {recognized_speech}")
 
-
-
-
-
+        # save the new sample json
+        self.create_a_new_sample_properties_json(username, data={"recognized_speech": recognized_speech})
 
         return path
 
-    def create_a_new_sample_properties_json(self, username):
-        """ this """
-        self.get_new_json_path(username)
+    def create_a_new_sample_properties_json(self, username, data: typing.Dict[str, str]) -> str:
+        """
+        this creates a json file for the newest sample for the username given
+        e.g: 5.json
+        takes data in the form of dict[string, string]
+        :param username: str
+        :param data: typing.Dict[str, str]
+        :return: str path to json
+        """
+        json_path = self.get_new_json_path(username)
+        with open(json_path, 'w', encoding='utf8') as json_file:
+            recording_properties = {"name": username, **data}
+            string_json = str(json.dumps(recording_properties, ensure_ascii=False).encode('utf8'), encoding='utf8')
+            json_file.writelines(string_json)
+        return json_path
 
 
     def username_to_dirname(self, username: str):
