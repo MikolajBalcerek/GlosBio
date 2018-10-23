@@ -6,6 +6,8 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from scipy.io import wavfile
 
+from Backend.convert_audio_wrapper import convert_webm
+
 ''''''''''''''''
 #to jest na razie propozycja, jeśli taka struktura nie zagra to będzie trzeba zmienić
 
@@ -100,11 +102,24 @@ class SampleManager:
         return not re.match('^\w+$', username)
 
     def save_new_sample(self, username: str, file: FileStorage) -> str:
+        """
+        saves new sample as both .webm and wav
+        :param username: str
+        :param file: FileStorage
+        :return: str path
+        """
         if not self.user_exists(username):
             self.create_user(username)
         path = self.get_new_sample_path(username, filetype="webm")
         file.save(path)
+
+        convert_webm.convert_webm_to_format(
+            path, path.replace(".webm", ""), "wav")
+        path = path.replace(".webm", ".wav")
+        print("#LOG: file copy converted to wav")
+
         return path
+
 
     def username_to_dirname(self, username: str):
         '''

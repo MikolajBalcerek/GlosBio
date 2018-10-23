@@ -77,11 +77,6 @@ def handling_audio_train_endpoint():
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
-        # TO DO: zawinąć konwerter w try - catch
-        convert_webm.convert_webm_to_format(
-            path, path.replace(".webm", ""), "wav")
-        print("#LOG: file copy converted to wav")
-
         with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
             recognized_speech = speech_to_text_wrapper.recognize_speech(
                 converted_file)
