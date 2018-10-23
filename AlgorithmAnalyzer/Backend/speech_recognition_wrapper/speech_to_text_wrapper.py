@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 import speech_recognition as sr
 import secret_keys
 
@@ -25,7 +27,8 @@ def recognize_speech(audio_file : sr.AudioFile, language="pl-PL"):
     except:
         # BING
         #TODO: NEW API KEY
+        with suppress(Exception):
+            return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY,
+                                    language="pl-PL")
         print("BING api key is outdated")
-        return r.recognize_bing(audio, key=secret_keys.SECRET_BING_KEY,
-                                language="pl-PL")
-
+        return None
