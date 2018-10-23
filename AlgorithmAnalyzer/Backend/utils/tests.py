@@ -74,5 +74,20 @@ class TestSampleManager(unittest.TestCase):
     def test_get_sample_should_pass(self):
         pass
 
+    def test_get_json_path(self):
+        example_path_wav = "C:/a.wav"
+        example_path_webm = "/home/train/5.webm"
+
+        suggested_json_path_wav = self.sample_manager.get_new_json_path(
+            audio_path=example_path_wav)
+        self.assertEquals(suggested_json_path_wav, "C:/a.json")
+
+        suggested_json_path_wav = self.sample_manager.get_new_json_path(
+            audio_path=example_path_webm)
+        self.assertEquals(suggested_json_path_wav, "/home/train/5.json")
+        
+
+
+
 if __name__ == '__main__':
     unittest.main()
