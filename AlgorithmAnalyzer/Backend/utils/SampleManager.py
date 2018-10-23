@@ -5,6 +5,7 @@ import unicodedata
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from scipy.io import wavfile
+import json
 
 from Backend.convert_audio_wrapper import convert_webm
 
@@ -41,7 +42,6 @@ class SampleManager:
         '''path:  string or path; path to root directory'''
 
         self.path = os.path.normpath(path)
-
 
     def _mkdir(self, name):
         if self._user_directory_exists(name):
@@ -81,6 +81,11 @@ class SampleManager:
             last_sample = 0
         return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
 
+    def get_new_json_path(self, username) -> str:
+        """ this gets path for a new recording's json file
+        uses get_new_sample_path """
+        return self.get_new_sample_path(username, filetype="json")
+
     def add_sample(self, username, sample):
         '''
             this method serves to save samples
@@ -103,7 +108,7 @@ class SampleManager:
 
     def save_new_sample(self, username: str, file: FileStorage) -> str:
         """
-        saves new sample as both .webm and wav
+        saves new sample as both .webm and wav with a JSON file
         :param username: str
         :param file: FileStorage
         :return: str path
@@ -112,13 +117,30 @@ class SampleManager:
             self.create_user(username)
         path = self.get_new_sample_path(username, filetype="webm")
         file.save(path)
+        print("#LOG: .webm file saved to: " + path)
 
         convert_webm.convert_webm_to_format(
             path, path.replace(".webm", ""), "wav")
         path = path.replace(".webm", ".wav")
         print("#LOG: file copy converted to wav")
 
+        json_path = self.get_new_json_path(username)
+        with open(json_path, 'w', encoding='utf8') as json_file:
+            recording_properties = {"name": username,
+                                    "recognized_speech": "asdasd"}
+            string_json = json.dumps(recording_properties, ensure_ascii=False).encode('utf8')
+            json_file.writelines(string_json)
+
+
+
+
+
+
         return path
+
+    def create_a_new_sample_properties_json(self, username):
+        """ this """
+        self.get_new_json_path(username)
 
 
     def username_to_dirname(self, username: str):

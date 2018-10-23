@@ -7,7 +7,6 @@ import urllib
 
 from utils import SampleManager, UsernameException
 from speech_recognition_wrapper import speech_to_text_wrapper
-from convert_audio_wrapper import convert_webm
 
 UPLOAD_TRAIN_PATH = './train'
 ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'flac', 'webm'])
@@ -73,7 +72,6 @@ def handling_audio_train_endpoint():
         sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
         try:
             path = sample_manager.save_new_sample(username, file)
-            print("#LOG: .webm file saved to: " + path)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
