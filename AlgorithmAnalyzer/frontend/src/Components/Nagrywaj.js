@@ -11,6 +11,8 @@ import FiberManualRecord from "@material-ui/icons/FiberManualRecord";
 import Stop from "@material-ui/icons/Stop";
 import KeyboardVoice from "@material-ui/icons/KeyboardVoice";
 import Grid from "@material-ui/core/Grid";
+import MySnackbarContent from './MySnackbarContent'
+import Typography from '@material-ui/core/Typography';
 
 class Recorder extends Component {
 	constructor(props) {
@@ -20,6 +22,11 @@ class Recorder extends Component {
 			recorded: false,
 			username: null,
 			blob_audio_data: null,
+			openErrorNoAudio: false,
+			openSuccess: false,
+			openErrorNoUser: false,
+			openErrorSave: false,
+			recognizedText: ''
 		};
 		this.onPressButtonRecord = this.onPressButtonRecord.bind(this);
 		this.onPressButtonStop = this.onPressButtonStop.bind(this);
@@ -40,6 +47,14 @@ class Recorder extends Component {
 			isRecording: false,
 		});
 	}
+
+	SnackbarHandleClose = (event, reason) => {
+		if (reason === 'clickaway') {
+			return;
+		  }
+		this.setState({ openErrorNoAudio: false, openSuccess: false, openErrorNoUser: false, openErrorSave: false });
+	  };
+	
 	onPressButtonUpload() {
 		if (this.state.recorded && this.state.username) {
 			console.log("upload", this.state);
@@ -54,20 +69,29 @@ class Recorder extends Component {
 				.then(function(response) {
 					console.log(response);
 					self.setState({
+						openSuccess: true,
 						isRecording: false,
 						recorded: false,
 						blob_audio_data: null,
+						recognizedText: response.data.text
 					});
 				})
 				.catch(function(error) {
+					self.setState({
+						openErrorSave: true
+					})
 					console.log(error);
 				});
 		} else {
 			if (!this.state.recorded) {
-				//#TODO: user feedback: jeszcze nic nie nagrano!
+				this.setState({
+					openErrorNoAudio: !this.state.openErrorNoAudio
+				})
 			}
 			if (!this.state.username) {
-				//#TODO: user feedback: nie wypełniono wymaganego pola!
+				this.setState({
+					openErrorNoUser: !this.state.openErrorNoUser
+				})
 			}
 		}
 	}
@@ -199,6 +223,20 @@ class Recorder extends Component {
 						paddingTop: 40,
 					}}
 				>
+				<Typography variant="subheading" gutterBottom>
+					{this.state.recognizedText}
+				</Typography>
+				</Grid>
+				<Grid
+					item
+					xs={12}
+					style={{
+						display: "flex",
+						justifyContent: "center",
+						alignItems: "center",
+						paddingTop: 40,
+					}}
+				>
 					<Button
 						variant="contained"
 						color="default"
@@ -209,6 +247,14 @@ class Recorder extends Component {
 						<CloudUploadIcon />
 					</Button>
 				</Grid>
+				<MySnackbarContent 
+					recognizedText={this.state.recognizedText}
+					openErrorNoAudio={this.state.openErrorNoAudio}
+					openSuccess={this.state.openSuccess}
+					openErrorNoUser={this.state.openErrorNoUser}
+					openErrorSave={this.state.openErrorSave}
+					SnackbarHandleClose={()=>this.SnackbarHandleClose}
+				/>
 			</Paper>
 		);
 	}
