@@ -133,16 +133,24 @@ class SampleManager:
         """
         if not self.user_exists(username):
             self.create_user(username)
-        if not self.is_allowed_file(file)
-        webm_path = self.get_new_sample_path(username, filetype="webm")
-        file.save(webm_path)
-        print("#LOG: .webm file saved to: " + webm_path)
 
-        # convert from webm
-        convert_webm.convert_webm_to_format(
-            webm_path, webm_path.replace(".webm", ""), "wav")
-        wav_path = webm_path.replace(".webm", ".wav")
-        print("#LOG: file copy converted to wav")
+        if self.is_allowed_file(file):
+            wav_path = self.get_new_sample_path(username, filetype="wav")
+            file.save(wav_path)
+            print("#LOG: .wav file saved to: " + wav_path)
+        else:
+            # not-wav file is temporarily saved
+            temp_path = self.get_new_sample_path(username, filetype="")
+            file.save(temp_path)
+
+            # convert to webm
+            convert_webm.convert_webm_to_format(
+                temp_path, temp_path,  "wav")
+            wav_path = temp_path +".wav"
+            print("#LOG: .wav file converted and saved to: " + wav_path)
+
+            # delete temp file
+            os.remove(temp_path)
 
         # recognize speech
         recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(wav_path)
