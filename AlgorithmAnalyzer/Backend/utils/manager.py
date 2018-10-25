@@ -7,8 +7,6 @@ from werkzeug.utils import secure_filename
 from scipy.io import wavfile
 
 ''''''''''''''''
-#to jest na razie propozycja, jeśli taka struktura nie zagra to będzie trzeba zmienić
-
 example of directory structure
 
 ../data/  <----- 'root' directory
@@ -39,7 +37,6 @@ class SampleManager:
         '''path:  string or path; path to root directory'''
 
         self.path = os.path.normpath(path)
-
 
     def _mkdir(self, name):
         if self._user_directory_exists(name):
@@ -79,6 +76,9 @@ class SampleManager:
             last_sample = 0
         return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
 
+    def get_user_dirpath(self, username):
+        return os.path.join(self.path, self.username_to_dirname(username))
+ 
     def add_sample(self, username, sample):
         '''
             this method serves to save samples
