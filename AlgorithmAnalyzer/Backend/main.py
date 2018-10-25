@@ -44,7 +44,7 @@ def landing_documentation_page():
         return list_routes()
 
 
-@app.route("/audio/<type>", methods=['GET', 'POST'])
+@app.route("/audio/<type>", methods=['GET', 'POST'], defaults={'type': 'train'})
 def handling_audio_endpoint(type):
     """
     This handles generic operations that have to do with audio
@@ -60,11 +60,10 @@ def handling_audio_endpoint(type):
                name.rsplit('.', 1)[1].lower() in ALLOWED_AUDIO_EXTENSIONS
 
     if type not in ['train', 'test']:
-        return ["Unexpected type '{}' requested".foramt(type)], status.HTTP_400_BAD_REQUEST
+        return ["Unexpected type '{}' requested".format(type)], status.HTTP_400_BAD_REQUEST
 
     if request.method == 'GET':
-        return ["hello"], 200
-        # return sample_manager.get_all_usernames()
+        return sample_manager.get_all_usernames(), status.HTTP_200_OK
 
     if request.method == 'POST':
         if 'file' not in request.files:
@@ -77,7 +76,7 @@ def handling_audio_endpoint(type):
 
         # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         try:
-            path = sample_manager.save_new_sample(username, file)
+            path = sample_manager.save_new_sample(username, file, type)
             app.logger.info(".webm file saved to: {}".format(path))
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
@@ -99,13 +98,20 @@ def handling_audio_endpoint(type):
                 }, status.HTTP_201_CREATED
 
 
-@app.route("/audio/<type>/<user>", methods=['GET'], defaults={'type': 'train'})
-def handle_list_samples_for_user(type, user):
+@app.route("/audio/<type>/<username>", methods=['GET'])
+def handle_list_samples_for_user(type, username):
     """
     it handles request for listing samples from train or test set
     for particular user
+
+    type: sample set type (train or test)
+    username: full name, eg. Hugo Kołątaj or  Stanisław
     """
-    return ["Get samples for {} from {} set".format(user, type)], 201
+    if sample_manager.user_exists(username):
+        app.logger.info('{} {}'.format(type, username))
+        return sample_manager.get_samples(username, type), status.HTTP_200_OK
+    else:
+        return ["There is no such user '{}' in sample base".format(username)], status.HTTP_400_BAD_REQUEST
 
 
 if __name__ == "__main__":

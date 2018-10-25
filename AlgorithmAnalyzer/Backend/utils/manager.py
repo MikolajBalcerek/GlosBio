@@ -60,13 +60,21 @@ class SampleManager:
     def create_user(self, username):
         user = self.username_to_dirname(username)
         self._mkdir(user)
+        self._mkdir(os.path.join(user, 'test'))
 
-    def get_samples(self, username):
+    def get_samples(self, username, set_type='train'):
+        # TO DO (Stachu) dodać regexa do wyłapywania tylko plików .wav
         user = self.username_to_dirname(username)
-        return list(os.listdir(os.path.join(self.path, user)))
+        samples = []
+        if set_type == 'train':
+            samples = list(os.listdir(os.path.join(self.path, user)))
+            samples.remove('test')
+        else:
+            samples = list(os.listdir(os.path.join(self.path, user, 'test')))
+        return samples
 
-    def get_new_sample_path(self, username, filetype="wav"):
-        samples = self.get_samples(username)
+    def get_new_sample_path(self, username, set_type="train", filetype="wav"):
+        samples = self.get_samples(username, set_type)
         username = self.username_to_dirname(username)
         if samples:
             last_sample = max(
@@ -74,11 +82,14 @@ class SampleManager:
             )
         else:
             last_sample = 0
-        return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
+        if set_type == 'test':
+            return os.path.join(self.path, username, set_type, str(last_sample + 1) + '.' + filetype)
+        else:
+            return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
 
     def get_user_dirpath(self, username):
         return os.path.join(self.path, self.username_to_dirname(username))
- 
+
     def add_sample(self, username, sample):
         '''
             this method serves to save samples
@@ -99,10 +110,10 @@ class SampleManager:
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
 
-    def save_new_sample(self, username: str, file: FileStorage) -> str:
+    def save_new_sample(self, username: str, file: FileStorage, type: str) -> str:
         if not self.user_exists(username):
             self.create_user(username)
-        path = self.get_new_sample_path(username, filetype="webm")
+        path = self.get_new_sample_path(username, set_type=type, filetype="webm")
         file.save(path)
         return path
 
