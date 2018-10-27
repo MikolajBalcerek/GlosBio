@@ -121,9 +121,7 @@ class SampleManager:
         :param file: FileStorage
         :return: True/False
         """
-        if file.mimetype == "audio/wav":
-            return True
-        return False
+        return True if file.mimetype == "audio/wav" else False
 
     def save_new_sample(self, username: str, file: FileStorage) -> typing.Tuple[str, str]:
         """
@@ -138,7 +136,7 @@ class SampleManager:
         if self.is_allowed_file_extension(file):
             wav_path = self.get_new_sample_path(username, filetype="wav")
             file.save(wav_path)
-            print("#LOG: .wav file saved to: " + wav_path)
+            print(f"#LOG {self.__class__.__name__}: .wav file saved to: " + wav_path)
         else:
             # not-wav file is temporarily saved
             temp_path = self.get_new_sample_path(username, no_file_type=True)
@@ -147,18 +145,19 @@ class SampleManager:
             # convert to webm
             wav_path = convert_webm.convert_webm_to_format(
                 temp_path, temp_path,  "wav")
-            print("#LOG: .wav file converted and saved to: " + wav_path)
+            print("#LOG {self.__class__.__name__}: .wav file converted and saved to: " + wav_path)
 
             # delete temp file
             os.remove(temp_path)
 
         # recognize speech
         recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(wav_path)
-        print(f"#LOG: Recognized words: {recognized_speech}")
+        print(f"#LOG {self.__class__.__name__}: Recognized words: {recognized_speech}")
 
         # save the new sample json
-        json_path = self.create_a_new_sample_properties_json(username, audio_path=wav_path, data={"recognized_speech": recognized_speech})
-        print(f"#LOG: Created a JSON file: {json_path}")
+        json_path = self.create_a_new_sample_properties_json(username, audio_path=wav_path,
+                                                             data={"recognized_speech": recognized_speech})
+        print(f"#LOG {self.__class__.__name__}: Created a JSON file: {json_path}")
 
         return wav_path, recognized_speech
 

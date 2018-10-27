@@ -29,3 +29,11 @@ From ./Backend run:
 ```
 pipenv run python -m unittest
 ```
+
+### Info
+
+#### JSON
+A JSON file is stored for each of the recordings.
+```
+{"name": "Unnormalised Name", "recognized_speech": "Some text"}
+```
