@@ -1,9 +1,10 @@
-from flask import request, current_app
+from flask import request, current_app, send_from_directory
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
 import speech_recognition as sr
 import urllib
+import os
 
 from utils import SampleManager, UsernameException
 from speech_recognition_wrapper import speech_to_text_wrapper
@@ -15,6 +16,12 @@ app = FlaskAPI(__name__)
 sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 
 CORS(app)
+
+
+def set_sample_base_dir(path):
+    SAMPLE_UPLOAD_PATH = path
+    global sample_manager
+    sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 
 
 @app.route("/", methods=['GET'])
@@ -109,14 +116,37 @@ def handle_list_samples_for_user(type, username):
     for particular user
 
     type: sample set type (train or test)
-    username: full name, eg. Hugo Kołątaj or  Stanisław
+    username: full name, eg. Hugo Kołątaj or Stanisław
     """
+    if type not in ['train', 'test']:
+        return ["Unexpected type '{}' requested".format(type)], status.HTTP_400_BAD_REQUEST
+
     if sample_manager.user_exists(username):
         app.logger.info('{} {}'.format(type, username))
         return {'samples': sample_manager.get_samples(username, type)}, status.HTTP_200_OK
     else:
         return ["There is no such user '{}' in sample base".format(username)], status.HTTP_400_BAD_REQUEST
 
+@app.route("/audio/<type>/<username>/<sample>", methods=['GET'])
+def handle_get_sample(type, username, sample):
+    """
+    serve sample as static file
+    """
+    if type not in ['train', 'test']:
+        return ["Unexpected type '{}' requested".format(type)], status.HTTP_400_BAD_REQUEST
+
+    elif not sample_manager.user_exists(username):
+        return ["There is no such user '{}' in sample base".format(username)], status.HTTP_400_BAD_REQUEST
+
+    elif not sample_manager.sample_exists(username, type, sample):
+        return ["There is no such sample '{}' in users '{}' {} samplebase".format(sample, username, type)], status.HTTP_400_BAD_REQUEST
+
+    else:
+        user_dir = sample_manager.get_user_dirpath(username)
+        app.logger.info("send file '{}' from '{}'".format(sample, user_dir))
+        return send_from_directory(user_dir, sample, as_attachment=True), status.HTTP_200_OK
+
 
 if __name__ == "__main__":
     app.run(debug=True)
+
