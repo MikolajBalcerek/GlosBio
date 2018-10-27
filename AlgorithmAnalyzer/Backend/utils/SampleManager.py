@@ -8,8 +8,8 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from scipy.io import wavfile
 
-from Backend.convert_audio_wrapper import convert_webm
-from Backend.speech_recognition_wrapper import speech_to_text_wrapper
+from convert_audio_wrapper import convert_webm
+from speech_recognition_wrapper import speech_to_text_wrapper
 
 ''''''''''''''''
 #to jest na razie propozycja, jeśli taka struktura nie zagra to będzie trzeba zmienić
