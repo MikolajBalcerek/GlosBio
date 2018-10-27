@@ -6,41 +6,37 @@ import os
 from flask_api import status
 from flask import wrappers
 from utils import SampleManager
+from main import app
 
-import main
-
-app = main.app
-
-# yep, dość brzydko, jakieś lepsze pomysły? (Stachu)
-SAMPLE_UPLOAD_PATH = './data_test'
-main.set_sample_base_dir(SAMPLE_UPLOAD_PATH)
-sm = main.sample_manager
-test_usernames = ["Train Person", "Test Person"]
-test_dirnames = [sm.get_user_dirpath(person) for person in test_usernames]
+SAMPLE_UPLOAD_PATH = './data'
+TEST_USERNAMES = ["Train Person", "Test Person"]
 
 
-def setUpModule():
-    print("#INFO: create '{}' directory".format(SAMPLE_UPLOAD_PATH))
-    os.mkdir(SAMPLE_UPLOAD_PATH)
-    app.config['SAMPLE_DIR'] = SAMPLE_UPLOAD_PATH
-
-
-def tearDownModule():
-    paths_to_be_deleted = [*test_dirnames]
-    for _path in paths_to_be_deleted:
-        print("#INFO: delete {} directory after test".format(_path))
-        shutil.rmtree(_path)
-    print("#INFO: delete {} directory after test".format(SAMPLE_UPLOAD_PATH))
-    os.rmdir(SAMPLE_UPLOAD_PATH)
+# def tearDownModule():
+#     ''' cleanup after all tests from this module '''
+#     test_dirnames = [cls.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
+#     paths_to_be_deleted = [*test_dirnames]
+#     for _path in paths_to_be_deleted:
+#         print(f"#INFO: delete {_path} directory after test")
+#         shutil.rmtree(_path)
 
 
 class Audio_Add_Sample_Tests(unittest.TestCase):
 
-    def setUp(self):
-        """ setup for every test """
-        # nie lepiej ustawiać tego w setUpClass()?
+    @classmethod
+    def setUpClass(self):
+        ''' setup before tests form this class '''
         app.config['TESTING'] = True
         self.app = app.test_client()
+        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
+        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
+
+    def tearDown(self):
+        ''' cleanup after every test '''
+        paths_to_be_deleted = [*self.test_dirnames]
+        for _path in paths_to_be_deleted:
+            if os.path.exists(_path):
+                shutil.rmtree(_path)
 
     @property
     def client(self):
@@ -51,7 +47,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
         """ test for happy path for send file train endpoint """
         with open('./tests/trzynascie.webm', 'rb') as f:
             r = self.client.post('/audio/train',
-                                 data={"username": test_usernames[0],
+                                 data={"username": TEST_USERNAMES[0],
                                        "file": f})
             # r type wrappers.Response
 
@@ -60,7 +56,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "wrong status code for file upload")
 
             # checking whether a person's username was process correctly
-            self.assertEqual(r.json["username"], test_usernames[0],
+            self.assertEqual(r.json["username"], TEST_USERNAMES[0],
                              "wrong username returned for correct upload")
 
             # check for recognized_speech
@@ -68,7 +64,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                           "wrong recognized speech returned for trzynascie")
 
             # check whether webm was converted and saved to wav
-            new_wav_expected_path = os.path.join(test_dirnames[0], '1.wav')
+            new_wav_expected_path = os.path.join(self.test_dirnames[0], '1.wav')
             my_wav = Path(new_wav_expected_path)
             self.assertEqual(my_wav.exists(), True,
                              "File was not converted and saved as .wav")
@@ -77,7 +73,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
         """ test for happy path for send file test endpoint """
         with open('./tests/trzynascie.webm', 'rb') as f:
             r = self.client.post('/audio/test',
-                                 data={"username": test_usernames[1],
+                                 data={"username": TEST_USERNAMES[1],
                                        "file": f})
             # r type wrappers.Response
 
@@ -86,14 +82,14 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "wrong status code for file upload")
 
             # checking whether a person's username was process correctly
-            self.assertEqual(r.json["username"], test_usernames[1],
+            self.assertEqual(r.json["username"], TEST_USERNAMES[1],
                              "wrong username returned for correct upload")
 
             # check whether webm was converted and saved to wav
-            new_wav_expected_path = os.path.join(test_dirnames[1], 'test', '1.wav')
+            new_wav_expected_path = os.path.join(self.test_dirnames[1], 'test', '1.wav')
             my_wav = Path(new_wav_expected_path)
             self.assertEqual(my_wav.exists(), True,
-                             "Missing converted .wav file in '{test_dirnames[1]}/test' direcotry")
+                             "Missing converted .wav file in '{test_dirnames[1]}/test' directory")
 
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
@@ -117,39 +113,69 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
 class Audio_Get_Sample_Tests(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(self):
+        ''' setup before tests for this class '''
+        app.config['TESTING'] = True
+        self.app = app.test_client()
+        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
+        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
+        with open('./tests/trzynascie.webm', 'rb') as f:
+            self.app.post('/audio/train',
+                                    data={"username": TEST_USERNAMES[0], "file": f})
+            f.close()
+        with open('./tests/trzynascie.webm', 'rb') as f:
+            self.app.post('/audio/test',
+                                    data={"username": TEST_USERNAMES[1], "file": f})
+            f.close()
+
+
+    @classmethod
+    def tearDownClass(self):
+        ''' cleanup after every test '''
+        paths_to_be_deleted = [*self.test_dirnames]
+        for _path in paths_to_be_deleted:
+            shutil.rmtree(_path)
+
     @property
     def client(self):
         """ this is a getter for client """
-        return app.test_client()
+        return self.app
 
     def test_get_all_users(self):
         r = self.client.get('/users')
-        expected_usrnames = set([sm.username_to_dirname(p) for p in test_usernames])
+        expected_usrnames = set([self.sm.username_to_dirname(p) for p in TEST_USERNAMES])
 
         self.assertEqual(r.status_code, status.HTTP_200_OK,
-                         "wrong status code, expected 200, got {}".format(r.status_code))
+                         f"wrong status code, expected 200, got {r.status_code}")
 
-        self.assertEqual(set(r.json['users']), expected_usrnames,
-                         "expected list with two usernames, got: {}".format(r.data))
+        for username in expected_usrnames:
+            self.assertIn(username, r.json['users'],
+                          f"expected user {username} in all-users list, got: {r.data}")
 
     def test_get_train_person_samples(self):
-        r1 = self.client.get('/audio/train/{}'.format(test_usernames[0]))
-        r2 = self.client.get('/audio/test/{}'.format(test_usernames[0]))
+        r1 = self.client.get(f'/audio/train/{TEST_USERNAMES[0]}')
+        r2 = self.client.get(f'/audio/test/{TEST_USERNAMES[0]}')
 
         # check status code
         self.assertEqual(r1.status_code, status.HTTP_200_OK,
-                         "wrong status code, expected 200, got {}".format(r1.status_code))
+                         f"wrong status code, expected 200, got {r1.status_code}")
         self.assertEqual(r2.status_code, status.HTTP_200_OK,
-                         "wrong status code, expected 200, got {}".format(r2.status_code))
+                         f"wrong status code, expected 200, got {r2.status_code}")
 
         self.assertEqual(r1.json['samples'], ['1.wav'],
-                         "expected one sample, got {}".format(r1.json['samples']))
+                         f"expected one sample, got {r1.json['samples']}")
 
         self.assertEqual(r2.json["samples"], [],
-                         "expected no samples, got {}".format(r2.json['samples']))
+                         f"expected no samples, got {r2.json['samples']}")
 
     def test_get_samples_for_wrong_user(self):
         r = self.client.get('/audio/train/mr_nobody')
 
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
-                         "wrong status code, expected 400, got {}".format(r.status_code))
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_request_sample_which_does_not_exist(self):
+        request_path = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1000.wav"
+        r = self.client.get(request_path)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, f"wrong status code, expected 400, got {r.status_code}")

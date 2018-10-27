@@ -18,12 +18,6 @@ sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 CORS(app)
 
 
-def set_sample_base_dir(path):
-    SAMPLE_UPLOAD_PATH = path
-    global sample_manager
-    sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
-
-
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
     """ Landing page for browsable API """
@@ -74,21 +68,21 @@ def handling_audio_endpoint(type):
                name.rsplit('.', 1)[1].lower() in ALLOWED_AUDIO_EXTENSIONS
 
     if type not in ['train', 'test']:
-        return ["Unexpected type '{}' requested".format(type)], status.HTTP_400_BAD_REQUEST
+        return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
     if request.method == 'POST':
         if 'file' not in request.files:
             return ['No file part'], status.HTTP_400_BAD_REQUEST
         if 'username' not in request.data:
             return ['No username'], status.HTTP_400_BAD_REQUEST
-        app.logger.info("add new sample to {} set".format(type))
+        app.logger.info(f"add new sample to {type} set")
         username = request.data.get('username')
         file = request.files.get('file')
 
         # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         try:
             path = sample_manager.save_new_sample(username, file, type)
-            app.logger.info(".webm file saved to: {}".format(path))
+            app.logger.info(f".webm file saved to: {path}")
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
@@ -119,32 +113,36 @@ def handle_list_samples_for_user(type, username):
     username: full name, eg. Hugo Kołątaj or Stanisław
     """
     if type not in ['train', 'test']:
-        return ["Unexpected type '{}' requested".format(type)], status.HTTP_400_BAD_REQUEST
+        return ["Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
     if sample_manager.user_exists(username):
-        app.logger.info('{} {}'.format(type, username))
+        app.logger.info(f'{type} {username}')
         return {'samples': sample_manager.get_samples(username, type)}, status.HTTP_200_OK
     else:
-        return ["There is no such user '{}' in sample base".format(username)], status.HTTP_400_BAD_REQUEST
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-@app.route("/audio/<type>/<username>/<sample>", methods=['GET'])
-def handle_get_sample(type, username, sample):
+@app.route("/audio/<type>/<username>/<samplename>", methods=['GET'])
+def handle_get_sample(type, username, samplename):
     """
-    serve sample as static file
+    serve sample .wav as static file
+
+    type: sample set type 'train' or 'test'
+    username: full name, eg. 'Hugo Kołątaj' or 'Stanisław'
+    samplename: full name of requested sample eg. '1.wav', '150.wav'
     """
     if type not in ['train', 'test']:
-        return ["Unexpected type '{}' requested".format(type)], status.HTTP_400_BAD_REQUEST
+        return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
     elif not sample_manager.user_exists(username):
-        return ["There is no such user '{}' in sample base".format(username)], status.HTTP_400_BAD_REQUEST
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-    elif not sample_manager.sample_exists(username, type, sample):
-        return ["There is no such sample '{}' in users '{}' {} samplebase".format(sample, username, type)], status.HTTP_400_BAD_REQUEST
+    elif not sample_manager.sample_exists(username, type, samplename):
+        return [f"There is no such sample '{samplename}' in users '{username}' {type} samplebase"], status.HTTP_400_BAD_REQUEST
 
     else:
         user_dir = sample_manager.get_user_dirpath(username)
-        app.logger.info("send file '{}' from '{}'".format(sample, user_dir))
-        return send_from_directory(user_dir, sample, as_attachment=True), status.HTTP_200_OK
+        app.logger.info(f"send file '{samplename}' from '{user_dir}'")
+        return send_from_directory(user_dir, samplename, as_attachment=True), status.HTTP_200_OK
 
 
 if __name__ == "__main__":
