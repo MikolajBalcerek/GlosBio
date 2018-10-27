@@ -5,6 +5,7 @@ import unicodedata
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from scipy.io import wavfile
+from pathlib import Path
 
 ''''''''''''''''
 example of directory structure
@@ -57,6 +58,9 @@ class SampleManager:
         user = self.username_to_dirname(username)
         return self._user_directory_exists(user)
 
+    def sample_exists(self, username, type, sample):
+        return Path(os.join(self.get_user_dirpath(username, type), sample)).exists()
+
     def create_user(self, username):
         user = self.username_to_dirname(username)
         self._mkdir(user)
@@ -87,8 +91,11 @@ class SampleManager:
         else:
             return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
 
-    def get_user_dirpath(self, username):
-        return os.path.join(self.path, self.username_to_dirname(username))
+    def get_user_dirpath(self, username, type='train'):
+        if type == 'train':
+            return os.path.join(self.path, self.username_to_dirname(username))
+        else:
+            return os.path.join(self.path, type,  self.username_to_dirname(username))
 
     def add_sample(self, username, sample):
         '''

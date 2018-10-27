@@ -7,12 +7,22 @@ from flask_api import status
 from flask import wrappers
 from utils import SampleManager
 
-from main import app
+import main
 
-SAMPLE_UPLOAD_PATH = './data'
-sm = SampleManager(SAMPLE_UPLOAD_PATH)
+app = main.app
+
+# yep, dość brzydko, jakieś lepsze pomysły? (Stachu)
+SAMPLE_UPLOAD_PATH = './data_test'
+main.set_sample_base_dir(SAMPLE_UPLOAD_PATH)
+sm = main.sample_manager
 test_usernames = ["Train Person", "Test Person"]
 test_dirnames = [sm.get_user_dirpath(person) for person in test_usernames]
+
+
+def setUpModule():
+    print("#INFO: create '{}' directory".format(SAMPLE_UPLOAD_PATH))
+    os.mkdir(SAMPLE_UPLOAD_PATH)
+    app.config['SAMPLE_DIR'] = SAMPLE_UPLOAD_PATH
 
 
 def tearDownModule():
@@ -20,6 +30,8 @@ def tearDownModule():
     for _path in paths_to_be_deleted:
         print("#INFO: delete {} directory after test".format(_path))
         shutil.rmtree(_path)
+    print("#INFO: delete {} directory after test".format(SAMPLE_UPLOAD_PATH))
+    os.rmdir(SAMPLE_UPLOAD_PATH)
 
 
 class Audio_Add_Sample_Tests(unittest.TestCase):
