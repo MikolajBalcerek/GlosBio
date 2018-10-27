@@ -2,19 +2,15 @@ from flask import request, current_app
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
-import speech_recognition as sr
 import urllib
 
 from utils import SampleManager, UsernameException
 from speech_recognition_wrapper import speech_to_text_wrapper
-from convert_audio_wrapper import convert_webm
 
 UPLOAD_TRAIN_PATH = './train'
-ALLOWED_AUDIO_EXTENSIONS = set(['wav', 'flac', 'webm'])
 app = FlaskAPI(__name__)
 
 CORS(app)
-
 
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
@@ -69,23 +65,12 @@ def handling_audio_train_endpoint():
         username = request.data.get('username')
         file = request.files.get('file')
 
-        # TO DO: sprawdzanie czy FileStorage zawiera mime type z ALLOWED_AUDIO_EXTENSIONS
         sample_manager = SampleManager(UPLOAD_TRAIN_PATH)
         try:
-            path = sample_manager.save_new_sample(username, file)
-            print("#LOG: .webm file saved to: " + path)
+            path, recognized_speech = sample_manager.save_new_sample(username, file)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
-        # TO DO: zawinąć konwerter w try - catch
-        convert_webm.convert_webm_to_format(
-            path, path.replace(".webm", ""), "wav")
-        print("#LOG: file copy converted to wav")
-
-        with sr.AudioFile(path.replace(".webm", ".wav")) as converted_file:
-            recognized_speech = speech_to_text_wrapper.recognize_speech(
-                converted_file)
-            print(f"#LOG Recognized words: {recognized_speech}")
 
         return {"username": username,
                 "text": f"Uploaded file for {username}, "

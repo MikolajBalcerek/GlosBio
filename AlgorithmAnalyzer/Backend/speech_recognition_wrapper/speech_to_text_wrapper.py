@@ -8,7 +8,7 @@ import secret_keys
 
 def recognize_speech(audio_file : sr.AudioFile, language="pl-PL"):
     """
-    speech to text from the audio_file
+    speech to text from the audio_file in sr.AudioFile
 
     :param audio_file: sr.AudioFile format, init by sr.AudioFile(path : str)
     :param language: language in the "pl-PL" style, default polish
@@ -17,6 +17,7 @@ def recognize_speech(audio_file : sr.AudioFile, language="pl-PL"):
 
     r = sr.Recognizer()
     # converting to audioData
+
     audio = r.record(audio_file)
     try:
         # GOOGLE
@@ -32,3 +33,17 @@ def recognize_speech(audio_file : sr.AudioFile, language="pl-PL"):
                                     language="pl-PL")
         print("BING api key is outdated")
         return None
+
+
+def recognize_speech_from_path(path : str, language="pl-PL"):
+    """
+    speech to text from the file under string path(preferred .wav)
+
+    :param path: str full path to the audiofile
+    :param language: language in the "pl-PL" style, default polish
+    :return: string of recognized text
+    """
+    # recognize speech
+    with sr.AudioFile(path) as _file:
+        recognized_speech = recognize_speech(_file)
+    return recognized_speech

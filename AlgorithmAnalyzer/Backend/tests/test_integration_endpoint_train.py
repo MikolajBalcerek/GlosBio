@@ -1,11 +1,9 @@
 from pathlib import Path
-import os
 import unittest
 import shutil
-
+import json
 
 from flask_api import status
-from flask import wrappers
 from utils import SampleManager
 
 from main import app
@@ -25,8 +23,7 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
     def tearDown(self):
         """ cleanup after each test """
         # delete files made during testing
-        # my_wav = Path(f"./train/{self.test_person_name})
-        test_person_dir = Path(f"./train/{self.test_person_name}.webm")
+        test_person_dir = Path(f"./train/{self.test_person_name}")
 
         paths_to_be_deleted = [test_person_dir]
         for _path in paths_to_be_deleted:
@@ -58,7 +55,7 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
             self.assertEqual(r.status_code, status.HTTP_201_CREATED,
                              "wrong status code for file upload")
 
-            # checking whether a person's username was process correctly
+            # checking whether a person's username was processed correctly
             self.assertEqual(r.json["username"], self.test_person_name,
                              "wrong username returned for correct upload")
 
@@ -66,10 +63,26 @@ class Audio_Train_Unit_Tests(unittest.TestCase):
             self.assertIn(r.json["recognized_speech"], ["trzynaście" , 13, '13'],
                              "wrong recognized speech returned for trzynascie")
 
+            # check for existence of JSON file
+            _json_path = Path(f"./train/{sample_manager.username_to_dirname(self.test_person_name)}/1.json")
+            self.assertEqual(_json_path.exists(), True,
+                             "Sample was not accompanied by .json file")
+
+            # check whether JSON includes name and recognized_speech
+            _json_path = Path(
+                f"./train/{sample_manager.username_to_dirname(self.test_person_name)}/1.json")
+
+            with open(_json_path, 'r') as _json_file:
+                json_dict = json.loads(_json_file.read(), encoding='utf8')
+                self.assertIn(json_dict["recognized_speech"], ["trzynaście" , 13, '13'],
+                                  "incorrect recognized_speech in JSON")
+
+                self.assertEqual(json_dict["name"], self.test_person_name,
+                                  "incorrect name in JSON")
+
             # check whether webm was converted and saved to wav
             my_wav = Path(f"./train/{sample_manager.username_to_dirname(self.test_person_name)}/1.wav")
             self.assertEqual(my_wav.exists(), True, "File was not converted and saved as .wav")
-
 
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
