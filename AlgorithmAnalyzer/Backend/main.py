@@ -44,14 +44,21 @@ def landing_documentation_page():
         return list_routes()
 
 
-@app.route("/audio/<type>", methods=['GET', 'POST'], defaults={'type': 'train'})
+@app.route("/users", methods=['GET'])
+def handle_users_endpoint():
+    """
+    serve list of registered users
+    """
+    return {'users': sample_manager.get_all_usernames()}, status.HTTP_200_OK
+
+
+@app.route("/audio/<type>", methods=['POST'])
 def handling_audio_endpoint(type):
     """
     This handles generic operations that have to do with audio
     being sent/received from test files
 
     POST to send a new audio file
-    GET to get a list of registered users
     """
 
     def allowed_file(name):
@@ -62,15 +69,12 @@ def handling_audio_endpoint(type):
     if type not in ['train', 'test']:
         return ["Unexpected type '{}' requested".format(type)], status.HTTP_400_BAD_REQUEST
 
-    if request.method == 'GET':
-        return sample_manager.get_all_usernames(), status.HTTP_200_OK
-
     if request.method == 'POST':
         if 'file' not in request.files:
             return ['No file part'], status.HTTP_400_BAD_REQUEST
         if 'username' not in request.data:
             return ['No username'], status.HTTP_400_BAD_REQUEST
-        app.logger.info("new sample to {} set".format(type))
+        app.logger.info("add new sample to {} set".format(type))
         username = request.data.get('username')
         file = request.files.get('file')
 
@@ -109,7 +113,7 @@ def handle_list_samples_for_user(type, username):
     """
     if sample_manager.user_exists(username):
         app.logger.info('{} {}'.format(type, username))
-        return sample_manager.get_samples(username, type), status.HTTP_200_OK
+        return {'samples': sample_manager.get_samples(username, type)}, status.HTTP_200_OK
     else:
         return ["There is no such user '{}' in sample base".format(username)], status.HTTP_400_BAD_REQUEST
 

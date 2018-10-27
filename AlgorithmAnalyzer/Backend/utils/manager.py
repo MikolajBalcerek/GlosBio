@@ -63,7 +63,6 @@ class SampleManager:
         self._mkdir(os.path.join(user, 'test'))
 
     def get_samples(self, username, set_type='train'):
-        # TO DO (Stachu) dodać regexa do wyłapywania tylko plików .wav
         user = self.username_to_dirname(username)
         samples = []
         if set_type == 'train':
@@ -71,7 +70,8 @@ class SampleManager:
             samples.remove('test')
         else:
             samples = list(os.listdir(os.path.join(self.path, user, 'test')))
-        return samples
+        rgx = re.compile('.+\.wav$')
+        return list(filter(rgx.match, samples))
 
     def get_new_sample_path(self, username, set_type="train", filetype="wav"):
         samples = self.get_samples(username, set_type)
