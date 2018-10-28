@@ -163,7 +163,6 @@ class SampleManager:
         if self.is_allowed_file_extension(file):
             wav_path = self.get_new_sample_path(username, set_type=set_type, filetype="wav")
             file.save(wav_path)
-            print("-----save_new_sample----------", wav_path)
             print(f"#LOG {self.__class__.__name__}: .wav file saved to: " + wav_path)
         else:
             # not-wav file is temporarily saved

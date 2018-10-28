@@ -98,6 +98,11 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             self.assertEqual(my_wav.exists(), True,
                              "Missing converted .wav file in '{self.test_dirnames[1]}/test' directory")
 
+            # check for existence of JSON file
+            _json_path = Path(f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1.json")
+            self.assertEqual(_json_path.exists(), True,
+                             "Sample was not accompanied by .json file")
+
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
         r = self.client.post('/audio/train',

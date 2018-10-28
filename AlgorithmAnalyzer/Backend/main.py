@@ -75,7 +75,6 @@ def handling_audio_endpoint(type):
         file = request.files.get('file')
 
         try:
-            print("------main-----", type)
             path, recognized_speech = sample_manager.save_new_sample(username, file, type)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
