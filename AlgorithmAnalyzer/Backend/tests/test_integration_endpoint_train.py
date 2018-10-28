@@ -122,13 +122,12 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.test_dirnames = [self.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
         with open('./tests/trzynascie.webm', 'rb') as f:
             self.app.post('/audio/train',
-                                    data={"username": TEST_USERNAMES[0], "file": f})
+                          data={"username": TEST_USERNAMES[0], "file": f})
             f.close()
         with open('./tests/trzynascie.webm', 'rb') as f:
             self.app.post('/audio/test',
-                                    data={"username": TEST_USERNAMES[1], "file": f})
+                          data={"username": TEST_USERNAMES[1], "file": f})
             f.close()
-
 
     @classmethod
     def tearDownClass(self):

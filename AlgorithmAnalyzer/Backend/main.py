@@ -4,7 +4,6 @@ from flask_cors import CORS
 
 import speech_recognition as sr
 import urllib
-import os
 
 from utils import SampleManager, UsernameException
 from speech_recognition_wrapper import speech_to_text_wrapper
@@ -53,7 +52,7 @@ def handle_users_endpoint():
     return {'users': sample_manager.get_all_usernames()}, status.HTTP_200_OK
 
 
-@app.route("/audio/<type>", methods=['POST'])
+@app.route("/audio/<string:type>", methods=['POST'])
 def handling_audio_endpoint(type):
     """
     This handles generic operations that have to do with audio
@@ -103,7 +102,7 @@ def handling_audio_endpoint(type):
                 }, status.HTTP_201_CREATED
 
 
-@app.route("/audio/<type>/<username>", methods=['GET'])
+@app.route("/audio/<string:type>/<string:username>", methods=['GET'])
 def handle_list_samples_for_user(type, username):
     """
     it handles request for listing samples from train or test set
@@ -121,7 +120,8 @@ def handle_list_samples_for_user(type, username):
     else:
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-@app.route("/audio/<type>/<username>/<samplename>", methods=['GET'])
+
+@app.route("/audio/<string:type>/<string:username>/<string:samplename>", methods=['GET'])
 def handle_get_sample(type, username, samplename):
     """
     serve sample .wav as static file
@@ -147,4 +147,3 @@ def handle_get_sample(type, username, samplename):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
