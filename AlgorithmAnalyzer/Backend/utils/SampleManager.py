@@ -15,21 +15,30 @@ from speech_recognition_wrapper import speech_to_text_wrapper
 ''''''''''''''''
 example of directory structure
 
-../data/  <----- 'root' directory
-│  
-├── hugo_kolataj
-│   ├── 1.wav
-│   └── 2.wav
-├── stanislaw_august_poniatowski  <------- username
-│   ├── 1.wav
-│   ├── 2.wav
-│   ├── 3.wav  <-------- audio sample
-│   ├── 4.wav
-│   └── 5.wav
-└── stanislaw_golebiewski
+data/    <---- root directory
+├── hugo_kolataj 
+│   ├── 1.json   
+│   ├── 1.wav   <----- sample from 'train' set
+│   └── test
+│       ├── 1.json
+│       ├── 1.wav
+│       ├── 2.json
+│       ├── 2.wav    <----- sample from 'test' set
+│       ├── 3.json
+│       └── 3.wav
+└── stanislaw_golebiewski  <---- username / user directory
+    ├── 1.json
     ├── 1.wav
+    ├── 2.json
     ├── 2.wav
-    └── 3.wav
+    ├── 3.json
+    ├── 3.wav
+    └── test   <---- test set directory
+        ├── 1.json
+        ├── 1.wav
+        ├── 2.json    <---- json file associated with sample '2.wav'
+        └── 2.wav
+
 '''''''''''''''
 
 
