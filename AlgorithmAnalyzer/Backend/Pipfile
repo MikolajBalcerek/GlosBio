@@ -10,6 +10,8 @@ flask-cors = "*"
 scipy = "*"
 SpeechRecognition = "*"
 pydub = "*"
+werkzeug = "*"
+tensorflow = "==1.5"
 
 [dev-packages]
 
