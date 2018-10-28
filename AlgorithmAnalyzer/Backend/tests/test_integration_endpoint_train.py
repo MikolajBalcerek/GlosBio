@@ -2,23 +2,15 @@ from pathlib import Path
 import unittest
 import shutil
 import os
+import json
+
 
 from flask_api import status
-from flask import wrappers
 from utils import SampleManager
 from main import app
 
 SAMPLE_UPLOAD_PATH = './data'
 TEST_USERNAMES = ["Train Person", "Test Person"]
-
-
-# def tearDownModule():
-#     ''' cleanup after all tests from this module '''
-#     test_dirnames = [cls.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
-#     paths_to_be_deleted = [*test_dirnames]
-#     for _path in paths_to_be_deleted:
-#         print(f"#INFO: delete {_path} directory after test")
-#         shutil.rmtree(_path)
 
 
 class Audio_Add_Sample_Tests(unittest.TestCase):
@@ -63,6 +55,21 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             self.assertIn(r.json["recognized_speech"], ["trzynaście", 13, '13'],
                           "wrong recognized speech returned for trzynascie")
 
+            # check for existence of JSON file
+            _json_path = Path(f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json")
+            self.assertEqual(_json_path.exists(), True,
+                             "Sample was not accompanied by .json file")
+
+            # check whether JSON includes name and recognized_speech
+
+            with open(_json_path, 'r') as _json_file:
+                json_dict = json.loads(_json_file.read(), encoding='utf8')
+                self.assertIn(json_dict["recognized_speech"], ["trzynaście" , 13, '13'],
+                              "incorrect recognized_speech in JSON")
+
+                self.assertEqual(json_dict["name"], TEST_USERNAMES[0],
+                                 "incorrect name in JSON")
+
             # check whether webm was converted and saved to wav
             new_wav_expected_path = os.path.join(self.test_dirnames[0], '1.wav')
             my_wav = Path(new_wav_expected_path)
@@ -89,7 +96,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             new_wav_expected_path = os.path.join(self.test_dirnames[1], 'test', '1.wav')
             my_wav = Path(new_wav_expected_path)
             self.assertEqual(my_wav.exists(), True,
-                             "Missing converted .wav file in '{test_dirnames[1]}/test' directory")
+                             "Missing converted .wav file in '{self.test_dirnames[1]}/test' directory")
 
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
