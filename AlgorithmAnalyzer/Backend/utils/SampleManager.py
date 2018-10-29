@@ -7,30 +7,38 @@ import typing
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from scipy.io import wavfile
+from pathlib import Path
 
 from convert_audio_wrapper import convert_webm
 from speech_recognition_wrapper import speech_to_text_wrapper
 
 ''''''''''''''''
-#to jest na razie propozycja, jeśli taka struktura nie zagra to będzie trzeba zmienić
-
 example of directory structure
 
-../data/  <----- 'root' directory
-│  
-├── hugo_kolataj
-│   ├── 1.wav
-│   └── 2.wav
-├── stanislaw_august_poniatowski  <------- username
-│   ├── 1.wav
-│   ├── 2.wav
-│   ├── 3.wav  <-------- audio sample
-│   ├── 4.wav
-│   └── 5.wav
-└── stanislaw_golebiewski
+data/    <---- root directory
+├── hugo_kolataj 
+│   ├── 1.json   
+│   ├── 1.wav   <----- sample from 'train' set
+│   └── test
+│       ├── 1.json
+│       ├── 1.wav
+│       ├── 2.json
+│       ├── 2.wav    <----- sample from 'test' set
+│       ├── 3.json
+│       └── 3.wav
+└── stanislaw_golebiewski  <---- username / user directory
+    ├── 1.json
     ├── 1.wav
+    ├── 2.json
     ├── 2.wav
-    └── 3.wav
+    ├── 3.json
+    ├── 3.wav
+    └── test   <---- test set directory
+        ├── 1.json
+        ├── 1.wav
+        ├── 2.json    <---- json file associated with sample '2.wav'
+        └── 2.wav
+
 '''''''''''''''
 
 
@@ -64,31 +72,52 @@ class SampleManager:
         user = self.username_to_dirname(username)
         return self._user_directory_exists(user)
 
+    def sample_exists(self, username, type, sample):
+        return Path(os.path.join(self.get_user_dirpath(username, type), sample)).exists()
+
     def create_user(self, username):
         user = self.username_to_dirname(username)
         self._mkdir(user)
+        self._mkdir(os.path.join(user, 'test'))
 
-    def get_samples(self, username):
+    def get_samples(self, username, set_type='train'):
         user = self.username_to_dirname(username)
-        return list(os.listdir(os.path.join(self.path, user)))
+        samples = []
+        if set_type == 'train':
+            samples = list(os.listdir(os.path.join(self.path, user)))
+            samples.remove('test')
+        else:
+            samples = list(os.listdir(os.path.join(self.path, user, 'test')))
+        rgx = re.compile('.+\.wav$')
+        return list(filter(rgx.match, samples))
 
-    def get_new_sample_path(self, username, filetype='wav', no_file_type=False):
-        samples = self.get_samples(username)
+    def get_new_sample_path(self, username, set_type="train", filetype="wav", no_file_type=False):
+        samples = self.get_samples(username, set_type)
         username = self.username_to_dirname(username)
+
         if samples:
             last_sample = max(
                 int(name.split('.')[0]) for name in samples
             )
         else:
             last_sample = 0
-        if not no_file_type:
-            return os.path.join(self.path, username, str(last_sample + 1) + '.' + filetype)
-        else:
-            return os.path.join(self.path, username, str(last_sample + 1))
+        out_path = os.path.join(self.path, username)
+        if set_type == 'test':
+            out_path = os.path.join(out_path, set_type)
 
+        if not no_file_type:
+            return os.path.join(out_path, str(last_sample + 1) + '.' + filetype)
+        else:
+            return os.path.join(out_path, str(last_sample + 1))
+
+    def get_user_dirpath(self, username, type='train'):
+        if type == 'train':
+            return os.path.join(self.path, self.username_to_dirname(username))
+        else:
+            return os.path.join(self.path, type,  self.username_to_dirname(username))
 
     @staticmethod
-    def get_new_json_path(audio_path : str) -> str:
+    def get_new_json_path(audio_path: str) -> str:
         """ this gets path for a new recording's json file
          based on str audio_path
          e.g C:/aasda/a.wav -> C:/aasda/a.json"""
@@ -114,6 +143,13 @@ class SampleManager:
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
 
+    # def save_new_sample(self, username: str, file: FileStorage, type: str) -> str:
+    #     if not self.user_exists(username):
+    #         self.create_user(username)
+    #     path = self.get_new_sample_path(username, set_type=type, filetype="webm")
+    #     file.save(path)
+    #     return path
+
     @staticmethod
     def is_allowed_file_extension(file: FileStorage) -> bool:
         """
@@ -123,7 +159,7 @@ class SampleManager:
         """
         return True if file.mimetype == "audio/wav" else False
 
-    def save_new_sample(self, username: str, file: FileStorage) -> typing.Tuple[str, str]:
+    def save_new_sample(self, username: str, file: FileStorage, set_type: str) -> typing.Tuple[str, str]:
         """
         saves new sample as both .webm and wav with a JSON file
         :param username: str
@@ -134,12 +170,13 @@ class SampleManager:
             self.create_user(username)
 
         if self.is_allowed_file_extension(file):
-            wav_path = self.get_new_sample_path(username, filetype="wav")
+            wav_path = self.get_new_sample_path(username, set_type=set_type, filetype="wav")
             file.save(wav_path)
             print(f"#LOG {self.__class__.__name__}: .wav file saved to: " + wav_path)
         else:
             # not-wav file is temporarily saved
-            temp_path = self.get_new_sample_path(username, no_file_type=True)
+            temp_path = self.get_new_sample_path(username, set_type=set_type, no_file_type=True)
+            print()
             file.save(temp_path)
 
             # convert to webm
@@ -162,7 +199,7 @@ class SampleManager:
         return wav_path, recognized_speech
 
     @staticmethod
-    def create_a_new_sample_properties_json(username, data: typing.Dict[str, str], audio_path : str) -> str:
+    def create_a_new_sample_properties_json(username, data: typing.Dict[str, str], audio_path: str) -> str:
         """
         this creates a json file for the newest sample for the username given
         e.g: 5.json
@@ -180,6 +217,8 @@ class SampleManager:
             json_file.writelines(string_json)
         return json_path
 
+    def is_wav_file(self, samplename):
+        return re.match('.+\.wav$', samplename)
 
     def username_to_dirname(self, username: str):
         '''
