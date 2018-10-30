@@ -3,7 +3,7 @@ from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Activation, Dropout, Dense
 
 from utils import SampleManager
-from algorithm import Algorithm
+from algorithms.algorithm import Algorithm
 
 
 class SimpleNN(Algorithm):
@@ -26,7 +26,7 @@ class SimpleNN(Algorithm):
             metrics=['accuracy']
         )
 
-        return model
+        self.model = model
 
     def train(self, data=None):
         sm = SampleManager('data')
@@ -35,6 +35,8 @@ class SimpleNN(Algorithm):
             X, y = data
         else:
             X, y = sm.get_data(normalized_length=4096)
-        model = self.prepare_model(len(labels_dict))
-        model.fit(X, y, epochs=100, validation_split=.25, verbose=2)
-        return model
+        self.prepare_model(len(labels_dict))
+        self.model.fit(X, y, epochs=100, validation_split=.25, verbose=2)
+
+    def get_model(self):
+        return self.model
