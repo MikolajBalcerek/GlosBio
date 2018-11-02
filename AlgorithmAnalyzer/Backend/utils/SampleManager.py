@@ -220,12 +220,9 @@ class SampleManager:
             json_file.writelines(string_json)
         return json_path
 
-<<<<<<< HEAD
-=======
     def is_wav_file(self, samplename):
         return re.match('.+\.wav$', samplename)
 
->>>>>>> 8231faa6280ce546c4a2c58cd8217786801e1f62
     def username_to_dirname(self, username: str):
         '''
         Convert username, which could include spaces,
