@@ -73,7 +73,14 @@ class SampleManager:
         return self._user_directory_exists(user)
 
     def sample_exists(self, username, type, sample):
+<<<<<<< HEAD
         return Path(os.path.join(self.get_user_dirpath(username, type), sample)).exists()
+=======
+        dir = self.get_user_dirpath(username)
+        if type == 'test':
+            dir = os.path.join(dir, type)
+        return Path(os.path.join(dir, sample)).exists()
+>>>>>>> 8231faa6280ce546c4a2c58cd8217786801e1f62
 
     def create_user(self, username):
         user = self.username_to_dirname(username)
@@ -217,6 +224,12 @@ class SampleManager:
             json_file.writelines(string_json)
         return json_path
 
+<<<<<<< HEAD
+=======
+    def is_wav_file(self, samplename):
+        return re.match('.+\.wav$', samplename)
+
+>>>>>>> 8231faa6280ce546c4a2c58cd8217786801e1f62
     def username_to_dirname(self, username: str):
         '''
         Convert username, which could include spaces,

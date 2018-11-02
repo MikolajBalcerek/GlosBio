@@ -190,3 +190,16 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         request_path = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1000.wav"
         r = self.client.get(request_path)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, f"wrong status code, expected 400, got {r.status_code}")
+<<<<<<< HEAD
+=======
+
+    def test_try_to_get_existing_json_file_should_fail(self):
+        request_path = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
+        r = self.client.get(request_path)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_get_train_sample(self):
+        request_path = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.wav"
+        r = self.client.get(request_path)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, f"wrong status code, expected 200, got {r.status_code}")
+>>>>>>> 8231faa6280ce546c4a2c58cd8217786801e1f62
