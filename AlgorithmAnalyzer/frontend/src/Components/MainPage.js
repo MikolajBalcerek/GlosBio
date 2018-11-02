@@ -12,16 +12,42 @@ import Testuj1 from "./Testuj1";
 import Testuj2 from "./Testuj2";
 import Avatar from "@material-ui/core/Avatar";
 import logo from "../img/GLOSBIO.png";
+import axios from 'axios';
 
 class MainPage extends Component {
 	state = {
 		value: 0,
+		userList: []
 	};
 
 	handleChange = (event, value) => {
+		this.getUsers()
 		this.setState({ value });
 	};
-
+	componentDidMount () {
+		this.getUsers()
+	}
+	setData (array)  {
+		this.setState({
+			userList: array
+		})
+	}
+	getUsers() {
+        var self = this
+        axios
+            .get('http://localhost:5000/users')
+            .then(function(response) {
+				let userLetList = []
+                response.data.users.map(user => {
+                    userLetList.push(user)
+				})
+				self.setData(userLetList)
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
+    }
+	
 	render() {
 		const { value } = this.state;
 		return (
@@ -54,7 +80,7 @@ class MainPage extends Component {
 					</Tabs>
 				</Paper>
 				{value === 0 && <Recorder />}
-				{value === 1 && <Przeglad />}
+				{value === 1 && <Przeglad userlist={this.state.userList} />}
 				{value === 2 && <Trenuj />}
 				{value === 3 && <Testuj1 />}
 				{value === 4 && <Testuj2 />}

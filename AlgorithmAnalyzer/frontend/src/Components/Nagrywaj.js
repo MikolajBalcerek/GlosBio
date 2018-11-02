@@ -13,6 +13,11 @@ import KeyboardVoice from "@material-ui/icons/KeyboardVoice";
 import Grid from "@material-ui/core/Grid";
 import MySnackbarContent from './MySnackbarContent'
 import Typography from '@material-ui/core/Typography';
+import FormLabel from '@material-ui/core/FormLabel';
+import RadioGroup from '@material-ui/core/RadioGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Radio from '@material-ui/core/Radio';
+import FormControl from '@material-ui/core/FormControl';
 
 class Recorder extends Component {
 	constructor(props) {
@@ -26,7 +31,8 @@ class Recorder extends Component {
 			openSuccess: false,
 			openErrorNoUser: false,
 			openErrorSave: false,
-			recognizedText: ''
+			recognizedText: '',
+			type: 'test'
 		};
 		this.onPressButtonRecord = this.onPressButtonRecord.bind(this);
 		this.onPressButtonStop = this.onPressButtonStop.bind(this);
@@ -63,7 +69,7 @@ class Recorder extends Component {
 			fd.append("file", this.state.blob_audio_data.blob);
 			let self = this;
 			axios
-				.post("http://127.0.0.1:5000/audio/train", fd, {
+				.post(`http://127.0.0.1:5000/audio/${this.state.type}`, fd, {
 					headers: { "Content-Type": "multipart/form-data" },
 				})
 				.then(function(response) {
@@ -105,6 +111,9 @@ class Recorder extends Component {
 	onData(recordedBlob) {
 		// console.log("real time data", recordedBlob);
 	}
+	handleTypeChange = event => {
+		this.setState({ type: event.target.value });
+	  };
 	render() {
 		return (
 			<Paper
@@ -159,6 +168,28 @@ class Recorder extends Component {
 							}}
 						/>
 					)}
+				</Grid>
+				<Grid
+					item
+					xs={12}
+					style={{
+						display: "flex",
+						justifyContent: "center",
+						alignItems: "center",
+						paddingTop: 20,
+					}}
+				>
+					<FormControl component="fieldset">
+							<FormLabel component="legend">Wybierz typ nagrania:</FormLabel>
+							<RadioGroup
+								value={this.state.type}
+								onChange={this.handleTypeChange}
+								style={{flexDirection: 'row'}}
+							>
+								<FormControlLabel value="train" control={<Radio />} label="Trenowanie" />
+								<FormControlLabel value="test" control={<Radio />} label="Test" />
+							</RadioGroup>
+						</FormControl>
 				</Grid>
 				<Grid
 					container
@@ -223,7 +254,10 @@ class Recorder extends Component {
 						paddingTop: 40,
 					}}
 				>
-				<Typography variant="subheading" gutterBottom>
+				<Typography 
+					variant="subheading" 
+					gutterBottom
+				>
 					{this.state.recognizedText}
 				</Typography>
 				</Grid>
