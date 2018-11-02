@@ -73,7 +73,10 @@ class SampleManager:
         return self._user_directory_exists(user)
 
     def sample_exists(self, username, type, sample):
-        return Path(os.path.join(self.get_user_dirpath(username, type), sample)).exists()
+        dir = self.get_user_dirpath(username)
+        if type == 'test':
+            dir = os.path.join(dir, type)
+        return Path(os.path.join(dir, sample)).exists()
 
     def create_user(self, username):
         user = self.username_to_dirname(username)
