@@ -123,12 +123,9 @@ def handle_get_sample(type, username, samplename):
     elif not sample_manager.sample_exists(username, type, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {type} samplebase"], status.HTTP_400_BAD_REQUEST
 
-<<<<<<< HEAD
-=======
     elif not sample_manager.is_wav_file(samplename):
         return [f"Expected .wav file got '{samplename}'"], status.HTTP_400_BAD_REQUEST
 
->>>>>>> 8231faa6280ce546c4a2c58cd8217786801e1f62
     else:
         user_dir = sample_manager.get_user_dirpath(username)
         app.logger.info(f"send file '{samplename}' from '{user_dir}'")
