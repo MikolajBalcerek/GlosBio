@@ -122,7 +122,7 @@ def handle_get_file(filetype, sampletype, username, samplename):
 
     # check for proper file type
     if filetype not in list(ALLOWED_FILES_TO_GET.keys()):
-        return [f"Unexpected file type '{filetype}' requested.\nExpected one of: {ALLOWED_FILES_TO_GET}"], \
+        return [f"Unexpected file type '{filetype}' requested.\nExpected one of: {list(ALLOWED_FILES_TO_GET.keys())}"], \
                status.HTTP_400_BAD_REQUEST
 
     # check for proper sample set type
@@ -138,7 +138,7 @@ def handle_get_file(filetype, sampletype, username, samplename):
     allowed_extensions = ALLOWED_FILES_TO_GET[filetype]
     proper_extension, extension = sample_manager.file_has_proper_extension(samplename, allowed_extensions)
     if not proper_extension:
-        return [f"Accepted extensions for filetype {filetype}: {allowed_extensions}, but got '{extension}' instead"],\
+        return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
                 status.HTTP_400_BAD_REQUEST
 
     # check if file exists in sampebase
