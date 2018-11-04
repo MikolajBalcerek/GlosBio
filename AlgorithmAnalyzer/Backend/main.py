@@ -3,6 +3,7 @@ from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
 import urllib
+import os
 
 from utils import SampleManager, UsernameException
 
@@ -105,7 +106,7 @@ def handle_list_samples_for_user(type, username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
 
-@app.route("/audio/<string:type>/<string:username>/<string:samplename>", methods=['GET'])
+@app.route("/audio/<string:type>/<string:username>/<path:samplename>", methods=['GET'])
 def handle_get_sample(type, username, samplename):
     """
     serve sample .wav as static file
@@ -128,6 +129,9 @@ def handle_get_sample(type, username, samplename):
 
     else:
         user_dir = sample_manager.get_user_dirpath(username)
+        if type == 'test':
+            user_dir = os.path.join(user_dir, type)
+
         app.logger.info(f"send file '{samplename}' from '{user_dir}'")
         return send_from_directory(user_dir, samplename, as_attachment=True), status.HTTP_200_OK
 
