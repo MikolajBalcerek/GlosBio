@@ -8,6 +8,9 @@ import os
 from utils import SampleManager, UsernameException
 
 SAMPLE_UPLOAD_PATH = './data'
+ALLOWED_SAMPLE_TYPES = ['train', 'test']
+ALLOWED_FILES_TO_GET = ['audio', 'json']
+ALLOWED_FILES_TO_GET_EXTENSIONS = ['wav', 'webm', 'json']
 app = FlaskAPI(__name__)
 sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 
@@ -106,34 +109,49 @@ def handle_list_samples_for_user(type, username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
 
-@app.route("/audio/<string:type>/<string:username>/<path:samplename>", methods=['GET'])
-def handle_get_sample(type, username, samplename):
+@app.route("/<string:filetype>/<string:sampletype>/<string:username>/<string:samplename>", methods=['GET'])
+def handle_get_sample(filetype, sampletype, username, samplename):
     """
-    serve sample .wav as static file
+    serve audio sample or json file
 
-    type: sample set type 'train' or 'test'
-    username: full name, eg. 'Hugo Kołątaj' or 'Stanisław'
+    filetype: 'audio' or 'json'
+    sampletype: sample set type 'train' or 'test'
+    username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
     samplename: full name of requested sample eg. '1.wav', '150.wav'
     """
-    if type not in ['train', 'test']:
-        return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
-    elif not sample_manager.user_exists(username):
+    # check for proper file type
+    if filetype not in ALLOWED_FILES_TO_GET:
+        return [f"Unexpected file type '{filetype}' requested.\nExpected one of: {ALLOWED_FILES_TO_GET}"],
+        status.HTTP_400_BAD_REQUEST
+
+    # check for proper sample set type
+    if sampletype not in ALLOWED_SAMPLE_TYPES:
+        return [f"Unexpected sample type '{sampletype}' requested.\nExpected one of: {ALLOWED_SAMPLE_TYPES}"],
+        status.HTTP_400_BAD_REQUEST
+
+    # check if user exists in samplebase
+    if not sample_manager.user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-    elif not sample_manager.sample_exists(username, type, samplename):
+    # TO DO: dodać do SM 'have_proper_extension(name, list_of_allowed_samples)
+    # check if requested file have allowed extension
+    proper_extension = sample_manager.file_have_proper_extension(samplename, ALLOWED_FILES_TO_GET_EXTENSIONS)
+    if not proper_extension:
+        return [f"Accepted extensions: file but got '{samplename}' instead"], status.HTTP_400_BAD_REQUEST
+
+    # TO DO: przerobić na json i audio
+    # check if file exists in sampebase
+    if not sample_manager.file_exists(username, type, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {type} samplebase"], status.HTTP_400_BAD_REQUEST
 
-    elif not sample_manager.is_wav_file(samplename):
-        return [f"Expected .wav file got '{samplename}'"], status.HTTP_400_BAD_REQUEST
+    # serve file
+    user_dir = sample_manager.get_user_dirpath(username)
+    if type == 'test':
+        user_dir = os.path.join(user_dir, type)
 
-    else:
-        user_dir = sample_manager.get_user_dirpath(username)
-        if type == 'test':
-            user_dir = os.path.join(user_dir, type)
-
-        app.logger.info(f"send file '{samplename}' from '{user_dir}'")
-        return send_from_directory(user_dir, samplename, as_attachment=True), status.HTTP_200_OK
+    app.logger.info(f"send file '{samplename}' from '{user_dir}'")
+    return send_from_directory(user_dir, samplename, as_attachment=True), status.HTTP_200_OK
 
 
 if __name__ == "__main__":
