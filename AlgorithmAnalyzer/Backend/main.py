@@ -9,8 +9,8 @@ from utils import SampleManager, UsernameException
 
 SAMPLE_UPLOAD_PATH = './data'
 ALLOWED_SAMPLE_TYPES = ['train', 'test']
-ALLOWED_FILES_TO_GET = ['audio', 'json']
-ALLOWED_FILES_TO_GET_EXTENSIONS = ['wav', 'webm', 'json']
+ALLOWED_FILES_TO_GET = {'audio': ['wav', 'webm'],
+                        'json': ['json']}
 app = FlaskAPI(__name__)
 sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 
@@ -110,7 +110,7 @@ def handle_list_samples_for_user(type, username):
 
 
 @app.route("/<string:filetype>/<string:sampletype>/<string:username>/<string:samplename>", methods=['GET'])
-def handle_get_sample(filetype, sampletype, username, samplename):
+def handle_get_file(filetype, sampletype, username, samplename):
     """
     serve audio sample or json file
 
@@ -121,34 +121,35 @@ def handle_get_sample(filetype, sampletype, username, samplename):
     """
 
     # check for proper file type
-    if filetype not in ALLOWED_FILES_TO_GET:
-        return [f"Unexpected file type '{filetype}' requested.\nExpected one of: {ALLOWED_FILES_TO_GET}"],
-        status.HTTP_400_BAD_REQUEST
+    if filetype not in list(ALLOWED_FILES_TO_GET.keys()):
+        return [f"Unexpected file type '{filetype}' requested.\nExpected one of: {ALLOWED_FILES_TO_GET}"], \
+               status.HTTP_400_BAD_REQUEST
 
     # check for proper sample set type
     if sampletype not in ALLOWED_SAMPLE_TYPES:
-        return [f"Unexpected sample type '{sampletype}' requested.\nExpected one of: {ALLOWED_SAMPLE_TYPES}"],
-        status.HTTP_400_BAD_REQUEST
+        return [f"Unexpected sample type '{sampletype}' requested.\nExpected one of: {ALLOWED_SAMPLE_TYPES}"], \
+                status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
     if not sample_manager.user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-    # TO DO: dodać do SM 'have_proper_extension(name, list_of_allowed_samples)
     # check if requested file have allowed extension
-    proper_extension = sample_manager.file_have_proper_extension(samplename, ALLOWED_FILES_TO_GET_EXTENSIONS)
+    allowed_extensions = ALLOWED_FILES_TO_GET[filetype]
+    proper_extension, extension = sample_manager.file_has_proper_extension(samplename, allowed_extensions)
     if not proper_extension:
-        return [f"Accepted extensions: file but got '{samplename}' instead"], status.HTTP_400_BAD_REQUEST
+        return [f"Accepted extensions for filetype {filetype}: {allowed_extensions}, but got '{extension}' instead"],\
+                status.HTTP_400_BAD_REQUEST
 
-    # TO DO: przerobić na json i audio
     # check if file exists in sampebase
-    if not sample_manager.file_exists(username, type, samplename):
-        return [f"There is no such sample '{samplename}' in users '{username}' {type} samplebase"], status.HTTP_400_BAD_REQUEST
+    if not sample_manager.file_exists(username, sampletype, samplename):
+        return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
+                status.HTTP_400_BAD_REQUEST
 
     # serve file
     user_dir = sample_manager.get_user_dirpath(username)
-    if type == 'test':
-        user_dir = os.path.join(user_dir, type)
+    if sampletype == 'test':
+        user_dir = os.path.join(user_dir, sampletype)
 
     app.logger.info(f"send file '{samplename}' from '{user_dir}'")
     return send_from_directory(user_dir, samplename, as_attachment=True), status.HTTP_200_OK

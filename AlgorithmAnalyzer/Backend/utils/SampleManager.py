@@ -16,8 +16,8 @@ from speech_recognition_wrapper import speech_to_text_wrapper
 example of directory structure
 
 data/    <---- root directory
-├── hugo_kolataj 
-│   ├── 1.json   
+├── hugo_kolataj
+│   ├── 1.json
 │   ├── 1.wav   <----- sample from 'train' set
 │   └── test
 │       ├── 1.json
@@ -72,7 +72,7 @@ class SampleManager:
         user = self.username_to_dirname(username)
         return self._user_directory_exists(user)
 
-    def sample_exists(self, username, type, sample):
+    def file_exists(self, username, type, sample):
         dir = self.get_user_dirpath(username)
         if type == 'test':
             dir = os.path.join(dir, type)
@@ -249,3 +249,23 @@ class SampleManager:
                 'Incorrect username "{}" !'.format(temp)
             )
         return secure_filename(temp)
+
+    def file_has_proper_extension(self, filename: str, allowed_extensions: list) -> typing.Tuple[bool, str]:
+        """
+        it takes 'filename' and decide if it has extension which can be found
+        in 'allowed_extensions'
+      
+        important: extensions in 'allowed_extensions' should not start with dot, eg:
+           good: ['webm', 'cat', 'wav']
+           bad:  ['.webm', '.cat', '.wav']
+        """
+        # regular expression for files with extensions (file).(extension)
+        regex = re.match('(.+)\.(.+$)', filename)
+        if not regex:
+            return False, ""
+        else:
+            file_extension = regex.group(2)
+            if file_extension not in allowed_extensions:
+                return False, file_extension
+            else:
+                return True, file_extension
