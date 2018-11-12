@@ -12,6 +12,7 @@ SpeechRecognition = "*"
 pydub = "*"
 
 [dev-packages]
+ddt = "*"
 
 [requires]
 python_version = "3.6"
