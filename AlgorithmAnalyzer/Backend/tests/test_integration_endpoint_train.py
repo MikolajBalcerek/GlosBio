@@ -9,7 +9,13 @@ from flask_api import status
 from utils import SampleManager
 from main import app
 
-SAMPLE_UPLOAD_PATH = './data'
+try:
+    import config
+except ModuleNotFoundError:
+    print(":> Could not find config module 'config.py'")
+
+
+SAMPLE_UPLOAD_PATH = config.SAMPLE_UPLOAD_PATH
 TEST_USERNAMES = ["Train Person", "Test Person"]
 
 
