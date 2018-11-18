@@ -15,6 +15,7 @@ except ModuleNotFoundError:
     print(":> Could not find config module 'config.py'")
 
 
+
 SAMPLE_UPLOAD_PATH = config.SAMPLE_UPLOAD_PATH
 TEST_USERNAMES = ["Train Person", "Test Person"]
 
@@ -210,9 +211,9 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         r = self.client.get(request_path_3)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_3}\nwrong status code, expected 400, got {r.status_code}")
-        print(f"------ test log :>  {r.data}")
-        expected_message = f"[\"Accepted extensions for filetype 'audio': {config.ALLOWED_AUDIO_EXTENSIONS['audio']}, but got 'json' instead\"]"
-        self.assertEqual(r.data, expected_message, "expected different message")
+        
+        expected_message = [f"Accepted extensions for filetype 'audio': {config.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
+        self.assertEqual(r.json, expected_message, "expected different message")
 
     def test_get_sample(self):
         # file exists - test set
@@ -233,14 +234,24 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_3}\nwrong status code, expected 400, got {r.status_code}")
 
+        expected_message = ["There is no such sample '1000.wav' in users 'train_person' train samplebase"]
+        self.assertEqual(r.json, expected_message, "expected different message")
+        
+        
         # file doesn't exist - test set
         request_path_4 = f"/audio/test/test_person/1000.wav"
         r = self.client.get(request_path_4)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_4}\nwrong status code, expected 400, got {r.status_code}")
-
+        
+        expected_message = ["There is no such sample '1000.wav' in users 'test_person' test samplebase"]
+        self.assertEqual(r.json, expected_message, "expected different message")
+        
         # user doesn't exist
         request_path_5 = f"/audio/train/mr_nobody12345qwerty/1.wav"
         r = self.client.get(request_path_5)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_5}\nwrong status code, expected 400, got {r.status_code}")
+
+        expected_message = ["There is no such user 'mr_nobody12345qwerty' in sample base"]
+        self.assertEqual(r.json, expected_message, "expected different message")
