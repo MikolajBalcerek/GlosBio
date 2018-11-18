@@ -199,11 +199,12 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_2}\nwrong status code, expected 400, got {r.status_code}")
 
-        # file exists but wrong filetype (audio) is applied
+        # file exists but wrong filetype (audio) is appl1ied
         request_path_3 = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
         r = self.client.get(request_path_3)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_3}\nwrong status code, expected 400, got {r.status_code}")
+        print(f"------ test log :>  {r.data}")
 
     def test_get_sample(self):
         # file exists - test set
