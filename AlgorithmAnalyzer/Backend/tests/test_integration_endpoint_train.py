@@ -6,10 +6,14 @@ import json
 
 
 from flask_api import status
+
+import config
 from utils import SampleManager
 from main import app
 
-SAMPLE_UPLOAD_PATH = './data'
+
+
+SAMPLE_UPLOAD_PATH = config.SAMPLE_UPLOAD_PATH
 TEST_USERNAMES = ["Train Person", "Test Person"]
 
 
@@ -64,7 +68,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
             with open(_json_path, 'r') as _json_file:
                 json_dict = json.loads(_json_file.read(), encoding='utf8')
-                self.assertIn(json_dict["recognized_speech"], ["trzynaście" , 13, '13'],
+                self.assertIn(json_dict["recognized_speech"], ["trzynaście", 13, '13'],
                               "incorrect recognized_speech in JSON")
 
                 self.assertEqual(json_dict["name"], TEST_USERNAMES[0],
@@ -164,7 +168,7 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
             self.assertIn(username, r.json['users'],
                           f"expected user {username} in all-users list, got: {r.data}")
 
-    def test_get_train_person_samples(self):
+    def test_get_train_person_sample_list(self):
         r1 = self.client.get(f'/audio/train/{TEST_USERNAMES[0]}')
         r2 = self.client.get(f'/audio/test/{TEST_USERNAMES[0]}')
 
@@ -186,17 +190,65 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"wrong status code, expected 400, got {r.status_code}")
 
-    def test_request_sample_which_does_not_exist(self):
-        request_path = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1000.wav"
-        r = self.client.get(request_path)
-        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, f"wrong status code, expected 400, got {r.status_code}")
+    def test_get_json(self):
+        # file exists
+        request_path_1 = f"/json/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
+        r = self.client.get(request_path_1)
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path_1}\nwrong status code, expected 200, got {r.status_code}")
 
-    def test_try_to_get_existing_json_file_should_fail(self):
-        request_path = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
-        r = self.client.get(request_path)
-        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, f"wrong status code, expected 400, got {r.status_code}")
+        # file doesn't exist
+        request_path_2 = f"/json/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/2.json"
+        r = self.client.get(request_path_2)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"request: {request_path_2}\nwrong status code, expected 400, got {r.status_code}")
 
-    def test_get_train_sample(self):
-        request_path = f"/audio/test/test_person/1.wav"
-        r = self.client.get(request_path)
-        self.assertEqual(r.status_code, status.HTTP_200_OK, f"wrong status code, expected 200, got {r.status_code}")
+        # file exists but wrong filetype (audio) is applied
+        request_path_3 = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
+        r = self.client.get(request_path_3)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"request: {request_path_3}\nwrong status code, expected 400, got {r.status_code}")
+        
+        expected_message = [f"Accepted extensions for filetype 'audio': {config.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
+        self.assertEqual(r.json, expected_message, "expected different message")
+
+    def test_get_sample(self):
+        # file exists - test set
+        request_path_1 = f"/audio/test/test_person/1.wav"
+        r = self.client.get(request_path_1)
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path_1}\nwrong status code, expected 200, got {r.status_code}, message: {r.data}")
+
+        # file exists - train set
+        request_path_2 = f"/audio/train/train_person/1.wav"
+        r = self.client.get(request_path_2)
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path_2}\nwrong status code, expected 200, got {r.status_code}, message: {r.data}")
+
+        # file doesn't exist - train set
+        request_path_3 = f"/audio/train/train_person/1000.wav"
+        r = self.client.get(request_path_3)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"request: {request_path_3}\nwrong status code, expected 400, got {r.status_code}")
+
+        expected_message = ["There is no such sample '1000.wav' in users 'train_person' train samplebase"]
+        self.assertEqual(r.json, expected_message, "expected different message")
+        
+        
+        # file doesn't exist - test set
+        request_path_4 = f"/audio/test/test_person/1000.wav"
+        r = self.client.get(request_path_4)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"request: {request_path_4}\nwrong status code, expected 400, got {r.status_code}")
+        
+        expected_message = ["There is no such sample '1000.wav' in users 'test_person' test samplebase"]
+        self.assertEqual(r.json, expected_message, "expected different message")
+        
+        # user doesn't exist
+        request_path_5 = f"/audio/train/mr_nobody12345qwerty/1.wav"
+        r = self.client.get(request_path_5)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"request: {request_path_5}\nwrong status code, expected 400, got {r.status_code}")
+
+        expected_message = ["There is no such user 'mr_nobody12345qwerty' in sample base"]
+        self.assertEqual(r.json, expected_message, "expected different message")
