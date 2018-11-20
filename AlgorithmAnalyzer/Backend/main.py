@@ -6,6 +6,7 @@ import urllib
 import os
 
 from utils import SampleManager, UsernameException
+import preprocessing.filters
 
 SAMPLE_UPLOAD_PATH = './data'
 app = FlaskAPI(__name__)

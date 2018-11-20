@@ -8,6 +8,13 @@ import preprocessing.filters as filters
 
 @ddt
 class TestFilters(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        if not os.path.isdir(data_dir):
+            os.makedirs(data_dir)
+
     def setUp(self):
         self.path = os.path.dirname(__file__)
         self.sig1_sr, sig1_stereo = wavfile.read(
@@ -20,7 +27,7 @@ class TestFilters(unittest.TestCase):
         filtered = filters.moving_average_lpf(self.sig1, self.sig1_sr, cut_off)
         filtered = filtered.astype(self.sig1.dtype)
         wavfile.write(
-            os.path.join(self.path, './data/moving_avg.wav'),
+            os.path.join(self.path, 'data/moving_avg.wav'),
             self.sig1_sr, filtered
         )
 
@@ -53,7 +60,7 @@ class TestFilters(unittest.TestCase):
         )
         filtered = filtered.astype(self.sig1.dtype)
         wavfile.write(
-            os.path.join(self.path, './data/lpf_' + window_name + '.wav'),
+            os.path.join(self.path, 'data/lpf_' + window_name + '.wav'),
             self.sig1_sr, filtered
         )
 
@@ -73,7 +80,7 @@ class TestFilters(unittest.TestCase):
         )
         filtered = filtered.astype(self.sig1.dtype)
         wavfile.write(
-            os.path.join(self.path, './data/hpf_' + window_name + '.wav'),
+            os.path.join(self.path, 'data/hpf_' + window_name + '.wav'),
             self.sig1_sr, filtered
         )
 
@@ -94,7 +101,7 @@ class TestFilters(unittest.TestCase):
         )
         filtered = filtered.astype(self.sig1.dtype)
         wavfile.write(
-            os.path.join(self.path, './data/bpf_' + window_name + '.wav'),
+            os.path.join(self.path, 'data/bpf_' + window_name + '.wav'),
             self.sig1_sr, filtered
         )
 
@@ -115,6 +122,6 @@ class TestFilters(unittest.TestCase):
         )
         filtered = filtered.astype(self.sig1.dtype)
         wavfile.write(
-            os.path.join(self.path, './data/bsf_' + window_name + '.wav'),
+            os.path.join(self.path, 'data/bsf_' + window_name + '.wav'),
             self.sig1_sr, filtered
         )
