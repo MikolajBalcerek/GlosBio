@@ -6,13 +6,10 @@ import json
 
 
 from flask_api import status
+
+import config
 from utils import SampleManager
 from main import app
-
-try:
-    import config
-except ModuleNotFoundError:
-    print(":> Could not find config module 'config.py'")
 
 
 
@@ -206,7 +203,7 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_2}\nwrong status code, expected 400, got {r.status_code}")
 
-        # file exists but wrong filetype (audio) is appl1ied
+        # file exists but wrong filetype (audio) is applied
         request_path_3 = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
         r = self.client.get(request_path_3)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,

@@ -1,18 +1,13 @@
-from flask import request, current_app, send_from_directory
-from flask_api import FlaskAPI, status
-from flask_cors import CORS
-
-from utils import SampleManager, UsernameException
-
 import urllib
 import os
 import sys
 
-try:
-    import config
-except ModuleNotFoundError:
-    print(":> Could not find config module 'config.py'")
-    sys.exit(-1)
+from flask import request, current_app, send_from_directory
+from flask_api import FlaskAPI, status
+from flask_cors import CORS
+
+import config
+from utils import SampleManager, UsernameException
 
 app = FlaskAPI(__name__)
 sample_manager = SampleManager(config.SAMPLE_UPLOAD_PATH)
