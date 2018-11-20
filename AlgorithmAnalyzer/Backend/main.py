@@ -1,6 +1,5 @@
 import urllib
 import os
-import sys
 
 from flask import request, current_app, send_from_directory
 from flask_api import FlaskAPI, status
