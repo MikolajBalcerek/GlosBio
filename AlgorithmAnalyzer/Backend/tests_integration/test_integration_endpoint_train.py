@@ -9,7 +9,7 @@ from flask_api import status
 
 from Backend import config
 from Backend.main import app
-from Backend.utils.sample_manager.SampleManager import SampleManager
+from Backend.sample_manager.SampleManager import SampleManager
 
 
 
