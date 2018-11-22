@@ -21,7 +21,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        ''' setup before tests form this class '''
+        ''' setup before tests_integration form this class '''
         app.config['TESTING'] = True
         self.app = app.test_client()
         self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
@@ -41,7 +41,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
     def test_post_train_file_username_correct(self):
         """ test for happy path for send file train endpoint """
-        with open('./tests/trzynascie.webm', 'rb') as f:
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
             r = self.client.post('/audio/train',
                                  data={"username": TEST_USERNAMES[0],
                                        "file": f})
@@ -82,7 +82,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
     def test_post_test_file_username_correct(self):
         """ test for happy path for send file test endpoint """
-        with open('./tests/trzynascie.webm', 'rb') as f:
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
             r = self.client.post('/audio/test',
                                  data={"username": TEST_USERNAMES[1],
                                        "file": f})
@@ -118,7 +118,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
     def test_post_file_no_username(self):
         """ test for endpoint send without an username """
-        with open('./tests/trzynascie.webm', 'rb') as f:
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
             r = self.client.post('/audio/train',
                                  data={'file': f})
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
@@ -131,16 +131,16 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        ''' setup before tests for this class '''
+        ''' setup before tests_integration for this class '''
         app.config['TESTING'] = True
         self.app = app.test_client()
         self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
         self.test_dirnames = [self.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
-        with open('./tests/trzynascie.webm', 'rb') as f:
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
             self.app.post('/audio/train',
                           data={"username": TEST_USERNAMES[0], "file": f})
             f.close()
-        with open('./tests/trzynascie.webm', 'rb') as f:
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
             self.app.post('/audio/test',
                           data={"username": TEST_USERNAMES[1], "file": f})
             f.close()
