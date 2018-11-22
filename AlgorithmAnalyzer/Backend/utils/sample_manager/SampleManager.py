@@ -9,8 +9,8 @@ from werkzeug.utils import secure_filename
 from scipy.io import wavfile
 from pathlib import Path
 
-from ..convert_audio_wrapper import convert_webm
-from ..speech_recognition_wrapper import speech_to_text_wrapper
+from Backend.utils import convert_webm
+from Backend.utils.speech_recognition_wrapper import speech_to_text_wrapper
 
 ''''''''''''''''
 example of directory structure

@@ -6,7 +6,7 @@ from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
 from . import config
-from .utils.SampleManager import SampleManager, UsernameException
+from Backend.utils.sample_manager.SampleManager import SampleManager, UsernameException
 
 app = FlaskAPI(__name__)
 sample_manager = SampleManager(config.SAMPLE_UPLOAD_PATH)

@@ -1,7 +1,7 @@
 from contextlib import suppress
 
 import speech_recognition as sr
-from .. import secret_keys
+from Backend import secret_keys
 
 
 #this file handles speech to text
