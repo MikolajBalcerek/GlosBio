@@ -7,9 +7,9 @@ import json
 
 from flask_api import status
 
-import config
-from utils import SampleManager
-from main import app
+from .. import config
+from ..main import app
+from ..utils.SampleManager import SampleManager
 
 
 
