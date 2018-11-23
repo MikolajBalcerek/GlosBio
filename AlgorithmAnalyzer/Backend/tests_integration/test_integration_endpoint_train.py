@@ -7,9 +7,9 @@ import json
 
 from flask_api import status
 
-from Backend import config
-from Backend.main import app
-from Backend.sample_manager.SampleManager import SampleManager
+import config
+from main import app
+from sample_manager.SampleManager import SampleManager
 
 
 

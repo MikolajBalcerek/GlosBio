@@ -1,9 +1,9 @@
-import os
+﻿import os
 import sys
 import unittest
 import speech_recognition as sr
 
-from Backend.utils.speech_recognition_wrapper import speech_to_text_wrapper as wrapper
+from utils.speech_recognition_wrapper import speech_to_text_wrapper as wrapper
 
 
 class TestSpeechToText(unittest.TestCase):
