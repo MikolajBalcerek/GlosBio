@@ -10,6 +10,8 @@ flask-cors = "*"
 scipy = "*"
 SpeechRecognition = "*"
 pydub = "*"
+python-speech-features = "*"
+matplotlib = "*"
 
 [dev-packages]
 
