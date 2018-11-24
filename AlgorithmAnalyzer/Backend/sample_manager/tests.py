@@ -92,9 +92,9 @@ class TestSampleManager(unittest.TestCase):
     def test_create_json_with_content(self):
         """ test for creating a new sample properties json"""
         self.sample_manager.create_user("Mikołaj Balcerek")
-        json_Path = Path(SampleManager.create_a_new_sample_properties_json("Mikołaj Balcerek",
-                                                          {"recognized_speech": "test"},
-                                                        self.sample_manager.path+"/mikolaj_balcerek/1.wav"))
+        json_Path = Path(SampleManager.create_new_sample_properties_json("Mikołaj Balcerek",
+                                                                         {"recognized_speech": "test"},
+                                                                         self.sample_manager.path +"/mikolaj_balcerek/1.wav"))
 
         self.assertTrue(json_Path.exists(), "Example JSON file was not created")
 
