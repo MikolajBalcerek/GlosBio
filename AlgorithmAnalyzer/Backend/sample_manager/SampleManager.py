@@ -119,13 +119,8 @@ class SampleManager:
         else:
             return os.path.join(out_path, str(last_sample + 1))
 
-    def get_user_dirpath(self, username, type='train'):
-        if type == 'train':
-            return os.path.join(self.path, self.username_to_dirname(username))
-        elif type =="test":
-            return os.path.join(self.path, type, self.username_to_dirname(username))
-        else:
-            raise ValueError(f"Type must be 'train' or 'test', not f{type}")
+    def get_user_dirpath(self, username):
+        return os.path.join(self.path, self.username_to_dirname(username))
 
 
     def _get_new_extension_path(self, audio_path: str, format: str) -> str:
@@ -289,7 +284,7 @@ class SampleManager:
         # audio_path = self._get_sample_file_path(username, sample_name=sample_name,
         #                                         sample_type=set_type)
 
-        directory_path = self.get_user_dirpath(username, type=set_type)
+        directory_path = self.get_user_dirpath(username)
         file_name = f"{self._get_sample_file_name(audio_path)}_mfcc"
 
         file_path = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,

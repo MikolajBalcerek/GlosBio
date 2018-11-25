@@ -115,8 +115,8 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
             # check for existence of MFCC plot file
             _mfcc_plot_path = Path(
-                f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1.png")
-            self.assertEqual(_json_path.exists(), True,
+                f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1_mfcc.png")
+            self.assertEqual(_mfcc_plot_path.exists(), True,
                              "Sample was not accompanied by MFCC plot .png file")
 
 
