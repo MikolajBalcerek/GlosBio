@@ -119,7 +119,9 @@ class SampleManager:
         else:
             return os.path.join(out_path, str(last_sample + 1))
 
-    def get_user_dirpath(self, username):
+    def get_user_dirpath(self, username, set_type = None):
+        if set_type == "test":
+            return os.path.join(self.path, self.username_to_dirname(username), set_type)
         return os.path.join(self.path, self.username_to_dirname(username))
 
 
@@ -284,11 +286,13 @@ class SampleManager:
         # audio_path = self._get_sample_file_path(username, sample_name=sample_name,
         #                                         sample_type=set_type)
 
-        directory_path = self.get_user_dirpath(username)
+        directory_path = self.get_user_dirpath(username, set_type=set_type)
         file_name = f"{self._get_sample_file_name(audio_path)}_mfcc"
 
         file_path = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,
                                              file_name, format)
+
+        print(f"#LOG {self.__class__.__name__}: mfcc plot file saved to: " + file_path)
         return file_path
 
     def _get_sample_file_name(self, file_path: str) -> str:
