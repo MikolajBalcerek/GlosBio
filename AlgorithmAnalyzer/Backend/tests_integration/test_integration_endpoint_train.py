@@ -81,7 +81,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "File was not converted and saved as .wav")
 
             # check for mfcc .png plot file
-            new_mfcc_expected_path = os.path.join(self.test_dirnames[0], '1.png')
+            new_mfcc_expected_path = os.path.join(self.test_dirnames[0], '1_mfcc.png')
             mfcc_file = Path(new_mfcc_expected_path)
             self.assertEqual(mfcc_file.exists(), True,
                              "MFCC .png was not created")
@@ -117,7 +117,8 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             _mfcc_plot_path = Path(
                 f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1_mfcc.png")
             self.assertEqual(_mfcc_plot_path.exists(), True,
-                             "Sample was not accompanied by MFCC plot .png file")
+                             "Sample was not accompanied by MFCC plot .png file, "
+                             f"expected path {_mfcc_plot_path}")
 
 
     def test_post_file_no_file(self):
