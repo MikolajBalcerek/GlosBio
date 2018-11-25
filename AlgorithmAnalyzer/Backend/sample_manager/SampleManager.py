@@ -145,12 +145,43 @@ class SampleManager:
             new.write(sample)
 
     def get_sample(self, username, sample_number):
+        # TODO: doesn't get samples for test/train...?
         username = self.username_to_dirname(username)
         sample_path = os.path.join(
             self.path, username,
             '{}.wav'.format(sample_number)
         )
         return wavfile.read(sample_path)
+
+    def _get_sample_file_path(self, username, sample_name: str, sample_type: str) -> str:
+        #TODO: Not unit tested!
+        """
+        Returns the sample's filepath
+
+        :param username: normalized or raw user's name
+        :param sample_name: sample's name without extension, e.g. '1'
+        :param sample_type: 'train' or 'test
+        :return: str with the sample_path or None
+        """
+        # normalize username
+        username = self.username_to_dirname(username)
+
+        # handle sample_type path change
+        if sample_type == "train":
+            sample_path = os.path.join(
+                self.path, username,
+                '{}.wav'.format(sample_name)
+            )
+        else:
+            sample_path = os.path.join(
+                self.path, username, sample_type,
+                '{}.wav'.format(sample_name)
+            )
+
+        if Path(sample_path).is_file():
+            return sample_path
+        return None
+
 
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
@@ -211,6 +242,11 @@ class SampleManager:
                                                            data={"recognized_speech": recognized_speech})
         print(f"#LOG {self.__class__.__name__}: Created a JSON file: {json_path}")
 
+        # create a mfcc plot for the sample
+        self.create_new_sample_mfcc_plot(audio_path=wav_path,
+                                                   username=username,
+                                                   set_type=set_type)
+
         return wav_path, recognized_speech
 
     def create_new_sample_properties_json(self, username, data: typing.Dict[str, str], audio_path: str) -> str:
@@ -234,6 +270,7 @@ class SampleManager:
     # method to create a new mfcc plot to the given sample
     def create_new_sample_mfcc_plot(self, audio_path: str, username: str,
                                     set_type: str, format: str = "png") -> str:
+        #TODO: Not unit tested!
         """
         This creates a MFCC plot file of format file (pdf or png)
         for the audio_path file given.
@@ -241,10 +278,14 @@ class SampleManager:
 
         :param username: str normalized
         :param set_type: 'train' or 'test'
-        :param audio_path: str path to audio file to be accompanied by mfcc file
+        :param audio_path: str full path to the sample file
         :param format: pdf or png format of the plot mfcc file
         :return file_path: str path to plot file
         """
+
+        # get audio_path
+        # audio_path = self._get_sample_file_path(username, sample_name=sample_name,
+        #                                         sample_type=set_type)
 
         directory_path = self.get_user_dirpath(username, type=set_type)
         file_name = f"{self._get_sample_file_name(audio_path)}_mfcc"
@@ -261,7 +302,8 @@ class SampleManager:
         :param file_path: str path to the file
         :return: str file name without its extension
         """
-        return re.search("[\/](.*)\.$", file_path).group(1)
+        file_name = re.search(f"[\/](.*)\[A-Za-z]{0,5}$", file_path).group(1)
+        return file_name
 
     def is_wav_file(self, samplename):
         return re.match('.+\.wav$', samplename)
