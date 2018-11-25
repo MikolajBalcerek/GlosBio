@@ -106,7 +106,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             new_wav_expected_path = os.path.join(self.test_dirnames[1], 'test', '1.wav')
             my_wav = Path(new_wav_expected_path)
             self.assertEqual(my_wav.exists(), True,
-                             "Missing converted .wav file in '{self.test_dirnames[1]}/test' directory")
+                             f"Missing converted .wav file in '{self.test_dirnames[1]}/test' directory")
 
             # check for existence of JSON file
             _json_path = Path(f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1.json")

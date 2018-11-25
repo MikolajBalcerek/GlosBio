@@ -121,9 +121,11 @@ class SampleManager:
 
     def get_user_dirpath(self, username, type='train'):
         if type == 'train':
+            return os.path.join(self.path, self.username_to_dirname(username))
+        elif type =="test":
             return os.path.join(self.path, type, self.username_to_dirname(username))
         else:
-            return os.path.join(self.path, self.username_to_dirname(username))
+            raise ValueError(f"Type must be 'train' or 'test', not f{type}")
 
 
     def _get_new_extension_path(self, audio_path: str, format: str) -> str:
