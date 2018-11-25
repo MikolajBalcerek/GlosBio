@@ -58,11 +58,6 @@ def handling_audio_endpoint(type):
     POST to send a new audio file
     """
 
-    # def allowed_file(name):
-    #     """ some function to see if a name could be used as a file name"""
-    #     return '.' in name and \
-    #            name.rsplit('.', 1)[1].lower() in ALLOWED_AUDIO_EXTENSIONS
-
     if type not in ['train', 'test']:
         return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
@@ -111,11 +106,14 @@ def handle_get_file(filetype, sampletype, username, filename):
     """
     serve audio sample or json file
 
-    filetype: 'audio' or 'json'
-    sampletype: sample set type 'train' or 'test'
-    username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
-    samplename: full name of requested sample eg. '1.wav', '150.wav'
+    :param filetype: 'audio', 'json', 'plot'
+    :param sampletype: sample set type 'train' or 'test'
+    :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
+    :param samplename: full name of requested sample eg. '1.wav', '150.wav'
     """
+
+    # TODO: Verbose endpoint, you end up typing the filename twice,
+    #  JSON/test/mikolaj/1.json..
 
     # check for proper file type
     if filetype not in list(config.ALLOWED_FILES_TO_GET.keys()):
@@ -150,50 +148,6 @@ def handle_get_file(filetype, sampletype, username, filename):
 
     app.logger.info(f"send file '{filename}' from '{user_dir}'")
     return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
-
-
-@app.route("/plot/<string:sampletype>/<string:username>/<string:filename>/<string:plot_type>", methods=['GET'])
-def handle_get_plots(sampletype, username, filename, plot_type):
-    """
-    Serves plot for a specified sample
-    The plot is of a type in plot_type, e.g '"mfcc_data"
-
-    :param sampletype: sample set type 'train' or 'test'
-    :param username: full or normalized username eg. 'Hugo Kołątaj', 'hugo_kolataj'
-    :param filename: full or shorthand name of requested sample eg. '1.wav', '1'
-    :param plot_type: type of plot given, e.g ['mfcc_data']
-    """
-
-    # check for proper sample set type
-    if sampletype not in config.ALLOWED_SAMPLE_TYPES:
-        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {config.ALLOWED_SAMPLE_TYPES}"], \
-                status.HTTP_400_BAD_REQUEST
-
-    # check if user exists in samplebase
-    if not sample_manager.user_exists(username):
-        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
-
-    # check if requested file have allowed extension
-    allowed_extensions = config.ALLOWED_FILES_TO_GET[filetype]
-    proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
-    if not proper_extension:
-        return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
-                status.HTTP_400_BAD_REQUEST
-
-    # check if file exists in samplebase
-    if not sample_manager.file_exists(username, sampletype, filename):
-        return [f"There is no such sample '{filename}' in users '{username}' {sampletype} samplebase"],\
-                status.HTTP_400_BAD_REQUEST
-
-    # serve file
-    user_dir = sample_manager.get_user_dirpath(username)
-    if sampletype == 'test':
-        user_dir = os.path.join(user_dir, sampletype)
-
-    app.logger.info(f"send file '{filename}' from '{user_dir}'")
-    return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
