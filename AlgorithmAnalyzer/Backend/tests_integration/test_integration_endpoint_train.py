@@ -223,10 +223,31 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         request_path_3 = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
         r = self.client.get(request_path_3)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
-                         f"request: {request_path_3}\nwrong status code, expected 400, got {r.status_code}")
+                         f"request: {request_path_3} wrong status code, expected 400, got {r.status_code}")
         
         expected_message = [f"Accepted extensions for filetype 'audio': {config.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
         self.assertEqual(r.json, expected_message, "expected different message")
+
+    def test_get_mfcc_plot(self):
+        # mfcc plot is returned from train directory
+        request_path_1 = f"/plot/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1_mfcc.png"
+        r = self.client.get(request_path_1)
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path_1}\nwrong status code, expected 200, got {r.status_code}")
+        self.assertEqual(r.content_type, 'image/png',
+                         "Wrong content_type was returned"
+                         f"for mfcc plot, should be image/png, is {r.content_type}")
+
+
+        # mfcc plot is returned from test directory
+        request_path_1 = f"/plot/test/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/1_mfcc.png"
+        r = self.client.get(request_path_1)
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path_1} wrong status code, expected 200, got {r.status_code}")
+        self.assertEqual(r.content_type, 'image/png',
+                         "Wrong content_type was returned"
+                         f"for mfcc plot, should be image/png, is {r.content_type}")
+
 
     def test_get_sample(self):
         # file exists - test set

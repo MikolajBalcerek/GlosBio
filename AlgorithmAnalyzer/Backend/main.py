@@ -115,6 +115,11 @@ def handle_get_file(filetype, sampletype, username, filename):
     # TODO: Verbose endpoint, you end up typing the filename twice,
     #  JSON/test/mikolaj/1.json..
 
+    # TODO: later some kind of smart duplication of this endpoint would be nice
+    #  that would help with selecting a plot without having to remember that
+    #  mfcc file is saved with X_mfcc
+
+
     # check for proper file type
     if filetype not in list(config.ALLOWED_FILES_TO_GET.keys()):
         return [f"Unexpected file type '{filetype}' requested.Expected one of: {list(config.ALLOWED_FILES_TO_GET.keys())}"], \
