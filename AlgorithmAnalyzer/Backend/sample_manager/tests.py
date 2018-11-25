@@ -128,7 +128,14 @@ class TestSampleManager(unittest.TestCase):
         self.assertEqual("C:\\ad/asd.pdf", path, "Wrong replacement of extension"
                                                "in the given path")
 
+    #TODO: Add a helper function to add a new user with a file
+    # Hard to do due to add_sample not being integrated
+    # and save_sample requiring FileStorage and overall being a mess
 
+
+    #TODO: Unit tests for create_new... (json, mfcc_plot)
+    # Require the aforementioned helper function
+    # For now both are tested using the integration tests
 
 if __name__ == '__main__':
     unittest.main()

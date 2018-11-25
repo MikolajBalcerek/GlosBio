@@ -49,6 +49,11 @@ class UsernameException(Exception):
 
 
 class SampleManager:
+    # TODO: this class handles way too many things
+    #  Needs to follow underscore (_get..) convention to denote private methods
+    #  Some methods not used at all
+    #  Rewrite to use DB?
+
     def __init__(self, path):
         '''path:  string or path; path to root directory'''
 
@@ -134,6 +139,7 @@ class SampleManager:
             this method serves to save samples
             for now it's not used
         '''
+        # TODO Not used anywhere..
         new_path = self.get_new_sample_path(username)
         with open(new_path, 'wb') as new:
             new.write(sample)
@@ -149,6 +155,7 @@ class SampleManager:
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
 
+    # TODO: ???? commented out
     # def save_new_sample(self, username: str, file: FileStorage, type: str) -> str:
     #     if not self.user_exists(username):
     #         self.create_user(username)
@@ -172,6 +179,8 @@ class SampleManager:
         :param file: FileStorage
         :return: str wav_path, str recognized_speech
         """
+        # TODO: FileStorage is hard to mock in tests
+        #  Perhaps could handle both standard and FileStorage files
         if not self.user_exists(username):
             self.create_user(username)
 
