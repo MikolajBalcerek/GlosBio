@@ -11,6 +11,7 @@ from pathlib import Path
 
 from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
+from plots import mfcc_plot
 
 ''''''''''''''''
 example of directory structure
@@ -119,12 +120,14 @@ class SampleManager:
         else:
             return os.path.join(self.path, type,  self.username_to_dirname(username))
 
-    @staticmethod
-    def get_new_json_path(audio_path: str) -> str:
-        """ this gets path for a new recording's json file
-         based on str audio_path
-         e.g C:/aasda/a.wav -> C:/aasda/a.json"""
-        return audio_path.rsplit('.', 1)[0]+".json"
+
+    def _get_new_extension_path(self, audio_path: str, format: str) -> str:
+        """ this gets path for the audio's accompanying file
+        of the format extension based on str audio_path
+
+         :param format: desired format without '.', e.g. 'pdf', 'json'
+         e.g C:/aasda/a.wav -> C:/aasda/a_type.format"""
+        return audio_path.rsplit('.', 1)[0]+f".{format}"
 
     def add_sample(self, username, sample):
         '''
@@ -195,14 +198,13 @@ class SampleManager:
         print(f"#LOG {self.__class__.__name__}: Recognized words: {recognized_speech}")
 
         # save the new sample json
-        json_path = self.create_a_new_sample_properties_json(username, audio_path=wav_path,
-                                                             data={"recognized_speech": recognized_speech})
+        json_path = self.create_new_sample_properties_json(username, audio_path=wav_path,
+                                                           data={"recognized_speech": recognized_speech})
         print(f"#LOG {self.__class__.__name__}: Created a JSON file: {json_path}")
 
         return wav_path, recognized_speech
 
-    @staticmethod
-    def create_a_new_sample_properties_json(username, data: typing.Dict[str, str], audio_path: str) -> str:
+    def create_new_sample_properties_json(self, username, data: typing.Dict[str, str], audio_path: str) -> str:
         """
         this creates a json file for the newest sample for the username given
         e.g: 5.json
@@ -213,12 +215,44 @@ class SampleManager:
         :param audio_path: str path to audio
         :return: str path to json
         """
-        json_path = SampleManager.get_new_json_path(audio_path)
+        json_path = self._get_new_extension_path(audio_path, 'json')
         with open(json_path, 'w', encoding='utf8') as json_file:
             recording_properties = {"name": username, **data}
             string_json = str(json.dumps(recording_properties, ensure_ascii=False).encode('utf8'), encoding='utf8')
             json_file.writelines(string_json)
         return json_path
+
+    # method to create a new mfcc plot to the given sample
+    def create_new_sample_mfcc_plot(self, audio_path: str, username: str,
+                                    set_type: str, format: str = "png") -> str:
+        """
+        This creates a MFCC plot file of format file (pdf or png)
+        for the audio_path file given.
+        The plot is saved in the user+type dirpath.
+
+        :param username: str normalized
+        :param set_type: 'train' or 'test'
+        :param audio_path: str path to audio file to be accompanied by mfcc file
+        :param format: pdf or png format of the plot mfcc file
+        :return file_path: str path to plot file
+        """
+
+        directory_path = self.get_user_dirpath(username, type=set_type)
+        file_name = f"{self._get_sample_file_name(audio_path)}_mfcc"
+
+        file_path = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,
+                                             file_name, format)
+        return file_path
+
+    def _get_sample_file_name(self, file_path: str) -> str:
+        """
+        Gets the number of the sample provided its file
+        e.g: "c:/app/2.wav -> 2"
+
+        :param file_path: str path to the file
+        :return: str file name without its extension
+        """
+        return re.search("[\/](.*)\.$", file_path).group(1)
 
     def is_wav_file(self, samplename):
         return re.match('.+\.wav$', samplename)

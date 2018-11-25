@@ -81,18 +81,18 @@ class TestSampleManager(unittest.TestCase):
         example_path_wav = "C:/a.wav"
         example_path_webm = "/home/train/5.webm"
 
-        suggested_json_path_wav = self.sample_manager.get_new_json_path(
-            audio_path=example_path_wav)
+        suggested_json_path_wav = self.sample_manager._get_new_extension_path(
+            audio_path = example_path_wav, format="json")
         self.assertEqual(suggested_json_path_wav, "C:/a.json")
 
-        suggested_json_path_wav = self.sample_manager.get_new_json_path(
-            audio_path=example_path_webm)
+        suggested_json_path_wav = self.sample_manager._get_new_extension_path(
+            audio_path=example_path_webm, format="json")
         self.assertEqual(suggested_json_path_wav, "/home/train/5.json")
 
     def test_create_json_with_content(self):
         """ test for creating a new sample properties json"""
         self.sample_manager.create_user("Mikołaj Balcerek")
-        json_Path = Path(SampleManager.create_new_sample_properties_json("Mikołaj Balcerek",
+        json_Path = Path(self.sample_manager.create_new_sample_properties_json("Mikołaj Balcerek",
                                                                          {"recognized_speech": "test"},
                                                                          self.sample_manager.path +"/mikolaj_balcerek/1.wav"))
 
@@ -117,6 +117,17 @@ class TestSampleManager(unittest.TestCase):
         self.assertFalse(SampleManager.is_allowed_file_extension(file),
                         "file with content type audio/webm was allowed"
                         " (should fail the test to be later converted)")
+
+    def test_get_new_extension_path(self):
+        path = self.sample_manager._get_new_extension_path("C:/asda.wav", "json")
+        self.assertEqual("C:/asda.json", path, "Wrong replacement of extension"
+                                               "in the given path")
+
+        path = self.sample_manager._get_new_extension_path("C:\\ad/asd.gpoo",
+                                                           "pdf")
+        self.assertEqual("C:\\ad/asd.pdf", path, "Wrong replacement of extension"
+                                               "in the given path")
+
 
 
 if __name__ == '__main__':
