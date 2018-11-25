@@ -80,6 +80,12 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             self.assertEqual(my_wav.exists(), True,
                              "File was not converted and saved as .wav")
 
+            # check for mfcc .png plot file
+            new_mfcc_expected_path = os.path.join(self.test_dirnames[0], '1.png')
+            mfcc_file = Path(new_mfcc_expected_path)
+            self.assertEqual(mfcc_file.exists(), True,
+                             "MFCC .png was not created")
+
     def test_post_test_file_username_correct(self):
         """ test for happy path for send file test endpoint """
         with open('./tests_integration/trzynascie.webm', 'rb') as f:
@@ -107,6 +113,13 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             self.assertEqual(_json_path.exists(), True,
                              "Sample was not accompanied by .json file")
 
+            # check for existence of MFCC plot file
+            _mfcc_plot_path = Path(
+                f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1.png")
+            self.assertEqual(_json_path.exists(), True,
+                             "Sample was not accompanied by MFCC plot .png file")
+
+
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
         r = self.client.post('/audio/train',
@@ -125,6 +138,8 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "wrong status code for no username file upload")
             self.assertEqual(r.data, b'["No username"]',
                              "wrong string for lack of username")
+
+
 
 
 class Audio_Get_Sample_Tests(unittest.TestCase):
