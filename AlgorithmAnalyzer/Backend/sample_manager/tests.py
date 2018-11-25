@@ -128,6 +128,28 @@ class TestSampleManager(unittest.TestCase):
         self.assertEqual("C:\\ad/asd.pdf", path, "Wrong replacement of extension"
                                                "in the given path")
 
+    def test_get_sample_file_name(self):
+        path = self.sample_manager._get_sample_file_name("C:/asda/hellohello.wav")
+        self.assertEqual("hellohello", path, "Wrong last element of the path returned"
+                                             "(without extension returned for Windows"
+                                      "style path with '/'")
+
+        path = self.sample_manager._get_sample_file_name("C:\\ad\\asd.gpoo")
+        self.assertEqual("asd", path,  "Wrong last element of the path returned"
+                                             "(without extension returned for Windows"
+                                      "style path with '\\'")
+
+        path = self.sample_manager._get_sample_file_name("/usr/src/axe.gpoo")
+        self.assertEqual("axe", path,  "Wrong last element of the path returned"
+                                             "(without extension returned for Linux"
+                                      "style path")
+
+        path = self.sample_manager._get_sample_file_name("/usr/src/CAPSLOCKED.GPOO")
+        self.assertEqual("CAPSLOCKED", path,  "Wrong last element of the path returned"
+                                             "(without extension returned for Linux"
+                                      "style path with capitalized filename")
+
+
     #TODO: Add a helper function to add a new user with a file
     # Hard to do due to add_sample not being integrated
     # and save_sample requiring FileStorage and overall being a mess

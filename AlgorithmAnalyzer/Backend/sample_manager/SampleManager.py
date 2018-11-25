@@ -121,9 +121,9 @@ class SampleManager:
 
     def get_user_dirpath(self, username, type='train'):
         if type == 'train':
-            return os.path.join(self.path, self.username_to_dirname(username))
+            return os.path.join(self.path, type, self.username_to_dirname(username))
         else:
-            return os.path.join(self.path, type,  self.username_to_dirname(username))
+            return os.path.join(self.path, self.username_to_dirname(username))
 
 
     def _get_new_extension_path(self, audio_path: str, format: str) -> str:
@@ -302,8 +302,8 @@ class SampleManager:
         :param file_path: str path to the file
         :return: str file name without its extension
         """
-        file_name = re.search(f"[\/](.*)\[A-Za-z]{0,5}$", file_path).group(1)
-        return file_name
+        path = Path(file_path)
+        return path.stem
 
     def is_wav_file(self, samplename):
         return re.match('.+\.wav$', samplename)
