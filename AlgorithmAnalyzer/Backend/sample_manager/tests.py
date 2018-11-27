@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 from werkzeug.datastructures import FileStorage
-from .SampleManager import SampleManager, UsernameException
+from sample_manager.SampleManager import SampleManager, UsernameException
 
 
 class TestSampleManager(unittest.TestCase):
