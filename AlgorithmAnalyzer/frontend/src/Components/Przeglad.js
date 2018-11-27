@@ -13,7 +13,9 @@ import FormLabel from '@material-ui/core/FormLabel';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Radio from '@material-ui/core/Radio';
-import AudioPlayer from "react-h5-audio-player";
+import AudioSpectrum from "react-audio-spectrum"
+import MySnackbarContent from './MySnackbarContent'
+
 class Przeglad extends Component { 
     constructor(props) {
         super(props);
@@ -24,7 +26,9 @@ class Przeglad extends Component {
             userSounds: [],
             type: 'train',
             sound: '',
-            url: ''
+            url: '',
+            openUploadSuccess: false,
+            openUploadError: false
         }
     }
 
@@ -50,6 +54,13 @@ class Przeglad extends Component {
 		})
     }
 
+    SnackbarHandleClose = (event, reason) => {
+		if (reason === 'clickaway') {
+			return;
+		  }
+		this.setState({ openUploadSuccess: false, openUploadError: false });
+      };
+      
     handleTypeChange = event => {
         let self = this
         this.setState({ type: event.target.value });
@@ -84,75 +95,115 @@ class Przeglad extends Component {
                 console.log(response)
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 self.setState({
-                    url: url
+                    url: url,
+                    openUploadSuccess: true
                 })
             })
             .catch(function(error) {
+                self.setState({
+                    openUploadError: true
+                })
                 console.log(error);
 			})
     }
 
     render(){
         return(
-            <Paper style={{paddingLeft: 200, paddingRight: 200, paddingTop: 30, paddingBottom: 30, margin: 20}}>   
-                <Grid item xs={12} style={{display: 'flex',  justifyContent:'center', alignItems:'center'}}> 
-                <FormControl style={{ minWidth: 200, paddingRight: 10 }}>
-                    <InputLabel >Wybierz użytkownika</InputLabel>
-                    <Select
-                        value={this.state.user}
-                        onChange={this.handleChangeUser}
-                        inputProps={{
-                        name: 'user',
+            <Paper style={{ margin: 20,backgroundColor: 'rgba(0, 0, 0, .6)'}}>   
+                <div
+				    style={{display: 'flex', flexDirection: 'row'}}
+			        >
+                    <div 
+                        style={{
+                            backgroundColor: 'rgba(0, 0, 0, .8)',
+                            width: '100%',
+                            margin: 20,
+                            borderRadius: 5,
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: 15,
+                            border: '3px solid rgba(120, 0, 0, .6)',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                         }}
                     >
-                    <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                {this.props.userlist && this.props.userlist.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
+                    <Grid item xs={12} style={{display: 'flex',  justifyContent:'space-around', alignItems:'center', width: '100%'}}> 
+                    <FormControl style={{ minWidth: 200, paddingRight: 10 }}>
+                        <InputLabel >Wybierz użytkownika</InputLabel>
+                        <Select
+                            value={this.state.user}
+                            onChange={this.handleChangeUser}
+                            inputProps={{
+                            name: 'user',
+                            }}
+                        >
+                        <MenuItem value="">
+                        <em>None</em>
+                    </MenuItem>
+                    {this.props.userlist && this.props.userlist.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
 
-                </Select>
-              </FormControl>
-              <FormControl style={{ minWidth: 200, paddingRight: 10 }}>
-                    <InputLabel >Wybierz próbkę</InputLabel>
-                    <Select
-                        value={this.state.sound}
-                        onChange={this.handleChangeSound}
-                        inputProps={{
-                        name: 'sound'
-                        }}
-                    >
-                    <MenuItem value=""/>
-                    {this.state.userSounds && this.state.userSounds.map((sound, id) => <MenuItem key={id} value={id}>{sound}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl component="fieldset">
-				<FormLabel component="legend">Wybierz typ nagrania:</FormLabel>
-							<RadioGroup
-								value={this.state.type}
-								onChange={this.handleTypeChange}
-								style={{flexDirection: 'row'}}
-							>
-								<FormControlLabel value="train" control={<Radio />} label="Trenowanie" />
-								<FormControlLabel value="test" control={<Radio />} label="Test" />
-							</RadioGroup>
-						</FormControl>
-              </Grid>
-              <Grid item xs={12} style={{display: 'flex',  justifyContent:'center', alignItems:'center', marginTop: 30 }}> 
-                <Button onClick={()=>this.getSound()} color='primary' variant="contained">Załaduj próbkę</Button>
-              </Grid>
-              <Grid item xs={12} style={{display: 'flex',  justifyContent:'center', alignItems:'center', marginTop: 30 }}> 
-              <Typography variant="headline" gutterBottom>
-                    Analiza próbki
-              </Typography>
-              </Grid>
-              <Grid item xs={12} style={{display: 'flex',  justifyContent:'center', alignItems:'center' }}> 
-              <Paper style={{paddingLeft: 200, paddingRight: 200, paddingTop: 30, paddingBottom: 30, margin: 20, width: 500}}>      
-                <AudioPlayer
-                    autoPlay={false}
-                    src={this.state.url}
-                />
-              </Paper>
-              </Grid>
+                    </Select>
+                </FormControl>
+                <FormControl component="fieldset">
+                    <FormLabel component="legend">Wybierz typ nagrania:</FormLabel>
+                                <RadioGroup
+                                    value={this.state.type}
+                                    onChange={this.handleTypeChange}
+                                    style={{flexDirection: 'row'}}
+                                >
+                                    <FormControlLabel value="train" control={<Radio />} label="Trenowanie" />
+                                    <FormControlLabel value="test" control={<Radio />} label="Test" />
+                                </RadioGroup>
+                            </FormControl>
+                <FormControl style={{ minWidth: 200, paddingRight: 10 }}>
+                        <InputLabel >Wybierz próbkę</InputLabel>
+                        <Select
+                            value={this.state.sound}
+                            onChange={this.handleChangeSound}
+                            inputProps={{
+                            name: 'sound'
+                            }}
+                        >
+                        <MenuItem value=""/>
+                        {this.state.userSounds && this.state.userSounds.map((sound, id) => <MenuItem key={id} value={id}>{sound}</MenuItem>)}
+                    </Select>
+                </FormControl>
+                            <Button onClick={()=>this.getSound()} color='primary' variant="contained">Załaduj próbkę</Button>
+                </Grid>
+                <Grid item xs={12} style={{display: 'flex',  justifyContent:'space-around', alignItems:'center', width: '100%', marginTop: 30, minHeight: 200 }}> 
+                <Typography variant="headline" gutterBottom>
+                        Analiza próbki
+                </Typography>     
+                <audio id="audio-element"
+                            src={this.state.url}
+                            controls
+                            >
+                        </audio>
+                        <AudioSpectrum
+                            id="audio-canvas"
+                            height={200}
+                            width={300}
+                            audioId={'audio-element'}
+                            capColor={'red'}
+                            capHeight={2}
+                            meterWidth={2}
+                            meterCount={512}
+                            meterColor={[
+                                {stop: 0, color: '#f00'},
+                                {stop: 0.5, color: '#0CD7FD'},
+                                {stop: 1, color: 'red'}
+                            ]}
+                            gap={4}
+                            />
+                </Grid>
+                </div>
+              </div>
+              <MySnackbarContent 
+                    openUploadSuccess={this.state.openUploadSuccess}
+                    openUploadError={this.state.openUploadError}
+					SnackbarHandleClose={()=>this.SnackbarHandleClose}
+				/>
             </Paper>
         )
     }

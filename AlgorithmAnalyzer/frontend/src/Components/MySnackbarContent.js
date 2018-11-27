@@ -87,6 +87,8 @@ MySnackbarContent.propTypes = {
   className: PropTypes.string,
   message: PropTypes.node,
   onClose: PropTypes.func,
+  openUploadSuccess: PropTypes.bool,
+  openUploadError: PropTypes.bool,
   variant: PropTypes.oneOf(['success', 'warning', 'error', 'info']).isRequired,
 };
 
@@ -140,6 +142,21 @@ class CustomizedSnackbars extends React.Component {
             vertical: 'bottom',
             horizontal: 'left',
           }}
+          open={this.props.openUploadSuccess}
+          autoHideDuration={2000}
+          onClose={this.props.SnackbarHandleClose()}
+        >
+          <MySnackbarContentWrapper
+            onClose={this.props.SnackbarHandleClose()}
+            variant="success"
+            message="Plik wczytano poprawnie!"
+          />
+        </Snackbar>
+        <Snackbar
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
           open={this.props.openErrorNoAudio}
           autoHideDuration={2000}
           onClose={this.props.SnackbarHandleClose()}
@@ -149,6 +166,22 @@ class CustomizedSnackbars extends React.Component {
           variant="error"
           className={classes.margin}
           message="Nie można zapisać pliku, nie został nagrany"
+        />
+        </Snackbar>
+        <Snackbar
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          open={this.props.openUploadError}
+          autoHideDuration={2000}
+          onClose={this.props.SnackbarHandleClose()}
+        >
+         <MySnackbarContentWrapper
+          onClose={this.props.SnackbarHandleClose()}
+          variant="error"
+          className={classes.margin}
+          message="Nie można wczytać pliku"
         />
         </Snackbar>
         <Snackbar

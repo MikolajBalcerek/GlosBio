@@ -1,0 +1,66 @@
+import React, { Component } from 'react'
+import logo from "../img/logo.png";
+import logo2 from "../img/logo2.png";
+import Button from '@material-ui/core/Button';
+export default class MiddleBar extends Component {
+    state = {
+        isLogo: false
+    }
+    setLogo(){
+        console.log('lol', this.state.isLogo)
+        this.setState({
+            isLogo: !this.state.isLogo
+        })
+    }
+    render(){
+        const styles ={
+            button: {
+                fontSize: '40px',
+                color: '#fff',
+                textShadow: '0 0 5px #fff, 0 0 10px #fff, 0 0 20px #3333ff, 0 0 30px #3333ff, 0 0 40px #3333ff, 0 0 55px #3333ff, 0 0 75px #3333ff',
+                border: 0
+            },
+            buttonHidden: {
+                fontSize: '40px',
+                color: '#fff',
+                textShadow: '0 0 5px #fff, 0 0 10px #fff, 0 0 20px #000, 0 0 30px #000, 0 0 40px #000, 0 0 55px #000, 0 0 75px #000',
+                border: 0
+            }
+        }
+        return(
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-around'}}>
+                {this.isLogo ? <img  
+                    onMouseEnter={() => this.setLogo()} 
+                    src={logo} 
+                    style={{width: 150, height: 150}}
+                /> : 
+                <img  
+                    onMouseLeave={() => this.setLogo()}
+                    src={logo2} 
+                    style={{width: 150, height: 150}}
+                />}
+                <Button 
+                    variant="outlined" 
+                    style={this.props.value === 1 ? styles.button : styles.buttonHidden } 
+                    onClick={this.props.handleChange1} 
+                >
+                    Nagrywaj
+                </Button>
+                <Button 
+                    variant="outlined" 
+                    style={this.props.value === 2 ? styles.button : styles.buttonHidden}
+                    onClick={this.props.handleChange2} 
+                >
+                    Przegląd
+                </Button>
+                <Button 
+                    variant="outlined" 
+                    style={this.props.value === 3 ? styles.button : styles.buttonHidden} 
+                    onClick={this.props.handleChange3}
+                    >
+                    Trenuj
+                </Button>
+            </div>
+        )
+    }
+}
