@@ -1,12 +1,13 @@
 
-from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.models import Sequential, save_model, load_model
 from tensorflow.python.keras.layers import Activation, Dropout, Dense
 
-from utils import SampleManager
-from algorithms.algorithm import Algorithm
+from utils import DataManager
 
 
-class SimpleNN(Algorithm):
+class SimpleNN:
+    MODEL_PATH = "./algorithms/models/simplenn.h5"
+
     def __init__(self):
         self.model = None
 
@@ -28,8 +29,10 @@ class SimpleNN(Algorithm):
 
         self.model = model
 
-    def train(self, data=None):
-        sm = SampleManager('data')
+    def train(self, use_old_model=False, data=None):
+        sm = DataManager('data')
+        if use_old_model:
+            self.load_model()
         samples, labels_dict = sm.get_samples_info()
         if data:
             X, y = data
@@ -40,3 +43,9 @@ class SimpleNN(Algorithm):
 
     def get_model(self):
         return self.model
+
+    def save_model(self):
+        save_model(self.model, self.MODEL_PATH)
+
+    def load_model(self):
+        self.model = load_model(self.MODEL_PATH)
