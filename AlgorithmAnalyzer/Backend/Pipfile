@@ -8,6 +8,7 @@ flask = "*"
 flask-api = "*"
 flask-cors = "*"
 scipy = "*"
+pymongo = "*"
 SpeechRecognition = "*"
 pydub = "*"
 
