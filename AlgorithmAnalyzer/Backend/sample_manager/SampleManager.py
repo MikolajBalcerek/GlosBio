@@ -8,9 +8,11 @@ import pprint
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
+from mimetypes import guess_type
+
 # from scipy.io import wavfile
 # from pathlib import Path
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 import gridfs
 import datetime
 
@@ -38,40 +40,37 @@ class SampleManager:
         :param db_name: database name
         '''
 
+        self.db_client = MongoClient(db_url)
+        self.db_database = self.db_client[db_name]
+        self.db_collection = self.db_database.samples
+        self.db_file_storage = gridfs.GridFS(self.db_database)
         try:
-            self.db_client = MongoClient(db_url)
-            self.db_database = self.db_client[db_name]
-            self.db_collection = self.db_database.samples
-            self.db_file_storage = gridfs.GridFS(self.db_database)
+            print(f"#INFO: testing db connection: '{db_url}'...(Timeout:{self.db_client.tim})")
+            self.db_client.server_info()
+        except errors.ServerSelectionTimeoutError:
+            raise Exception("Could not connect to MongoDB database...")
+
+    def get_all_usernames(self) -> list:
+        '''
+        get list of all usernames in samplebase
+        '''
+        out = []
+        try:
+            usernames = self.db_collection.find({}, ["name"])
+            for user in usernames:
+                out.append(user['name'])
         except Exception:
             raise
-
-    # def _mkdir(self, name):
-    #     if self._user_directory_exists(name):
-    #         return
-    #     os.makedirs(os.path.join(self.path, name))
-
-    def get_all_usernames(self):
-        # TO DO: reimplement
-        pass
-        # d = []
-        # for (dirpath, dirnames, filenames) in os.walk(self.path):
-        #     d.extend(dirnames)
-        #     break
-        # return d
-
-    # def _user_directory_exists(self, dirname):
-    #     return os.path.isdir(os.path.join(self.path, dirname))
+        return out
 
     def user_exists(self, username: str) -> bool:
         '''
         check if user already exists in samplebase
         '''
-       
         norm_name = self._username_to_dirname(username)
         return True if self.db_collection.find_one({"name-normalized": norm_name}) else False
 
-    def sample_exists(self, username, type, sample):
+    def sample_exists(self, username, type, samplename):
         # TO DO: reimplement
         pass
         # dir = self.get_user_dirpath(username)
@@ -84,14 +83,15 @@ class SampleManager:
         create new user in samplebase
         '''
         new_saple = self._get_sample_class_document_template(username)
-        self.db_collection.insert_one(new_saple).inserted_id
-        # user = self.username_to_dirname(username)
-        # self._mkdir(user)
-        # self._mkdir(os.path.join(user, 'test'))
+        id = self.db_collection.insert_one(new_saple).inserted_id
+        return id
 
-    def get_user_sample_list(self, username, set_type='train'):
-        # TO DO: reimplement
-        pass
+    def get_user_sample_list(self, username: str, set_type: str) -> list:
+        '''
+        '''
+        id = self._get_user_mongo_id(username)
+        doc = self.db_collection.find_one({'_id': id}, ["samples.{set_type}.filename"])
+        print(doc)
         # user = self.username_to_dirname(username)
         # samples = []
         # if set_type == 'train':
@@ -134,27 +134,24 @@ class SampleManager:
     #      e.g C:/aasda/a.wav -> C:/aasda/a.json"""
     #     return audio_path.rsplit('.', 1)[0]+".json"
 
-    def add_sample(self, username, type, sample):
-        pass
-        # '''
-        #     this method serves to save samples
-        #     for now it's not used
-        # '''
-        # new_path = self.get_new_sample_path(username)
-        # with open(new_path, 'wb') as new:
-        #     new.write(sample)
+    # def add_sample(self, username, type, sample):
+    #     pass
+    #     # '''
+    #     #     this method serves to save samples
+    #     #     for now it's not used
+    #     # '''
+    #     # new_path = self.get_new_sample_path(username)
+    #     # with open(new_path, 'wb') as new:
+    #     #     new.write(sample)
 
-    def get_sample(self, username, type, sample):
-        pass
+    # def get_sample_file(self, username, type, sample):
+        # pass
         # username = self.username_to_dirname(username)
         # sample_path = os.path.join(
         #     self.path, username,
         #     '{}.wav'.format(sample_number)
         # )
         # return wavfile.read(sample_path)
-
-    def _invalid_username(self, username):
-        return not re.match('^\w+$', username)
 
     # def save_new_sample(self, username: str, file: FileStorage, type: str) -> str:
     #     if not self.user_exists(username):
@@ -173,24 +170,32 @@ class SampleManager:
     #     return True if file.mimetype == "audio/wav" else False
 
     def save_new_sample(self, username: str, type: str, file: FileStorage) -> str:
-        """
-        """
+        '''
+
+        '''
 
         print(f"{self.user_exists(username)} - exists?")
         if not self.user_exists(username):
             self.create_user(username)
-            
+ 
         try:
-            print("get ids")
-            file_id = self.db_file_storage.put(file.stream.read())
+            file_id = self._save_file_to_db(fileObj=file)
             user_id = self._get_user_mongo_id(username)
-            print(file_id, user_id)
+            self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{type}': file_id}})
         except Exception:
-            print("Unexpected error:", sys.exc_info()[0])
             raise
 
-        print(self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{type}': file_id}}).raw_result)
         return ""
+
+    def get_samplefile(self, username: str, type: str, filename: str) -> FileStorage:
+        '''
+
+        '''
+        id = self.db_collection.find_one({'_id': self._get_user_mongo_id(username)}, ["samples.train"])["samples"]["train"][0]
+        out = self.db_file_storage.get(id)
+        print(out.read())
+        out_2 = FileStorage(stream=out.read(), filename="1.wav", content_type="audio/wav")
+        return out_2
         
         # if not self.user_exists(username):
         #     self.create_user(username)
@@ -245,8 +250,13 @@ class SampleManager:
 
     # def is_wav_file(self, samplename):
     #     return re.match('.+\.wav$', samplename)
-
-    def _username_to_dirname(self, username: str):
+    def _invalid_username(self, username: str) -> bool:
+        '''
+        check if given username is valid
+        '''
+        return not re.match('^\w+$', username)
+    
+    def _username_to_dirname(self, username: str) -> str:
         '''
         Convert username, which could include spaces,
         big letters and diacritical marks, to valid directory name
@@ -272,8 +282,8 @@ class SampleManager:
                 'Incorrect username "{}" !'.format(temp)
             )
         return secure_filename(temp)
-
-    def _get_sample_class_document_template(self, username: str ="No Name"):
+    
+    def _get_sample_class_document_template(self, username: str ="No Name") -> dict:
         '''
         get single sample class document template, needed when there is
         need for 'fresh' document templete, eg. creating new user
@@ -285,6 +295,12 @@ class SampleManager:
                 "tags": []
                 }
 
+    def _get_sample_file_document_template(self, filename, id) -> dict:
+        '''
+        get single file document template
+        '''
+        return {"filename": filename, "id": id}
+
     def _get_user_mongo_id(self, username: str):
         '''
         needed when we want to refere to db document via mongo _id
@@ -292,6 +308,38 @@ class SampleManager:
         '''
         doc = self.db_collection.find_one({"name-normalized": self._username_to_dirname(username)})
         return doc['_id'] if doc else None
+
+    def _save_file_to_db(self, filename: str = 'test.wav', fileObj=None, content_type: str = None):
+        '''
+        save file-like object, eg. FileStorage, to database
+        '''
+        if content_type is None:
+            content_type, _ = guess_type(filename)
+
+        storage = self.db_file_storage
+        id = storage.put(fileObj, filename=filename, content_type=content_type)
+        return id
+
+    def _get_file_from_db(self, id):
+        '''
+        get file-like object, eg. FileStorage, from database
+        '''
+        storage = self.db_file_storage
+        try:
+            fileObj = storage.get(id)
+        except Exception:
+            raise
+        return fileObj
+
+    def _get_next_filename(self, username: str, set_type: str) -> str:
+        '''
+        get next valid name for new file
+
+        :param username:str - eg. 'Stanisław Gołębiewski'
+        :param set_type:str - 'test' or 'train'
+        '''
+        pass
+
 
     # def file_has_proper_extension(self, filename: str, allowed_extensions: list) -> typing.Tuple[bool, str]:
     #     """
