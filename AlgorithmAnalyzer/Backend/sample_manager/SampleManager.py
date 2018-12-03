@@ -45,7 +45,7 @@ class SampleManager:
         self.db_collection = self.db_database.samples
         self.db_file_storage = gridfs.GridFS(self.db_database)
         try:
-            print(f"#INFO: testing db connection: '{db_url}'...(Timeout:{self.db_client.tim})")
+            print(f" * #INFO: testing db connection: '{db_url}'...")
             self.db_client.server_info()
         except errors.ServerSelectionTimeoutError:
             raise Exception("Could not connect to MongoDB database...")
@@ -88,44 +88,19 @@ class SampleManager:
 
     def get_user_sample_list(self, username: str, set_type: str) -> list:
         '''
+        get list of files from particular user
+        :param username: str
+        :param set_type: str - 'train' or 'test'
         '''
         id = self._get_user_mongo_id(username)
-        doc = self.db_collection.find_one({'_id': id}, ["samples.{set_type}.filename"])
-        print(doc)
-        # user = self.username_to_dirname(username)
-        # samples = []
-        # if set_type == 'train':
-        #     samples = list(os.listdir(os.path.join(self.path, user)))
-        #     samples.remove('test')
-        # else:
-        #     samples = list(os.listdir(os.path.join(self.path, user, 'test')))
-        # rgx = re.compile('.+\.wav$')
-        # return list(filter(rgx.match, samples))
-
-    # def get_new_sample_path(self, username, set_type="train", filetype="wav", no_file_type=False):
-    #     samples = self.get_samples(username, set_type)
-    #     username = self.username_to_dirname(username)
-
-    #     if samples:
-    #         last_sample = max(
-    #             int(name.split('.')[0]) for name in samples
-    #         )
-    #     else:
-    #         last_sample = 0
-    #     out_path = os.path.join(self.path, username)
-    #     if set_type == 'test':
-    #         out_path = os.path.join(out_path, set_type)
-
-    #     if not no_file_type:
-    #         return os.path.join(out_path, str(last_sample + 1) + '.' + filetype)
-    #     else:
-    #         return os.path.join(out_path, str(last_sample + 1))
-
-    # def get_user_dirpath(self, username, type='train'):
-    #     if type == 'train':
-    #         return os.path.join(self.path, self.username_to_dirname(username))
-    #     else:
-    #         return os.path.join(self.path, type,  self.username_to_dirname(username))
+        doc = self.db_collection.find_one({'_id': id}, {f"samples.{set_type}.filename": 1, '_id': 0})
+        print(doc['samples'])
+        if not doc['samples']:
+            return []
+        sample_names = []
+        for sample in doc['samples'][set_type]:
+            sample_names.append(sample['filename'])
+        return sample_names
 
     # @staticmethod
     # def get_new_json_path(audio_path: str) -> str:
@@ -133,16 +108,6 @@ class SampleManager:
     #      based on str audio_path
     #      e.g C:/aasda/a.wav -> C:/aasda/a.json"""
     #     return audio_path.rsplit('.', 1)[0]+".json"
-
-    # def add_sample(self, username, type, sample):
-    #     pass
-    #     # '''
-    #     #     this method serves to save samples
-    #     #     for now it's not used
-    #     # '''
-    #     # new_path = self.get_new_sample_path(username)
-    #     # with open(new_path, 'wb') as new:
-    #     #     new.write(sample)
 
     # def get_sample_file(self, username, type, sample):
         # pass
@@ -153,13 +118,6 @@ class SampleManager:
         # )
         # return wavfile.read(sample_path)
 
-    # def save_new_sample(self, username: str, file: FileStorage, type: str) -> str:
-    #     if not self.user_exists(username):
-    #         self.create_user(username)
-    #     path = self.get_new_sample_path(username, set_type=type, filetype="webm")
-    #     file.save(path)
-    #     return path
-
     # @staticmethod
     # def is_allowed_file_extension(file: FileStorage) -> bool:
     #     """
@@ -169,25 +127,28 @@ class SampleManager:
     #     """
     #     return True if file.mimetype == "audio/wav" else False
 
-    def save_new_sample(self, username: str, type: str, file: FileStorage) -> str:
+    def save_new_sample(self, username: str, set_type: str, file: FileStorage) -> str:
         '''
 
         '''
 
-        print(f"{self.user_exists(username)} - exists?")
         if not self.user_exists(username):
             self.create_user(username)
- 
+
         try:
             file_id = self._save_file_to_db(fileObj=file)
             user_id = self._get_user_mongo_id(username)
-            self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{type}': file_id}})
+
+            filename = self._get_next_filename(username, set_type)
+            new_file_doc = self._get_sample_file_document_template(filename, file_id)
+
+            self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
         except Exception:
             raise
 
         return ""
 
-    def get_samplefile(self, username: str, type: str, filename: str) -> FileStorage:
+    def get_samplefile(self, username: str, type: str, filename: str):
         '''
 
         '''
@@ -334,11 +295,19 @@ class SampleManager:
     def _get_next_filename(self, username: str, set_type: str) -> str:
         '''
         get next valid name for new file
+        eg. if user has files '1.wav', '2.wav' in samplebase it will return '3.wav'
 
         :param username:str - eg. 'Stanisław Gołębiewski'
         :param set_type:str - 'test' or 'train'
         '''
-        pass
+        last_file = max(self.get_user_sample_list(username, set_type))
+        if not last_file:
+            return '1.wav'
+        regex = re.match('(.+)\.(.+$)', last_file)
+        if not regex or not regex.group(1).isdigit():
+            raise ValueError(f"Invalid filename retrived from database: {last_file}, should be: '<number>.wav'")
+        next_number = int(regex.group(1)) + 1
+        return f"{next_number}.wav"
 
 
     # def file_has_proper_extension(self, filename: str, allowed_extensions: list) -> typing.Tuple[bool, str]:

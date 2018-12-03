@@ -41,12 +41,13 @@ def landing_documentation_page():
         return list_routes()
 
 
-# @app.route("/users", methods=['GET'])
-# def handle_users_endpoint():
-#     """
-#     serve list of registered users
-#     """
-#     return {'users': sample_manager.get_all_usernames()}, status.HTTP_200_OK
+@app.route("/users", methods=['GET'])
+def handle_users_endpoint():
+    """
+    serve list of registered users
+    """
+    usernames = sample_manager.get_all_usernames()
+    return {'users': usernames}, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])
@@ -72,6 +73,8 @@ def handling_audio_endpoint(type):
     username = request.data.get('username')
     file = request.files.get('file')
 
+    print(file)
+
     try:
         recognized_speech = sample_manager.save_new_sample(username, type, file)
     except UsernameException:
@@ -84,69 +87,71 @@ def handling_audio_endpoint(type):
     }, status.HTTP_201_CREATED
 
 
-# @app.route("/audio/<string:type>/<string:username>", methods=['GET'])
-# def handle_list_samples_for_user(type, username):
-#     """
-#     it handles request for listing samples from train or test set
-#     for particular user
+@app.route("/audio/<string:type>/<string:username>", methods=['GET'])
+def handle_list_samples_for_user(type, username):
+    """
+    it handles request for listing samples from train or test set
+    for particular user
 
-#     type: sample set type (train or test)
-#     username: full name, eg. Hugo Kołątaj or Stanisław
-#     """
-#     if type not in ['train', 'test']:
-#         return ["Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
+    type: sample set type (train or test)
+    username: full name, eg. Hugo Kołątaj or Stanisław
+    """
+    if type not in ['train', 'test']:
+        return ["Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
-#     if sample_manager.user_exists(username):
-#         app.logger.info(f'{type} {username}')
-#         return {'samples': sample_manager.get_samples(username, type)}, status.HTTP_200_OK
-#     else:
-#         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+    if sample_manager.user_exists(username):
+        return {'samples': sample_manager.get_user_sample_list(username, type)}, status.HTTP_200_OK
+    else:
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
 
-# @app.route("/<string:filetype>/<string:sampletype>/<string:username>/<string:filename>", methods=['GET'])
-# def handle_get_file(filetype, sampletype, username, filename):
-#     """
-#     serve audio sample or json file
+@app.route("/audio/<string:sampletype>/<string:username>/<string:samplename>", methods=['GET'])
+def handle_get_file(sampletype, username, samplename):
+    """
+    serve audio sample or json file
 
-#     filetype: 'audio' or 'json'
-#     sampletype: sample set type 'train' or 'test'
-#     username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
-#     samplename: full name of requested sample eg. '1.wav', '150.wav'
-#     """
+    sampletype: sample set type 'train' or 'test'
+    username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
+    samplename: full name of requested sample eg. '1', '150'
+    """
 
-#     # check for proper file type
-#     if filetype not in list(config.ALLOWED_FILES_TO_GET.keys()):
-#         return [f"Unexpected file type '{filetype}' requested.Expected one of: {list(config.ALLOWED_FILES_TO_GET.keys())}"], \
-#                status.HTTP_400_BAD_REQUEST
+    # check for proper file type
+    # if filetype not in list(config.ALLOWED_FILES_TO_GET.keys()):
+    #     return [f"Unexpected file type '{filetype}' requested.Expected one of: {list(config.ALLOWED_FILES_TO_GET.keys())}"], \
+    #            status.HTTP_400_BAD_REQUEST
 
-#     # check for proper sample set type
-#     if sampletype not in config.ALLOWED_SAMPLE_TYPES:
-#         return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {config.ALLOWED_SAMPLE_TYPES}"], \
-#                 status.HTTP_400_BAD_REQUEST
+    # check for proper sample set type
+    # if sampletype not in config.ALLOWED_SAMPLE_TYPES:
+    #     return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {config.ALLOWED_SAMPLE_TYPES}"], \
+    #             status.HTTP_400_BAD_REQUEST
 
-#     # check if user exists in samplebase
-#     if not sample_manager.user_exists(username):
-#         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+    # # check if user exists in samplebase
+    # if not sample_manager.user_exists(username):
+    #     return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-#     # check if requested file have allowed extension
-#     allowed_extensions = config.ALLOWED_FILES_TO_GET[filetype]
-#     proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
-#     if not proper_extension:
-#         return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
-#                 status.HTTP_400_BAD_REQUEST
+    # # check if requested file have allowed extension
+    # allowed_extensions = config.ALLOWED_FILES_TO_GET[filetype]
+    # proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
+    # if not proper_extension:
+    #     return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
+    #             status.HTTP_400_BAD_REQUEST
 
-#     # check if file exists in samplebase
-#     if not sample_manager.file_exists(username, sampletype, filename):
-#         return [f"There is no such sample '{filename}' in users '{username}' {sampletype} samplebase"],\
-#                 status.HTTP_400_BAD_REQUEST
+    # check if file exists in samplebase
+    # if not sample_manager.file_exists(username, sampletype, filename):
+    #     return [f"There is no such sample '{filename}' in users '{username}' {sampletype} samplebase"],\
+    #             status.HTTP_400_BAD_REQUEST
 
-#     # serve file
-#     user_dir = sample_manager.get_user_dirpath(username)
-#     if sampletype == 'test':
-#         user_dir = os.path.join(user_dir, sampletype)
+    # serve file
+    # user_dir = sample_manager.get_user_dirpath(username)
+    # if sampletype == 'test':
+    #     user_dir = os.path.join(user_dir, sampletype)
 
-#     app.logger.info(f"send file '{filename}' from '{user_dir}'")
-#     return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
+    app.logger.info(f"send file '{samplename}' from database")
+    file = sample_manager.get_samplefile(username, sampletype, samplename)
+    file.save("./1.wav")
+    print(file)
+    # return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
+    return []
 
 
 if __name__ == "__main__":
