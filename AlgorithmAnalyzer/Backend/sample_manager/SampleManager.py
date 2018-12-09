@@ -35,10 +35,11 @@ example of single MongoDB document representing single 'user'
 
 
 class SampleManager:
-    def __init__(self, db_url: str, db_name: str):
+    def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
         '''
-        :param db_url: url to MongioDB database, it can contain port eg: "localhost:27017"
-        :param db_name: database name
+        :param db_url: str - url to MongioDB database, it can contain port eg: "localhost:27017"
+        :param db_name: str - database name
+        :param testing: bool - used to suppress log messages
         '''
         # setup MongoDB database connetion
         self.db_client = MongoClient(db_url)
@@ -46,10 +47,13 @@ class SampleManager:
         self.db_collection = self.db_database.samples
         self.db_file_storage = gridfs.GridFS(self.db_database)
         try:
-            print(f" * #INFO: testing db connection: '{db_url}'...")
+            if show_logs:
+                print(f" * #INFO: testing db connection: '{db_url}'...")
             self.db_client.server_info()
         except errors.ServerSelectionTimeoutError:
             raise Exception("Could not connect to MongoDB database...")
+
+        self.show_logs = show_logs
 
     def get_all_usernames(self) -> list:
         '''
@@ -99,7 +103,6 @@ class SampleManager:
         '''
         id = self._get_user_mongo_id(username)
         doc = self.db_collection.find_one({'_id': id}, {f"samples.{set_type}.filename": 1, '_id': 0})
-        print(doc['samples'])
         if not doc['samples']:
             return []
         sample_names = []
@@ -120,10 +123,9 @@ class SampleManager:
             self.create_user(username)
 
         try:
-            file_id = self._save_file_to_db(fileObj=file)
-            user_id = self._get_user_mongo_id(username)
-
             filename = self._get_next_filename(username, set_type)
+            user_id = self._get_user_mongo_id(username)
+            file_id = self._save_file_to_db(filename, fileObj=file)
             new_file_doc = self._get_sample_file_document_template(filename, file_id)
 
             self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
@@ -154,7 +156,6 @@ class SampleManager:
         if not temp_doc:
             return None
         id = list(temp_doc)[0]['id']
-        print(id)
         fileObj = self.db_file_storage.get(id)
         return fileObj
 
@@ -249,9 +250,10 @@ class SampleManager:
         :param username:str - eg. 'Stanisław Gołębiewski'
         :param set_type:str - 'test' or 'train'
         '''
-        last_file = max(self.get_user_sample_list(username, set_type))
-        if not last_file:
+        all_files = self.get_user_sample_list(username, set_type)
+        if not all_files:
             return '1.wav'
+        last_file = max(self.get_user_sample_list(username, set_type))
         regex = re.match('(.+)\.(.+$)', last_file)
         if not regex or not regex.group(1).isdigit():
             raise ValueError(f"Invalid filename retrived from database: {last_file}, should be: '<number>.wav'")

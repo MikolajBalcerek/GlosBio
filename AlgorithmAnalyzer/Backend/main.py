@@ -58,22 +58,18 @@ def handling_audio_endpoint(type):
 
     POST to send a new audio file
     """
-    
     if type not in ['train', 'test']:
         return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
-    
+
     if 'file' not in request.files:
         return ['No file part'], status.HTTP_400_BAD_REQUEST
-    
+
     if 'username' not in request.data:
         return ['No username'], status.HTTP_400_BAD_REQUEST
 
     app.logger.info(f"add new sample to {type} set")
-    
     username = request.data.get('username')
     file = request.files.get('file')
-
-    print(file)
 
     try:
         recognized_speech = sample_manager.save_new_sample(username, type, file)
@@ -84,7 +80,7 @@ def handling_audio_endpoint(type):
             "text": f"Uploaded file for {username}, "
                     f"recognized: {recognized_speech}",
             "recognized_speech": str(recognized_speech)
-    }, status.HTTP_201_CREATED
+            }, status.HTTP_201_CREATED
 
 
 @app.route("/audio/<string:type>/<string:username>", methods=['GET'])
@@ -140,8 +136,13 @@ def handle_get_file(sampletype, username, samplename):
 
     app.logger.info(f"send file '{samplename}' from database")
     return send_file(BytesIO(file.read()), mimetype=file.content_type)
-    
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+if __name__ == "main":
+    # to set proper database name during tests
+    sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}",
+                                   f"{config.DATABASE_NAME}_test",
+                                   show_logs=False)

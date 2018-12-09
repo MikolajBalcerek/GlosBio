@@ -6,12 +6,13 @@ from sample_manager.SampleManager import SampleManager, UsernameException
 
 import config
 
+
 class TestSampleManager(unittest.TestCase):
 
     def setUp(self):
         self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
         self.db_name = f"{config.DATABASE_NAME}_test"
-        self.sample_manager = SampleManager(self.db_url, self.db_name)
+        self.sample_manager = SampleManager(self.db_url, self.db_name, show_logs=False)
 
     def tearDown(self):
         client = MongoClient(self.db_url)
@@ -26,7 +27,7 @@ class TestSampleManager(unittest.TestCase):
         
         self.assertEqual(out_simple, 'abcd_efgh',
                          f"Wrong name normalization: '{username_simple}' --> '{out_simple}'")
-        self.assertEqual(out_complex, 'aabc_cdgl_sciao',
+        self.assertEqual(out_complex, 'aabc_cdel_sciao',
                          f"Wrong name normalization: '{username_complex}' --> '{out_complex}'")
 
     # def test_username_to_dirname_invalid_username(self):
