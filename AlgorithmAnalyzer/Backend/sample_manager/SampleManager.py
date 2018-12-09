@@ -1,26 +1,16 @@
-# import os
-# import sys
 import re
 import unicodedata
-# import json
-# import typing
-# import pprint
+import gridfs
+import datetime
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from mimetypes import guess_type
-# from werkzeug.wsgi import wrap_file
-
-# from scipy.io import wavfile
-# from pathlib import Path
 from pymongo import MongoClient, errors
 from bson.objectid import ObjectId
-import gridfs
-import datetime
 
 # from utils import convert_webm
 # from utils.speech_recognition_wrapper import speech_to_text_wrapper
-
 
 ''''''''''''''''
 example of single MongoDB document representing single 'user'
