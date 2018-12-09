@@ -16,101 +16,101 @@ from sample_manager.SampleManager import SampleManager
 TEST_USERNAMES = ["Train Person", "Test Person"]
 
 
-# class Audio_Add_Sample_Tests(unittest.TestCase):
+class Audio_Add_Sample_Tests(unittest.TestCase):
 
-#     @classmethod
-#     def setUpClass(self):
-#         ''' setup before tests_integration form this class '''
-#         app.config['TESTING'] = True
-#         self.app = app.test_client()
+    @classmethod
+    def setUpClass(self):
+        ''' setup before tests_integration form this class '''
+        app.config['TESTING'] = True
+        self.app = app.test_client()
 
-#         self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
-#         self.db_name = f"{config.DATABASE_NAME}_test"
-#         self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
+        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
+        self.db_name = f"{config.DATABASE_NAME}_test"
+        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
 
-#     def tearDown(self):
-#         ''' cleanup after every test '''
-#         client = MongoClient(self.db_url)
-#         client.drop_database(self.db_name)
+    def tearDown(self):
+        ''' cleanup after every test '''
+        client = MongoClient(self.db_url)
+        client.drop_database(self.db_name)
 
-#     @property
-#     def client(self):
-#         """ this is a getter for client """
-#         return self.app
+    @property
+    def client(self):
+        """ this is a getter for client """
+        return self.app
 
-#     def test_post_train_file_username_correct(self):
-#         """ test for happy path for send file train endpoint """
-#         with open('./tests_integration/trzynascie.webm', 'rb') as f:
-#             r = self.client.post('/audio/train',
-#                                  data={"username": TEST_USERNAMES[0],
-#                                        "file": f})
-#             # r type wrappers.Response
+    def test_post_train_file_username_correct(self):
+        """ test for happy path for send file train endpoint """
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+            r = self.client.post('/audio/train',
+                                 data={"username": TEST_USERNAMES[0],
+                                       "file": f})
+            # r type wrappers.Response
 
-#             # status code test
-#             self.assertEqual(r.status_code, status.HTTP_201_CREATED,
-#                              "wrong status code for file upload")
+            # status code test
+            self.assertEqual(r.status_code, status.HTTP_201_CREATED,
+                             "wrong status code for file upload")
 
-#             # checking whether a person's username was process correctly
-#             self.assertEqual(r.json["username"], TEST_USERNAMES[0],
-#                              "wrong username returned for correct upload")
+            # checking whether a person's username was process correctly
+            self.assertEqual(r.json["username"], TEST_USERNAMES[0],
+                             "wrong username returned for correct upload")
 
-#             # check for recognized_speech
-#             # self.assertIn(r.json["recognized_speech"], ["trzynaście", 13, '13'],
-#             #               "wrong recognized speech returned for trzynascie")
+            # check for recognized_speech
+            # self.assertIn(r.json["recognized_speech"], ["trzynaście", 13, '13'],
+            #               "wrong recognized speech returned for trzynascie")
 
-#             # check for existence of new user in db
-#             _username = r.json["username"]
-#             self.assertEqual(self.sm.user_exists(_username), True,
-#                              "User wasn't create")
+            # check for existence of new user in db
+            _username = r.json["username"]
+            self.assertEqual(self.sm.user_exists(_username), True,
+                             "User wasn't create")
 
-#             # check if sample exists in database in proper sample set
-#             self.assertEqual(self.sm.sample_exists(_username, "train", "1.wav"), True,
-#                              "Could not find sample in database")
+            # check if sample exists in database in proper sample set
+            self.assertEqual(self.sm.sample_exists(_username, "train", "1.wav"), True,
+                             "Could not find sample in database")
 
 
-#     def test_post_test_file_username_correct(self):
-#         """ test for happy path for send file test endpoint """
-#         with open('./tests_integration/trzynascie.webm', 'rb') as f:
-#             r = self.client.post('/audio/test',
-#                                  data={"username": TEST_USERNAMES[1],
-#                                        "file": f})
-#             # r type wrappers.Response
+    def test_post_test_file_username_correct(self):
+        """ test for happy path for send file test endpoint """
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+            r = self.client.post('/audio/test',
+                                 data={"username": TEST_USERNAMES[1],
+                                       "file": f})
+            # r type wrappers.Response
 
-#             # status code test
-#             self.assertEqual(r.status_code, status.HTTP_201_CREATED,
-#                              "wrong status code for file upload")
+            # status code test
+            self.assertEqual(r.status_code, status.HTTP_201_CREATED,
+                             "wrong status code for file upload")
 
-#             # checking whether a person's username was process correctly
-#             self.assertEqual(r.json["username"], TEST_USERNAMES[1],
-#                              "wrong username returned for correct upload")
+            # checking whether a person's username was process correctly
+            self.assertEqual(r.json["username"], TEST_USERNAMES[1],
+                             "wrong username returned for correct upload")
 
-#             # check for existence of new user in db
-#             _username = r.json["username"]
-#             self.assertEqual(self.sm.user_exists(_username), True,
-#                              "User wasn't create")
+            # check for existence of new user in db
+            _username = r.json["username"]
+            self.assertEqual(self.sm.user_exists(_username), True,
+                             "User wasn't create")
 
-#             # check if sample exists in database in proper sample set
-#             self.assertEqual(self.sm.sample_exists(_username, "test", "1.wav"), True,
-#                              "Could not find sample in database")
+            # check if sample exists in database in proper sample set
+            self.assertEqual(self.sm.sample_exists(_username, "test", "1.wav"), True,
+                             "Could not find sample in database")
 
-#     def test_post_file_no_file(self):
-#         """ test for endpoint send without a file """
-#         r = self.client.post('/audio/train',
-#                              data={"username": 'testPerson'})
-#         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
-#                          "wrong status code for lack of file upload")
-#         self.assertEqual(r.data, b'["No file part"]',
-#                          "wrong string for lack of file upload")
+    def test_post_file_no_file(self):
+        """ test for endpoint send without a file """
+        r = self.client.post('/audio/train',
+                             data={"username": 'testPerson'})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code for lack of file upload")
+        self.assertEqual(r.data, b'["No file part"]',
+                         "wrong string for lack of file upload")
 
-#     def test_post_file_no_username(self):
-#         """ test for endpoint send without an username """
-#         with open('./tests_integration/trzynascie.webm', 'rb') as f:
-#             r = self.client.post('/audio/train',
-#                                  data={'file': f})
-#             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
-#                              "wrong status code for no username file upload")
-#             self.assertEqual(r.data, b'["No username"]',
-#                              "wrong string for lack of username")
+    def test_post_file_no_username(self):
+        """ test for endpoint send without an username """
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+            r = self.client.post('/audio/train',
+                                 data={'file': f})
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                             "wrong status code for no username file upload")
+            self.assertEqual(r.data, b'["No username"]',
+                             "wrong string for lack of username")
 
 
 class Audio_Get_Sample_Tests(unittest.TestCase):
