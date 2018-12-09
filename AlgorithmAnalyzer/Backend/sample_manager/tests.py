@@ -1,14 +1,10 @@
-import json
 import unittest
-import shutil
-from pathlib import Path
 
 from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
 from sample_manager.SampleManager import SampleManager, UsernameException
 
 import config
-
 
 class TestSampleManager(unittest.TestCase):
 
@@ -20,13 +16,18 @@ class TestSampleManager(unittest.TestCase):
     def tearDown(self):
         client = MongoClient(self.db_url)
         client.drop_database(self.db_name)
-        
-        # shutil.rmtree('./test', ignore_errors=True)
 
-    # def test_username_to_dirname_should_pass(self):
-    #     username = 'Abcd Efgh'
-    #     dirname = self.sample_manager.username_to_dirname(username)
-    #     self.assertEqual(dirname, 'abcd_efgh')
+    def test_get_normalized_username(self):
+        username_simple = 'Abcd Efgh'
+        username_complex = "Aąbc ĆdęŁ Ściąö"
+
+        out_simple = self.sample_manager._get_normalized_username(username_simple)
+        out_complex = self.sample_manager._get_normalized_username(username_complex)
+        
+        self.assertEqual(out_simple, 'abcd_efgh',
+                         f"Wrong name normalization: '{username_simple}' --> '{out_simple}'")
+        self.assertEqual(out_complex, 'aabc_cdgl_sciao',
+                         f"Wrong name normalization: '{username_complex}' --> '{out_complex}'")
 
     # def test_username_to_dirname_invalid_username(self):
     #     username = 'a ?'
