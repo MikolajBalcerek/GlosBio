@@ -1,15 +1,15 @@
-import os
-import sys
+# import os
+# import sys
 import re
 import unicodedata
-import json
-import typing
-import pprint
+# import json
+# import typing
+# import pprint
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from mimetypes import guess_type
-from werkzeug.wsgi import wrap_file
+# from werkzeug.wsgi import wrap_file
 
 # from scipy.io import wavfile
 # from pathlib import Path
@@ -18,42 +18,29 @@ from bson.objectid import ObjectId
 import gridfs
 import datetime
 
-from utils import convert_webm
-from utils.speech_recognition_wrapper import speech_to_text_wrapper
+# from utils import convert_webm
+# from utils.speech_recognition_wrapper import speech_to_text_wrapper
 
 
 ''''''''''''''''
-example of single MongoDB document representing single sample class
+example of single MongoDB document representing single 'user'
 
 {
-	"_id" : ObjectId("5c05b2a837aeab2bca848c74"),
-	"name" : "Test Test",
-	"name-normalized" : "test_test",
-	"created" : ISODate("2018-12-03T22:48:08.449Z"),
-	"samples" : {
-		"train" : [
-			{
-				"filename" : "1.wav",
-				"id" : ObjectId("5c05b2a837aeab2bca848c75")
-			},
-			{
-				"filename" : "2.wav",
-				"id" : ObjectId("5c05b7ae37aeab2f3e779659")
-			},
-			{
-				"filename" : "3.wav",
-				"id" : ObjectId("5c05c17c37aeab3cf2e5cb76")
-			},
-			{
-				"filename" : "4.wav",
-				"id" : ObjectId("5c05c19837aeab3cf2e5cb78")
-			}
-		],
-		"test" : [ ]
-	},
-	"tags" : [ ]
+    "_id" : ObjectId("5c05b2a837aeab2bca848c74"),      // mongo document id
+    "name" : "Test Test",                              // base username, set during new user creation
+    "name-normalized" : "test_test",                   // normalized name, unique for every user
+    "created" : ISODate("2018-12-03T22:48:08.449Z"),   // creation timestamp
+    "samples" : {                                      // here store samples
+        "train" : [
+            { "filename" : "1.wav", "id" : ObjectId("5c05b2a837aeab2bca848c75") },  //single sample document
+            { "filename" : "2.wav", "id" : ObjectId("5c05b7ae37aeab2f3e779659") }
+                  ]
+        "test" : [
+            { "filename" : "1.wav", "id" : ObjectId("5c05c17c37aeab3cf2e5cb76") },
+                 ]
+    },
+    "tags" : {"gender": "male", "age": "20-29"}        // all user-specific tags
 }
-
 '''''''''''''''
 
 
@@ -215,7 +202,7 @@ class SampleManager:
                 'Incorrect username "{}" !'.format(temp)
             )
         return secure_filename(temp)
-    
+
     def _get_sample_class_document_template(self, username: str ="No Name") -> dict:
         '''
         get single sample class document template, needed when there is
@@ -228,13 +215,13 @@ class SampleManager:
                 "tags": []
                 }
 
-    def _get_sample_file_document_template(self, filename, id: DocObjectId) -> dict:
+    def _get_sample_file_document_template(self, filename, id: ObjectId) -> dict:
         '''
         get single file document template
         '''
         return {"filename": filename, "id": id}
 
-    def _get_user_mongo_id(self, username: str) -> DocObjectId:
+    def _get_user_mongo_id(self, username: str) -> ObjectId:
         '''
         needed when we want to refere to db document via mongo _id
         and have username
@@ -253,9 +240,9 @@ class SampleManager:
         id = storage.put(fileObj, filename=filename, content_type=content_type)
         return id
 
-    def _get_file_from_db(self, id: DocObjectId):
+    def _get_file_from_db(self, id: ObjectId):
         '''
-        get file-like object, eg. FileStorage, from database
+        get file-like object from database
         '''
         storage = self.db_file_storage
         try:
