@@ -13,6 +13,9 @@ sample_manager = SampleManager(config.SAMPLE_UPLOAD_PATH)
 
 CORS(app)
 
+# TODO: Would be nice to reword endpoints to follow username -> type instead of
+#  type -> username for consistency to how currently SampleManager stores them
+
 
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
@@ -102,6 +105,55 @@ def handle_list_samples_for_user(type, username):
 
 
 @app.route("/<string:filetype>/<string:sampletype>/<string:username>/<string:filename>", methods=['GET'])
+def handle_get_file(filetype, sampletype, username, filename):
+    """
+    serve audio sample or json file
+
+    :param filetype: 'audio', 'json'
+    :param sampletype: sample set type 'train' or 'test'
+    :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
+    :param samplename: full name of requested sample eg. '1.wav', '150.wav'
+    """
+
+    # TODO: Verbose endpoint, you end up typing the filename twice,
+    #  JSON/test/mikolaj/1.json..
+
+    # check for proper file type
+    if filetype not in list(config.ALLOWED_FILES_TO_GET.keys()):
+        return [f"Unexpected file type '{filetype}' requested.Expected one of: {list(config.ALLOWED_FILES_TO_GET.keys())}"], \
+               status.HTTP_400_BAD_REQUEST
+
+    # check for proper sample set type
+    if sampletype not in config.ALLOWED_SAMPLE_TYPES:
+        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {config.ALLOWED_SAMPLE_TYPES}"], \
+                status.HTTP_400_BAD_REQUEST
+
+    # check if user exists in samplebase
+    if not sample_manager.user_exists(username):
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+
+    # check if requested file have allowed extension
+    allowed_extensions = config.ALLOWED_FILES_TO_GET[filetype]
+    proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
+    if not proper_extension:
+        return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
+                status.HTTP_400_BAD_REQUEST
+
+    # check if file exists in samplebase
+    if not sample_manager.file_exists(username, sampletype, filename):
+        return [f"There is no such sample '{filename}' in users '{username}' {sampletype} samplebase"],\
+                status.HTTP_400_BAD_REQUEST
+
+    # serve file
+    user_dir = sample_manager.get_user_dirpath(username)
+    if sampletype == 'test':
+        user_dir = os.path.join(user_dir, sampletype)
+
+    app.logger.info(f"send file '{filename}' from '{user_dir}'")
+    return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
+
+
+@app.route("/plot/<string:sampletype>/<string:username>/<string:filename>", methods=['POST', 'PUT'])
 def handle_get_file(filetype, sampletype, username, filename):
     """
     serve audio sample or json file

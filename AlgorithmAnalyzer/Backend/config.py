@@ -6,5 +6,7 @@ ALLOWED_SAMPLE_TYPES = ['train', 'test']
 
 # available filetypes and corresponding allowed extensions
 ALLOWED_FILES_TO_GET = {'audio': ['wav', 'webm'],
-                        'json': ['json'],
-                        'plot': ['pdf', 'png']}
+                        'json': ['json']}
+
+# allowed plots' file extensions
+ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
