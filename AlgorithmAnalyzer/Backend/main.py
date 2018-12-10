@@ -1,11 +1,12 @@
 import urllib
 import os
+import json
 
 from flask import request, current_app, send_from_directory
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
-import config
+from config import *
 from sample_manager.SampleManager import SampleManager, UsernameException
 
 app = FlaskAPI(__name__)
@@ -153,23 +154,49 @@ def handle_get_file(filetype, sampletype, username, filename):
     return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
 
 
-@app.route("/plot/<string:sampletype>/<string:username>/<string:filename>", methods=['POST', 'PUT'])
-def handle_get_file(filetype, sampletype, username, filename):
+@app.route("/plot/<string:sampletype>/<string:username>/<string:samplename>",
+           methods=['POST'])
+def handle_plot_endpoint(sampletype, username, samplename):
     """
-    serve audio sample or json file
+    Create/update and return the requested plot
+    Available methods: POST
+    The request should send a JSON that contains:
+    {
+        type: "mfcc",
+        file_extension: "png" or "pdf"
+    }
 
-    :param filetype: 'audio', 'json', 'plot'
     :param sampletype: sample set type 'train' or 'test'
     :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
-    :param samplename: full name of requested sample eg. '1.wav', '150.wav'
+    :param samplename: full name of the sample to create plot from, e.g. 1.wav
     """
+    # TODO: Perhaps handle both '1.wav' and '1' when new SampleManager is
+    #  available
+    # TODO: later some kind of smart duplication of this endpoint's steps
+    #  alongside with handle_get_file could be done - already tasked
 
-    # TODO: Verbose endpoint, you end up typing the filename twice,
-    #  JSON/test/mikolaj/1.json..
+    ALLOWED_PLOT_TYPE = ['mfcc']
 
-    # TODO: later some kind of smart duplication of this endpoint would be nice
-    #  that would help with selecting a plot without having to remember that
-    #  mfcc file is saved with X_mfcc
+    # get the request's JSON or return a 400 if an invalid one/none was passed
+    if request.get_json(force=True, cache=True, silent=True) is None:
+        return ["No or invalid JSON was passed", status.HTTP_400_BAD_REQUEST]
+
+    sent_json_dict = json.loads(request.get_json())
+
+    if sent_json_dict['type'] not in ALLOWED_PLOT_TYPE:
+        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPE}",
+            status.HTTP_400_BAD_REQUEST]
+
+    if sent_json_dict['file_extension'] not in ALLOWED_PLOT_FILE_EXTENSIONS:
+        return ["Plot requested cannot be returned with that file extension,"
+                f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}",
+            status.HTTP_400_BAD_REQUEST]
+
+
+
+
+
+
 
 
     # check for proper file type
