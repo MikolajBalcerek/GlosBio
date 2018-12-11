@@ -266,31 +266,56 @@ class SampleManager:
             json_file.writelines(string_json)
         return json_path
 
-    # method to create a new mfcc plot to the given sample
-    def create_new_sample_mfcc_plot(self, audio_path: str, username: str,
-                                    set_type: str, format: str = "png") -> str:
+    def create_plot_for_sample(self, plot_type: str, set_type: str,
+                               username: str, sample_name: str,
+                               file_extension: str = "png", **parameters):
+        """
+        Master method that creates a plot of given plot_type (e.g. "mfcc")
+        for a given set_type (train, test), username and specific sample
+        file_extension can be specified (png or pdf)
+
+        :param plot_type: str type of plot, e.g. "mfcc"
+        :param set_type: set of users' sample, test or train
+        :param username: str normalized username of the user
+        :param sample_name: str name of the sample, e.g. "1.wav"
+        :param file_extension: pdf or png file extension of the plot file
+        :param parameters: extra plot type specific parameters, pass as keyworded
+        e.g. alfa=10, beta=20
+        :return file_path: str path to plot file
+        """
+        wav_path = self.get_new_sample_path(username, set_type=set_type,
+                                            filetype="wav")
+        directory_path = self.get_user_dirpath(username, set_type=set_type)
+
+        # TODO: if a new sample manager rolls out, will need to check whether a
+        #  file already exists to not remake it pointlessly in a new way
+
+        if plot_type == "mfcc":
+            self._create_plot_mfcc_for_sample(audio_path=wav_path,
+                                              directory_path=directory_path,
+                                              file_extension=file_extension)
+        else:
+            return None
+
+
+
+    def _create_plot_mfcc_for_sample(self, audio_path: str, directory_path: str,
+                                     file_extension: str = "png") -> str:
         #TODO: Not unit tested!
         """
-        This creates a MFCC plot file of format file (pdf or png)
+        This creates a MFCC plot file of file_extension file (pdf or png)
         for the audio_path file given.
         The plot is saved in the user+type dirpath.
 
-        :param username: str normalized
-        :param set_type: 'train' or 'test'
         :param audio_path: str full path to the sample file
-        :param format: pdf or png format of the plot mfcc file
+        :param directory_path: str full path to the sample's directory,
+        e.g username/ or username/set_type
+        :param file_extension: pdf or png file extension of the plot mfcc file
         :return file_path: str path to plot file
         """
-
-        # get audio_path
-        # audio_path = self._get_sample_file_path(username, sample_name=sample_name,
-        #                                         sample_type=set_type)
-
-        directory_path = self.get_user_dirpath(username, set_type=set_type)
         file_name = f"{self._get_sample_file_name(audio_path)}_mfcc"
-
         file_path = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,
-                                             file_name, format)
+                                                         file_name, file_extension)
 
         print(f"#LOG {self.__class__.__name__}: mfcc plot file saved to: " + file_path)
         return file_path

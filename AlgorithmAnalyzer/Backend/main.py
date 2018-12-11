@@ -172,10 +172,11 @@ def handle_plot_endpoint(sampletype, username, samplename):
     """
     # TODO: Perhaps handle both '1.wav' and '1' when new SampleManager is
     #  available
+
     # TODO: later some kind of smart duplication of this endpoint's steps
     #  alongside with handle_get_file could be done - already tasked
 
-    ALLOWED_PLOT_TYPE = ['mfcc']
+    ALLOWED_SAMPLE_PLOT_TYPE = ['mfcc']
 
     # get the request's JSON or return a 400 if an invalid one/none was passed
     if request.get_json(force=True, cache=True, silent=True) is None:
@@ -183,14 +184,18 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     sent_json_dict = json.loads(request.get_json())
 
-    if sent_json_dict['type'] not in ALLOWED_PLOT_TYPE:
-        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPE}",
+    if sent_json_dict['type'] not in ALLOWED_SAMPLE_PLOT_TYPE:
+        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_SAMPLE_PLOT_TYPE}",
             status.HTTP_400_BAD_REQUEST]
 
     if sent_json_dict['file_extension'] not in ALLOWED_PLOT_FILE_EXTENSIONS:
         return ["Plot requested cannot be returned with that file extension,"
                 f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}",
             status.HTTP_400_BAD_REQUEST]
+
+    # TODO: needs to change on new SampleManager
+    plot_path = sample_manager.create_plot_for_sample()
+
 
 
 
