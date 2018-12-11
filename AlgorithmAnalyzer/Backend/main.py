@@ -176,16 +176,14 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # TODO: later some kind of smart duplication of this endpoint's steps
     #  alongside with handle_get_file could be done - already tasked
 
-    allowed_plot_types_from_samples = ['mfcc']
-
     # get the request's JSON or return a 400 if an invalid one/none was passed
     if request.get_json(force=True, cache=True, silent=True) is None:
         return ["No or invalid JSON was passed", status.HTTP_400_BAD_REQUEST]
 
     sent_json_dict = json.loads(request.get_json())
 
-    if sent_json_dict['type'] not in allowed_plot_types_from_samples:
-        return [f"Plot of non-existing type was requested,supported plots {allowed_plot_types_from_samples}",
+    if sent_json_dict['type'] not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPES_FROM_SAMPLES}",
             status.HTTP_400_BAD_REQUEST]
 
     if sent_json_dict['file_extension'] not in ALLOWED_PLOT_FILE_EXTENSIONS:
@@ -193,7 +191,12 @@ def handle_plot_endpoint(sampletype, username, samplename):
                 f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}",
             status.HTTP_400_BAD_REQUEST]
 
-    plot_path, file_io = sample_manager.create_plot_for_sample()
+    plot_path, file_io = sample_manager.create_plot_for_sample(plot_type=sent_json_dict['type'],
+                                                               set_type=sampletype,
+                                                               username=username,
+                                                               sample_name=samplename,
+                                                               file_extension=sent_json_dict['file_extension'])
+
     return send_file(file_io, as_attachment=True), status.HTTP_200_OK
 
 

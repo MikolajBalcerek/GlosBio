@@ -10,3 +10,6 @@ ALLOWED_FILES_TO_GET = {'audio': ['wav', 'webm'],
 
 # allowed plots' file extensions
 ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
+
+# allowed plot from samples' types
+ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
