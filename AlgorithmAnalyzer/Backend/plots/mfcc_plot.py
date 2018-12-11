@@ -1,3 +1,6 @@
+from io import BytesIO
+from typing import Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
@@ -28,7 +31,7 @@ def _plot_mfcc_color_boxes(audio_path: str) -> plt.Figure:
 
 
 def plot_save_mfcc_color_boxes(audio_path: str, directory_path: str,
-                               file_name: str, saved_format: str = "pdf") -> str:
+                               file_name: str, saved_format: str = "pdf") -> Tuple[str, BytesIO]:
     """
     Creates a MFCC colored boxes plot and saves it to provided path
     with the given name and format (pdf or png)
@@ -38,10 +41,11 @@ def plot_save_mfcc_color_boxes(audio_path: str, directory_path: str,
     :param file_name: name of the file (without the extension)
     :param saved_format: str type of plot image to be saved, png or pdf,
     defaults to pdf (vector format)
-    :return file_path: str file_path to the plot created
+    :return file_path, file_io: str file_path to the saved file,
+    BytesIO containing the requested plot
     """
     figure = _plot_mfcc_color_boxes(audio_path)
-    file_path = save_matplotlib_figure(figure, directory_path,
+    file_path, file_io = save_matplotlib_figure(figure, directory_path,
                                        file_name, saved_format)
-    return file_path
+    return file_path, file_io
 

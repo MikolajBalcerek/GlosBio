@@ -2,7 +2,9 @@ import os
 import re
 import unicodedata
 import json
-import typing
+from io import BytesIO
+from typing import *
+
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -268,7 +270,7 @@ class SampleManager:
 
     def create_plot_for_sample(self, plot_type: str, set_type: str,
                                username: str, sample_name: str,
-                               file_extension: str = "png", **parameters):
+                               file_extension: str = "png", **parameters)-> Tuple[str, BytesIO]:
         """
         Master method that creates a plot of given plot_type (e.g. "mfcc")
         for a given set_type (train, test), username and specific sample
@@ -281,7 +283,8 @@ class SampleManager:
         :param file_extension: pdf or png file extension of the plot file
         :param parameters: extra plot type specific parameters, pass as keyworded
         e.g. alfa=10, beta=20
-        :return file_path: str path to plot file
+        :return file_path, file_io: str file_path to the saved file,
+        BytesIO containing the requested plot
         """
         wav_path = self.get_new_sample_path(username, set_type=set_type,
                                             filetype="wav")
@@ -291,16 +294,16 @@ class SampleManager:
         #  file already exists to not remake it pointlessly in a new way
 
         if plot_type == "mfcc":
-            self._create_plot_mfcc_for_sample(audio_path=wav_path,
+            file_path, file_io = self._create_plot_mfcc_for_sample(audio_path=wav_path,
                                               directory_path=directory_path,
                                               file_extension=file_extension)
         else:
             return None
 
-
+        return file_path, file_io
 
     def _create_plot_mfcc_for_sample(self, audio_path: str, directory_path: str,
-                                     file_extension: str = "png") -> str:
+                                     file_extension: str = "png") -> Tuple[str, BytesIO]:
         #TODO: Not unit tested!
         """
         This creates a MFCC plot file of file_extension file (pdf or png)
@@ -311,14 +314,16 @@ class SampleManager:
         :param directory_path: str full path to the sample's directory,
         e.g username/ or username/set_type
         :param file_extension: pdf or png file extension of the plot mfcc file
-        :return file_path: str path to plot file
+        :return file_path, file_io: str file_path to the saved file,
+        BytesIO containing the requested plot
         """
+
         file_name = f"{self._get_sample_file_name(audio_path)}_mfcc"
-        file_path = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,
+        file_path, file_io = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,
                                                          file_name, file_extension)
 
         print(f"#LOG {self.__class__.__name__}: mfcc plot file saved to: " + file_path)
-        return file_path
+        return file_path, file_io
 
     def _get_sample_file_name(self, file_path: str) -> str:
         """
