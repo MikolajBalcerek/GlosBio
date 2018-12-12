@@ -318,7 +318,7 @@ class SampleManager:
         BytesIO containing the requested plot
         """
         # TODO: Not unit tested!
-        file_name = f"{self._get_sample_file_name(audio_path)}_mfcc"
+        file_name = f"{self._get_sample_file_name_from_path(audio_path)}_mfcc"
         file_path, file_io = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,
                                                          file_name, file_extension)
 
@@ -342,12 +342,12 @@ class SampleManager:
         """
         # TODO: This will have to be remade once a new SampleManager rolls out
         # TODO: NOT UNIT TESTED AWAITING FOR CHANGE
-        expected_plot_path =  f"{self._get_sample_file_name(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
+        expected_plot_path =  f"{self._get_sample_file_name_from_path(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
         with open(expected_plot_path, mode='rb') as plot_file:
             return expected_plot_path, BytesIO(plot_file.read())
 
 
-    def _get_sample_file_name(self, file_path: str) -> str:
+    def _get_sample_file_name_from_path(self, file_path: str) -> str:
         """
         Gets the number of the sample provided its file
         e.g: "c:/app/2.wav -> 2"

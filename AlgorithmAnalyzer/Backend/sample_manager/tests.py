@@ -129,22 +129,22 @@ class TestSampleManager(unittest.TestCase):
                                                "in the given path")
 
     def test_get_sample_file_name(self):
-        path = self.sample_manager._get_sample_file_name("C:/asda/hellohello.wav")
+        path = self.sample_manager._get_sample_file_name_from_path("C:/asda/hellohello.wav")
         self.assertEqual("hellohello", path, "Wrong last element of the path returned"
                                              "(without extension returned for Windows"
                                       "style path with '/'")
 
-        path = self.sample_manager._get_sample_file_name("C:\\ad\\asd.gpoo")
+        path = self.sample_manager._get_sample_file_name_from_path("C:\\ad\\asd.gpoo")
         self.assertEqual("asd", path,  "Wrong last element of the path returned"
                                              "(without extension returned for Windows"
                                       "style path with '\\'")
 
-        path = self.sample_manager._get_sample_file_name("/usr/src/axe.gpoo")
+        path = self.sample_manager._get_sample_file_name_from_path("/usr/src/axe.gpoo")
         self.assertEqual("axe", path,  "Wrong last element of the path returned"
                                              "(without extension returned for Linux"
                                       "style path")
 
-        path = self.sample_manager._get_sample_file_name("/usr/src/CAPSLOCKED.GPOO")
+        path = self.sample_manager._get_sample_file_name_from_path("/usr/src/CAPSLOCKED.GPOO")
         self.assertEqual("CAPSLOCKED", path,  "Wrong last element of the path returned"
                                              "(without extension returned for Linux"
                                       "style path with capitalized filename")
