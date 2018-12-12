@@ -6,7 +6,7 @@ from plots.mfcc_plot import _plot_mfcc_color_boxes, plot_save_mfcc_color_boxes
 
 
 class TestMfccPlotting(unittest.TestCase):
-    def setUp(self):
+    def setUpClass(self):
         self.AUDIO_1_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "1.wav")
         self.DIRECTORY_TEST = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
