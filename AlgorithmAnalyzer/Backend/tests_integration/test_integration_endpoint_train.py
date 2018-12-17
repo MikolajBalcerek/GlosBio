@@ -1,3 +1,4 @@
+import glob
 from pathlib import Path
 import unittest
 import shutil
@@ -29,6 +30,13 @@ class IntegrationBaseClass(unittest.TestCase, ABC):
         app.config['TESTING'] = True
         self.app = app.test_client()
 
+        # a nifty search for test audio file that will work both from test dir
+        # and backend dir
+        # however will return a false copy if two trzynascie.webm exist
+        _trzynascie_file_finder_generator = glob.iglob("./**/trzynascie.webm", recursive=True)
+        self.test_audio_path_trzynascie = next(_trzynascie_file_finder_generator)
+
+
     @property
     def client(self):
         """ this is a getter for client """
@@ -46,7 +54,7 @@ class Audio_Add_Sample_Tests(IntegrationBaseClass):
 
     def test_post_train_file_username_correct(self):
         """ test for happy path for send file train endpoint """
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+        with open(self.test_audio_path_trzynascie, 'rb') as f:
             r = self.client.post('/audio/train',
                                  data={"username": self.TEST_USERNAMES[0],
                                        "file": f})
@@ -85,15 +93,10 @@ class Audio_Add_Sample_Tests(IntegrationBaseClass):
             self.assertEqual(my_wav.exists(), True,
                              "File was not converted and saved as .wav")
 
-            # check for mfcc .png plot file
-            new_mfcc_expected_path = os.path.join(self.test_dirnames[0], '1_mfcc.png')
-            mfcc_file = Path(new_mfcc_expected_path)
-            self.assertEqual(mfcc_file.exists(), True,
-                             "MFCC .png was not created")
 
     def test_post_test_file_username_correct(self):
         """ test for happy path for send file test endpoint """
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+        with open(self.test_audio_path_trzynascie) as f:
             r = self.client.post('/audio/test',
                                  data={"username": self.TEST_USERNAMES[1],
                                        "file": f})
@@ -137,7 +140,7 @@ class Audio_Add_Sample_Tests(IntegrationBaseClass):
 
     def test_post_file_no_username(self):
         """ test for endpoint send without an username """
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+        with open(self.test_audio_path_trzynascie, 'rb') as f:
             r = self.client.post('/audio/train',
                                  data={'file': f})
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
@@ -154,11 +157,11 @@ class Audio_Get_Sample_Tests(IntegrationBaseClass):
     def setUpClass(self):
         ''' setup before tests_integration for this class '''
         super().setUpClass()
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+        with open(self.test_audio_path_trzynascie, 'rb') as f:
             self.app.post('/audio/train',
                           data={"username": self.TEST_USERNAMES[0], "file": f})
             f.close()
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+        with open(self.test_audio_path_trzynascie, 'rb') as f:
             self.app.post('/audio/test',
                           data={"username": self.TEST_USERNAMES[1], "file": f})
             f.close()
@@ -280,4 +283,51 @@ class Audio_Get_Sample_Tests(IntegrationBaseClass):
         expected_message = ["There is no such user 'mr_nobody12345qwerty' in sample base"]
         self.assertEqual(r.json, expected_message, "expected different message")
 
-# class PlotForSamplesTests(unittest.TestCase):
+
+class PlotForSamplesTests(IntegrationBaseClass):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # post a train file for TEST_USERNAMES[0] to be ready to make plots of
+        with open(cls.test_audio_path_trzynascie, 'rb') as f:
+            r = cls.app.post('/audio/train',
+                                data={"username": cls.TEST_USERNAMES[0],
+                                       "file": f})
+            assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
+                                                             " for file upload during class setup"
+
+    def test_POST_mfcc_plot_train_json_no_file_extension_specified(self):
+        """ tests for MFCC plot being requested
+        with json
+        without having specified a file extension
+        for an existing user
+        in train category """
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+        request_json = json.dumps({"type": "mfcc"})
+
+        r = self.client.post(request_path, json=request_json)
+
+        new_mfcc_expected_path = os.path.join(self.test_dirnames[0], '1_mfcc.png')
+        mfcc_file = Path(new_mfcc_expected_path)
+
+        self.assertEqual(mfcc_file.exists(), True,
+                         "MFCC .png was not created")
+
+    def test_POST_mfcc_plot_train_no_json_no_file_extension_specified(self):
+        """ tests for MFCC plot being requested
+        without json passed (just correct data in request)
+        without having specified a file extension
+        for an existing user
+        in train category """
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+
+        r = self.client.post(request_path, data={"type": "mfcc"})
+
+        new_mfcc_expected_path = os.path.join(self.test_dirnames[0], '1_mfcc.png')
+        mfcc_file = Path(new_mfcc_expected_path)
+
+        self.assertEqual(mfcc_file.exists(), True,
+                         "MFCC .png was not created")
+

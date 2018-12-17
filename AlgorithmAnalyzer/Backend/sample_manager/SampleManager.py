@@ -155,7 +155,7 @@ class SampleManager:
         )
         return wavfile.read(sample_path)
 
-    def _get_sample_file_path(self, username, sample_name: str, sample_type: str) -> str:
+    def _get_wav_sample_expected_file_path(self, username, sample_name: str, sample_type: str) -> str:
         #TODO: Not unit tested!
         """
         Returns the sample's filepath
@@ -163,10 +163,13 @@ class SampleManager:
         :param username: normalized or raw user's name
         :param sample_name: sample's name without extension, e.g. '1'
         :param sample_type: 'train' or 'test
-        :return: str with the sample_path or None
+        :return: str with the expected sample path
         """
         # normalize username
         username = self.username_to_dirname(username)
+
+        # drop file extension if it was passed alongside
+        sample_name = sample_name.rsplit(".")[0]
 
         # handle sample_type path change
         if sample_type == "train":
@@ -180,9 +183,7 @@ class SampleManager:
                 '{}.wav'.format(sample_name)
             )
 
-        if Path(sample_path).is_file():
-            return sample_path
-        return None
+        return sample_path
 
 
     def _invalid_username(self, username):
@@ -283,8 +284,8 @@ class SampleManager:
         :return file_path, file_io: str file_path to the saved file,
         BytesIO containing the requested plot
         """
-        wav_path = self.get_new_sample_path(username, set_type=set_type,
-                                            filetype="wav")
+        wav_path = self._get_wav_sample_expected_file_path(username, sample_type=set_type,
+                                                           sample_name=sample_name)
         directory_path = self.get_user_dirpath(username, set_type=set_type)
 
         # see if a plot already exists

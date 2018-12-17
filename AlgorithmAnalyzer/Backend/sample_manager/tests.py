@@ -159,7 +159,7 @@ class TestSampleManager(unittest.TestCase):
     # Require the aforementioned helper function
     # For now both are tested using the integration tests
 
-    #TODO: Unit test for _get_sample_file_path
+    #TODO: Unit test for _get_wav_sample_expected_file_path
     # Require the aforementioned helper function
 
 
