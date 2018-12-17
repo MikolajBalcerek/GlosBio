@@ -1,3 +1,4 @@
+import glob
 from pathlib import Path
 import unittest
 import shutil
@@ -28,11 +29,12 @@ class IntegrationBaseClass(unittest.TestCase, ABC):
                               self.TEST_USERNAMES]
         app.config['TESTING'] = True
         self.app = app.test_client()
-        # TODO: this path needs to be dynamic using glob, but SM and tests
-        #  are hardcoded in many ways
-        #  this causes tests to be only runnable from Backend with python -m unittest
-        #  instead from different contexts (e.g. from tests_integration)
-        self.test_audio_path_trzynascie = './tests_integration/trzynascie.webm'
+
+        # a nifty search for test audio file that will work both from test dir
+        # and backend dir
+        # however will return a false copy if two trzynascie.webm exist
+        _trzynascie_file_finder_generator = glob.iglob("./**/trzynascie.webm", recursive=True)
+        self.test_audio_path_trzynascie = next(_trzynascie_file_finder_generator)
 
 
     @property
