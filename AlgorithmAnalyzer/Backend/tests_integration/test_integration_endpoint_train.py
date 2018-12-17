@@ -96,7 +96,7 @@ class Audio_Add_Sample_Tests(IntegrationBaseClass):
 
     def test_post_test_file_username_correct(self):
         """ test for happy path for send file test endpoint """
-        with open(self.test_audio_path_trzynascie) as f:
+        with open(self.test_audio_path_trzynascie, 'rb') as f:
             r = self.client.post('/audio/test',
                                  data={"username": self.TEST_USERNAMES[1],
                                        "file": f})
@@ -121,12 +121,6 @@ class Audio_Add_Sample_Tests(IntegrationBaseClass):
             self.assertEqual(_json_path.exists(), True,
                              "Sample was not accompanied by .json file")
 
-            # check for existence of MFCC plot file
-            _mfcc_plot_path = Path(
-                f"{self.SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(self.TEST_USERNAMES[1])}/test/1_mfcc.png")
-            self.assertEqual(_mfcc_plot_path.exists(), True,
-                             "Sample was not accompanied by MFCC plot .png file, "
-                             f"expected path {_mfcc_plot_path}")
 
 
     def test_post_file_no_file(self):
@@ -352,6 +346,38 @@ class PlotEndpointForSampleTests(IntegrationBaseClass):
                          "lack of type (empty json) specified "
                          "when querying plot endpoint should result in a failure")
 
+    # TODO: duplication of tests from other endpoints
+    def test_bad_username_specified(self):
+        """ tests for a post being send to plot endpoint
+        with a correct file, but with an incorrect nonexisting username"""
+        username = "random_username"
+        request_path = f"/plot/train/{username}/1.wav"
+        request_json = json.dumps({"type": "mfcc"})
+
+        r = self.client.post(request_path, json=request_json)
+
+        self.assertEqual([f"There is no such user '{username}' in sample base"],
+                         r.json, "Differing string returned for bad username")
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
+                         "Nonexisting username should return 400 during plots")
+
+    # TODO: duplication of tests from other endpoints
+    def test_nonexisting_sample_requested_to_plot(self):
+        """ tests for a post being send to plot endpoint
+        with non-existing file, but with a correct existing username"""
+        sample_name = "2.wav"
+        user_name = self.TEST_USERNAMES[0]
+        type = 'train'
+        request_path = f"/plot/{type}/{user_name}/2.wav"
+        request_json = json.dumps({"type": "mfcc"})
+
+        r = self.client.post(request_path, json=request_json)
+
+
+        self.assertEqual([f"There is no such sample '{sample_name}' in users '{user_name}' {type} samplebase"],
+                         r.json, "Differing string returned for bad username")
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
+                         "Nonexisting filename for existing user should return 400 during plots")
 
 
 

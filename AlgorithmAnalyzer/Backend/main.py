@@ -188,18 +188,30 @@ def handle_plot_endpoint(sampletype, username, samplename):
         if sent_json_dict is None or not sent_json_dict:
             return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
-
-    if sent_json_dict['type'] not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+    # check for type
+    if sent_json_dict.get('type') not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
         return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
                status.HTTP_400_BAD_REQUEST
-    try:
-        if sent_json_dict['file_extension'] not in ALLOWED_PLOT_FILE_EXTENSIONS:
+
+    # check for file_extension
+    if sent_json_dict.get('file_extension') not in ALLOWED_PLOT_FILE_EXTENSIONS:
+        if sent_json_dict.get('file_extension') is None:
+            sent_json_dict['file_extension'] = 'png'
+        else:
             return ["Plot requested cannot be returned with that file extension,"
                     f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}"],\
                    status.HTTP_400_BAD_REQUEST
-    except KeyError:
-        # catching no file_extension provided/cached, filling it in automatically
-        sent_json_dict['file_extension'] = 'png'
+
+    # TODO: duplication from other endpoints
+    # check if user exists in samplebase
+    if not sample_manager.user_exists(username):
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+
+    # TODO: duplication from other endpoints
+    # check if file exists in samplebase
+    if not sample_manager.file_exists(username, sampletype, samplename):
+        return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
+                status.HTTP_400_BAD_REQUEST
 
     plot_path, file_io = sample_manager.create_plot_for_sample(plot_type=sent_json_dict['type'],
                                                                set_type=sampletype,
