@@ -328,7 +328,7 @@ class SampleManager:
 
 
     def _get_plot_for_sample_file(self, audio_path: str, plot_type: str,
-                                  file_extension: str = "png") -> Tuple[str,BytesIO]:
+                                  file_extension: str = "png") -> Tuple[str, BytesIO]:
         """
         This helper gets str plot's path and plot's content as BytesIO
         based on str audio_path of the

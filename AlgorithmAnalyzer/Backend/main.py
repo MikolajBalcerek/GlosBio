@@ -220,10 +220,10 @@ def handle_plot_endpoint(sampletype, username, samplename):
                                                                file_extension=sent_json_dict['file_extension'])
 
 
-    # TODO: if a SM rework fails, sending file_io with the attachment_filename
-    #  can be replaced with just plot_path instead of file_io
+    # TODO: if a SM rework fails, sending file with the attachment_filename
+    #  can be replaced with just plot_path instead of file
     return send_file(file_io, as_attachment=True,
-                     attachment_filename=sent_json_dict['file_extension']), status.HTTP_200_OK
+                     attachment_filename=f"generated_mfcc.{sent_json_dict['file_extension']}"), status.HTTP_200_OK
 
 
 if __name__ == "__main__":

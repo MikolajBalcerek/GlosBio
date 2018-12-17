@@ -215,27 +215,6 @@ class Audio_Get_Sample_Tests(IntegrationBaseClass):
         expected_message = [f"Accepted extensions for filetype 'audio': {config.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
         self.assertEqual(r.json, expected_message, "expected different message")
 
-    def test_get_mfcc_plot(self):
-        # mfcc plot is returned from train directory
-        request_path_1 = f"/plot/train/{self.sm.username_to_dirname(self.TEST_USERNAMES[0])}/1_mfcc.png"
-        r = self.client.get(request_path_1)
-        self.assertEqual(r.status_code, status.HTTP_200_OK,
-                         f"request: {request_path_1}\nwrong status code, expected 200, got {r.status_code}")
-        self.assertEqual(r.content_type, 'image/png',
-                         "Wrong content_type was returned"
-                         f"for mfcc plot, should be image/png, is {r.content_type}")
-
-
-        # mfcc plot is returned from test directory
-        request_path_1 = f"/plot/test/{self.sm.username_to_dirname(self.TEST_USERNAMES[1])}/1_mfcc.png"
-        r = self.client.get(request_path_1)
-        self.assertEqual(r.status_code, status.HTTP_200_OK,
-                         f"request: {request_path_1} wrong status code, expected 200, got {r.status_code}")
-        self.assertEqual(r.content_type, 'image/png',
-                         "Wrong content_type was returned"
-                         f"for mfcc plot, should be image/png, is {r.content_type}")
-
-
     def test_get_sample(self):
         # file exists - test set
         request_path_1 = f"/audio/test/test_person/1.wav"
@@ -290,7 +269,17 @@ class PlotEndpointForSampleTests(IntegrationBaseClass):
                                 data={"username": cls.TEST_USERNAMES[0],
                                        "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
+                                                          " for file upload during class setup"
+        
+        # post a test file for TEST_USERNAMES[1] to be ready to make plots of
+        with open(cls.test_audio_path_trzynascie, 'rb') as f:
+            r = cls.app.post('/audio/test',
+                                data={"username": cls.TEST_USERNAMES[1],
+                                       "file": f})
+
+            assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
+
 
     def test_POST_mfcc_plot_train_json_no_file_extension_specified(self):
         """ tests for MFCC plot being requested
@@ -308,6 +297,12 @@ class PlotEndpointForSampleTests(IntegrationBaseClass):
 
         self.assertEqual(mfcc_file.exists(), True,
                          "MFCC .png was not created")
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path} wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.content_type, 'image/png',
+                         "Wrong content_type was returned"
+                         f"for mfcc plot, should be image/png, is {r.content_type}")
 
     def test_POST_mfcc_plot_train_no_json_no_file_extension_specified(self):
         """ tests for MFCC plot being requested
