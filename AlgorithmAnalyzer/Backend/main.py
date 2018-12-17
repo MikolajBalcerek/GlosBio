@@ -179,24 +179,24 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # get the request's JSON
     try:
         # try to get a json
-        sent_json_dict = json.loads(request.get_json(force=True, cache=True, silent=True))
+        sent_json_dict: dict = json.loads(request.get_json(force=True, cache=True, silent=True))
     except TypeError:
         # not a json was sent, let's see if a standard HTTP data was sent
         sent_json_dict = request.form
     finally:
         # or return a 400 if an invalid one/none was passed
-        if sent_json_dict is None:
-            return ["No or invalid JSON was passed", status.HTTP_400_BAD_REQUEST]
+        if sent_json_dict is None or not sent_json_dict:
+            return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
 
     if sent_json_dict['type'] not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPES_FROM_SAMPLES}",
-            status.HTTP_400_BAD_REQUEST]
+        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+               status.HTTP_400_BAD_REQUEST
     try:
         if sent_json_dict['file_extension'] not in ALLOWED_PLOT_FILE_EXTENSIONS:
             return ["Plot requested cannot be returned with that file extension,"
-                    f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}",
-                status.HTTP_400_BAD_REQUEST]
+                    f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}"],\
+                   status.HTTP_400_BAD_REQUEST
     except KeyError:
         # catching no file_extension provided/cached, filling it in automatically
         sent_json_dict['file_extension'] = 'png'

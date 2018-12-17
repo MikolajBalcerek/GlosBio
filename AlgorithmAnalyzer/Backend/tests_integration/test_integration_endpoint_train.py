@@ -284,7 +284,7 @@ class Audio_Get_Sample_Tests(IntegrationBaseClass):
         self.assertEqual(r.json, expected_message, "expected different message")
 
 
-class PlotForSamplesTests(IntegrationBaseClass):
+class PlotEndpointForSampleTests(IntegrationBaseClass):
 
     @classmethod
     def setUpClass(cls):
@@ -330,4 +330,28 @@ class PlotForSamplesTests(IntegrationBaseClass):
 
         self.assertEqual(mfcc_file.exists(), True,
                          "MFCC .png was not created")
+
+    def test_failing_lack_of_data_url_specified(self):
+        """ tests for a post being send to plot endpoint
+        without any data specified, but with a correct url """
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+
+        r = self.client.post(request_path)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
+                         "lack of type (no data)specified when querying plot endpoint "
+                         "should result in a failure")
+
+    def test_failing_empty_json_url_specified(self):
+        """ tests for a post being send to plot endpoint
+        with an empty json file, but with a correct url """
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+
+        empty_json = json.dumps(dict())
+        r = self.client.post(request_path, json=empty_json)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
+                         "lack of type (empty json) specified "
+                         "when querying plot endpoint should result in a failure")
+
+
+
 
