@@ -389,3 +389,13 @@ class PlotEndpointForSampleTests(unittest.TestCase):
                          r.json, "Differing string returned for bad username")
         self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
                          "Nonexisting filename for existing user should return 400 during plots")
+
+    def test_try_GET(self):
+        """ test for response code on GET request """
+        sample_name = "1.wav"
+        user_name = TEST_USERNAMES[0]
+        type = 'train'
+        r = self.client.get(f"/plot/{type}/{user_name}/{sample_name}")
+
+        self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED,
+                         f"Expected resposne status code 405 but got {r.status_code}")
