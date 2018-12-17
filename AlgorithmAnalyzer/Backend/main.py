@@ -104,8 +104,7 @@ def handle_list_samples_for_user(type, username):
     else:
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-
-@app.route("/<string:filetype>/<string:sampletype>/<string:username>/<string:filename>", methods=['GET'])
+@app.route("/<any('audio', 'json'):filetype>/<string:sampletype>/<string:username>/<string:filename>", methods=['GET'])
 def handle_get_file(filetype, sampletype, username, filename):
     """
     serve audio sample or json file
@@ -165,6 +164,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
         type: "mfcc",
         file_extension: "png" or "pdf"
     }
+    or send HTTP POST request which contains the same values as DATA
 
     :param sampletype: sample set type 'train' or 'test'
     :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
