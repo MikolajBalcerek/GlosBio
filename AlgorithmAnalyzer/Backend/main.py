@@ -118,11 +118,6 @@ def handle_get_file(filetype, sampletype, username, filename):
     # TODO: Verbose endpoint, you end up typing the filename twice,
     #  JSON/test/mikolaj/1.json..
 
-    # check for proper file type
-    if filetype not in list(ALLOWED_FILES_TO_GET.keys()):
-        return [f"Unexpected file type '{filetype}' requested.Expected one of: {list(ALLOWED_FILES_TO_GET.keys())}"], \
-               status.HTTP_400_BAD_REQUEST
-
     # check for proper sample set type
     if sampletype not in ALLOWED_SAMPLE_TYPES:
         return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {ALLOWED_SAMPLE_TYPES}"], \

@@ -199,6 +199,13 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"wrong status code, expected 400, got {r.status_code}")
 
+    def test_get_samples_for_wrong_type(self):
+        """ tests for 400    if a bad endpoint is given"""
+        r = self.client.get('/random_endpoint_name/train/mr_nobody')
+
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND,
+                         f"wrong status code, expected 404  , got {r.status_code}")
+
     def test_get_json(self):
         # file exists
         request_path_1 = f"/json/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
@@ -390,7 +397,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
                          "Nonexisting filename for existing user should return 400 during plots")
 
-    def test_try_GET(self):
+    def test_incorrect_try_GET_should_405(self):
         """ test for response code on GET request """
         sample_name = "1.wav"
         user_name = TEST_USERNAMES[0]
