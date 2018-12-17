@@ -183,10 +183,11 @@ def handle_plot_endpoint(sampletype, username, samplename):
     except TypeError:
         # not a json was sent, let's see if a standard HTTP data was sent
         sent_json_dict = request.form
-    finally:
-        # or return a 400 if an invalid one/none was passed
-        if sent_json_dict is None or not sent_json_dict:
-            return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
+    except:
+        return ["Invalid request"], status.HTTP_400_BAD_REQUEST
+    # or return a 400 if an invalid one/none was passed
+    if sent_json_dict is None or not sent_json_dict:
+        return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
     # check for type
     if sent_json_dict.get('type') not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
