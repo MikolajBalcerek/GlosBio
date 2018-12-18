@@ -1,8 +1,11 @@
+import io
 import os
 import re
 import unicodedata
 import json
-import typing
+from io import BytesIO
+from typing import *
+
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -11,6 +14,8 @@ from pathlib import Path
 
 from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
+from plots import mfcc_plot
+from config import ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
 ''''''''''''''''
 example of directory structure
@@ -48,8 +53,13 @@ class UsernameException(Exception):
 
 
 class SampleManager:
+    # TODO: this class handles way too many things
+    #  Needs to follow underscore (_get..) convention to denote private methods
+    #  Some methods not used at all
+    #  Rewrite to use DB?
+
     def __init__(self, path):
-        '''path:  string or path; path to root directory'''
+        """path:  string or path; path to root directory"""
 
         self.path = os.path.normpath(path)
 
@@ -113,29 +123,32 @@ class SampleManager:
         else:
             return os.path.join(out_path, str(last_sample + 1))
 
-    def get_user_dirpath(self, username, type='train'):
-        if type == 'train':
-            return os.path.join(self.path, self.username_to_dirname(username))
-        else:
-            return os.path.join(self.path, type,  self.username_to_dirname(username))
+    def get_user_dirpath(self, username, set_type = None):
+        if set_type == "test":
+            return os.path.join(self.path, self.username_to_dirname(username), set_type)
+        return os.path.join(self.path, self.username_to_dirname(username))
 
-    @staticmethod
-    def get_new_json_path(audio_path: str) -> str:
-        """ this gets path for a new recording's json file
-         based on str audio_path
-         e.g C:/aasda/a.wav -> C:/aasda/a.json"""
-        return audio_path.rsplit('.', 1)[0]+".json"
+
+    def _get_new_extension_path(self, audio_path: str, format: str) -> str:
+        """ this gets path for the audio's accompanying file
+        of the format extension based on str audio_path
+
+         :param format: desired format without '.', e.g. 'pdf', 'json'
+         e.g C:/aasda/a.wav -> C:/aasda/a_type.format"""
+        return audio_path.rsplit('.', 1)[0]+f".{format}"
 
     def add_sample(self, username, sample):
         '''
             this method serves to save samples
             for now it's not used
         '''
+        # TODO Not used anywhere..
         new_path = self.get_new_sample_path(username)
         with open(new_path, 'wb') as new:
             new.write(sample)
 
     def get_sample(self, username, sample_number):
+        # TODO: doesn't get samples for test/train...?
         username = self.username_to_dirname(username)
         sample_path = os.path.join(
             self.path, username,
@@ -143,9 +156,41 @@ class SampleManager:
         )
         return wavfile.read(sample_path)
 
+    def _get_wav_sample_expected_file_path(self, username, sample_name: str, sample_type: str) -> str:
+        #TODO: Not unit tested!
+        """
+        Returns the sample's filepath
+
+        :param username: normalized or raw user's name
+        :param sample_name: sample's name without extension, e.g. '1'
+        :param sample_type: 'train' or 'test
+        :return: str with the expected sample path
+        """
+        # normalize username
+        username = self.username_to_dirname(username)
+
+        # drop file extension if it was passed alongside
+        sample_name = sample_name.rsplit(".")[0]
+
+        # handle sample_type path change
+        if sample_type == "train":
+            sample_path = os.path.join(
+                self.path, username,
+                '{}.wav'.format(sample_name)
+            )
+        else:
+            sample_path = os.path.join(
+                self.path, username, sample_type,
+                '{}.wav'.format(sample_name)
+            )
+
+        return sample_path
+
+
     def _invalid_username(self, username):
         return not re.match('^\w+$', username)
 
+    # TODO: ???? commented out
     # def save_new_sample(self, username: str, file: FileStorage, type: str) -> str:
     #     if not self.user_exists(username):
     #         self.create_user(username)
@@ -162,13 +207,15 @@ class SampleManager:
         """
         return True if file.mimetype == "audio/wav" else False
 
-    def save_new_sample(self, username: str, file: FileStorage, set_type: str) -> typing.Tuple[str, str]:
+    def save_new_sample(self, username: str, file: FileStorage, set_type: str) -> Tuple[str, str]:
         """
         saves new sample as both .webm and wav with a JSON file
         :param username: str
         :param file: FileStorage
         :return: str wav_path, str recognized_speech
         """
+        # TODO: FileStorage is hard to mock in tests
+        #  Perhaps could handle both standard and FileStorage files
         if not self.user_exists(username):
             self.create_user(username)
 
@@ -195,14 +242,14 @@ class SampleManager:
         print(f"#LOG {self.__class__.__name__}: Recognized words: {recognized_speech}")
 
         # save the new sample json
-        json_path = self.create_a_new_sample_properties_json(username, audio_path=wav_path,
-                                                             data={"recognized_speech": recognized_speech})
+        json_path = self.create_new_sample_properties_json(username, audio_path=wav_path,
+                                                           data={"recognized_speech": recognized_speech})
         print(f"#LOG {self.__class__.__name__}: Created a JSON file: {json_path}")
+
 
         return wav_path, recognized_speech
 
-    @staticmethod
-    def create_a_new_sample_properties_json(username, data: typing.Dict[str, str], audio_path: str) -> str:
+    def create_new_sample_properties_json(self, username, data: Dict[str, str], audio_path: str) -> str:
         """
         this creates a json file for the newest sample for the username given
         e.g: 5.json
@@ -213,12 +260,105 @@ class SampleManager:
         :param audio_path: str path to audio
         :return: str path to json
         """
-        json_path = SampleManager.get_new_json_path(audio_path)
+        json_path = self._get_new_extension_path(audio_path, 'json')
         with open(json_path, 'w', encoding='utf8') as json_file:
             recording_properties = {"name": username, **data}
             string_json = str(json.dumps(recording_properties, ensure_ascii=False).encode('utf8'), encoding='utf8')
             json_file.writelines(string_json)
         return json_path
+
+    def create_plot_for_sample(self, plot_type: str, set_type: str,
+                               username: str, sample_name: str,
+                               file_extension: str = "png", **parameters) -> Tuple[str, bytes]:
+        """
+        Master method that creates a plot of given plot_type (e.g. "mfcc")
+        for a given set_type (train, test), username and specific sample
+        file_extension can be specified (png or pdf)
+
+        :param plot_type: str type of plot, e.g. "mfcc"
+        :param set_type: set of users' sample, test or train
+        :param username: str normalized username of the user
+        :param sample_name: str name of the sample, e.g. "1.wav"
+        :param file_extension: pdf or png file extension of the plot file
+        :param parameters: extra plot type specific parameters, pass as keyworded
+        e.g. alfa=10, beta=20
+        :return file_path, file_io: str file_path to the saved file,
+        BytesIO containing the requested plot
+        """
+        wav_path = self._get_wav_sample_expected_file_path(username, sample_type=set_type,
+                                                           sample_name=sample_name)
+        directory_path = self.get_user_dirpath(username, set_type=set_type)
+
+        # see if a plot already exists
+        # if it does, send it instead of remaking it
+        try:
+            file_path, file_bytes = self._get_plot_for_sample_file(wav_path, plot_type, file_extension)
+        except FileNotFoundError:
+            # the plot does not exists, gonna make it!
+            if plot_type == "mfcc":
+                file_path, file_bytes = self._create_plot_mfcc_for_sample(audio_path=wav_path,
+                                                  directory_path=directory_path,
+                                                  file_extension=file_extension)
+            else:
+                raise ValueError("plot_type should be of type str, of value one of "
+                                 f"{ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
+
+            return file_path, file_bytes
+
+    def _create_plot_mfcc_for_sample(self, audio_path: str, directory_path: str,
+                                     file_extension: str = "png") -> Tuple[str, bytes]:
+        """
+        This creates a MFCC plot file of file_extension file (pdf or png)
+        for the audio_path file given.
+        The plot is saved in the user+type dirpath.
+
+        :param audio_path: str full path to the sample file
+        :param directory_path: str full path to the sample's directory,
+        e.g username/ or username/set_type
+        :param file_extension: pdf or png file extension of the plot mfcc file
+        :return file_path, file_io: str file_path to the saved file,
+        BytesIO containing the requested plot
+        """
+        # TODO: Not unit tested!
+        file_name = f"{self._get_sample_file_name_from_path(audio_path)}_mfcc"
+        file_path, file_io = mfcc_plot.plot_save_mfcc_color_boxes(audio_path, directory_path,
+                                                         file_name, file_extension)
+
+        print(f"#LOG {self.__class__.__name__}: mfcc plot file saved to: " + file_path)
+        return file_path, file_io.getvalue()
+
+
+    def _get_plot_for_sample_file(self, audio_path: str, plot_type: str,
+                                  file_extension: str = "png") -> Tuple[str, bytes]:
+        """
+        This helper gets str plot's path and plot's content as BytesIO
+        based on str audio_path of the
+        with a file_extension given (or None for png)
+        already exists
+
+        :param audio_path: str full path to the sample file
+        :param plot_type: str type of plot, e.g. "mfcc"
+        :param file_extension: pdf or png file extension of the plot mfcc file
+        :raises FileNotFoundError:
+        :return: str path to the plot, and BytesIO plot's contents
+        """
+        # TODO: This will have to be remade once a new SampleManager rolls out
+        # TODO: NOT UNIT TESTED AWAITING FOR CHANGE
+        expected_plot_path =  f"{self._get_sample_file_name_from_path(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
+        with open(expected_plot_path, mode='rb') as plot_file:
+            return expected_plot_path, io.BytesIO(plot_file.read()).getvalue()
+
+
+    def _get_sample_file_name_from_path(self, file_path: str) -> str:
+        """
+        Gets the number of the sample provided its file
+        e.g: "c:/app/2.wav -> 2"
+
+        :param file_path: str path to the file
+        :return: str file name without its extension
+        """
+        path = Path(file_path)
+        return path.stem
 
     def is_wav_file(self, samplename):
         return re.match('.+\.wav$', samplename)
@@ -250,7 +390,7 @@ class SampleManager:
             )
         return secure_filename(temp)
 
-    def file_has_proper_extension(self, filename: str, allowed_extensions: list) -> typing.Tuple[bool, str]:
+    def file_has_proper_extension(self, filename: str, allowed_extensions: list) -> Tuple[bool, str]:
         """
         it takes 'filename' and decide if it has extension which can be found
         in 'allowed_extensions'

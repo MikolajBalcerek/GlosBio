@@ -1,17 +1,22 @@
+import io
 import urllib
 import os
+import json
 
-from flask import request, current_app, send_from_directory
+from flask import request, current_app, send_from_directory, send_file
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
-import config
+from config import *
 from sample_manager.SampleManager import SampleManager, UsernameException
 
 app = FlaskAPI(__name__)
-sample_manager = SampleManager(config.SAMPLE_UPLOAD_PATH)
+sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 
 CORS(app)
+
+# TODO: Would be nice to reword endpoints to follow username -> type instead of
+#  type -> username for consistency to how currently SampleManager stores them
 
 
 @app.route("/", methods=['GET'])
@@ -58,11 +63,6 @@ def handling_audio_endpoint(type):
     POST to send a new audio file
     """
 
-    # def allowed_file(name):
-    #     """ some function to see if a name could be used as a file name"""
-    #     return '.' in name and \
-    #            name.rsplit('.', 1)[1].lower() in ALLOWED_AUDIO_EXTENSIONS
-
     if type not in ['train', 'test']:
         return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
@@ -105,26 +105,23 @@ def handle_list_samples_for_user(type, username):
     else:
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-
-@app.route("/<string:filetype>/<string:sampletype>/<string:username>/<string:filename>", methods=['GET'])
+@app.route("/<any('audio', 'json'):filetype>/<string:sampletype>/<string:username>/<string:filename>", methods=['GET'])
 def handle_get_file(filetype, sampletype, username, filename):
     """
     serve audio sample or json file
 
-    filetype: 'audio' or 'json'
-    sampletype: sample set type 'train' or 'test'
-    username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
-    samplename: full name of requested sample eg. '1.wav', '150.wav'
+    :param filetype: 'audio', 'json'
+    :param sampletype: sample set type 'train' or 'test'
+    :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
+    :param samplename: full name of requested sample eg. '1.wav', '150.wav'
     """
 
-    # check for proper file type
-    if filetype not in list(config.ALLOWED_FILES_TO_GET.keys()):
-        return [f"Unexpected file type '{filetype}' requested.Expected one of: {list(config.ALLOWED_FILES_TO_GET.keys())}"], \
-               status.HTTP_400_BAD_REQUEST
+    # TODO: Verbose endpoint, you end up typing the filename twice,
+    #  JSON/test/mikolaj/1.json..
 
     # check for proper sample set type
-    if sampletype not in config.ALLOWED_SAMPLE_TYPES:
-        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {config.ALLOWED_SAMPLE_TYPES}"], \
+    if sampletype not in ALLOWED_SAMPLE_TYPES:
+        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {ALLOWED_SAMPLE_TYPES}"], \
                 status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
@@ -132,7 +129,7 @@ def handle_get_file(filetype, sampletype, username, filename):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # check if requested file have allowed extension
-    allowed_extensions = config.ALLOWED_FILES_TO_GET[filetype]
+    allowed_extensions = ALLOWED_FILES_TO_GET[filetype]
     proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
     if not proper_extension:
         return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
@@ -150,6 +147,82 @@ def handle_get_file(filetype, sampletype, username, filename):
 
     app.logger.info(f"send file '{filename}' from '{user_dir}'")
     return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
+
+
+@app.route("/plot/<string:sampletype>/<string:username>/<string:samplename>",
+           methods=['POST'])
+def handle_plot_endpoint(sampletype, username, samplename):
+    """
+    Create/update and return the requested plot
+    Available methods: POST
+    The request should send a JSON that contains:
+    {
+        type: "mfcc",
+        file_extension: "png" or "pdf"
+    }
+    or send HTTP POST request which contains the same values as DATA
+
+    :param sampletype: sample set type 'train' or 'test'
+    :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
+    :param samplename: full name of the sample to create plot from, e.g. 1.wav
+    """
+    # TODO: Perhaps handle both '1.wav' and '1' when new SampleManager is
+    #  available
+
+    # TODO: later some kind of smart duplication of this endpoint's steps
+    #  alongside with handle_get_file could be done - already tasked
+
+    # get the request's JSON
+    try:
+        # try to get a json
+        sent_json_dict: dict = json.loads(request.get_json(force=True, cache=True, silent=True))
+    except TypeError:
+        # not a json was sent, let's see if a standard HTTP data was sent
+        sent_json_dict = request.form
+    except:
+        return ["Invalid request"], status.HTTP_400_BAD_REQUEST
+    # or return a 400 if an invalid one/none was passed
+    if sent_json_dict is None or not sent_json_dict:
+        return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
+
+    # check for type
+    if sent_json_dict.get('type') not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+               status.HTTP_400_BAD_REQUEST
+
+    # check for file_extension
+    if sent_json_dict.get('file_extension') not in ALLOWED_PLOT_FILE_EXTENSIONS:
+        if sent_json_dict.get('file_extension') is None:
+            sent_json_dict['file_extension'] = 'png'
+        else:
+            return ["Plot requested cannot be returned with that file extension,"
+                    f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}"],\
+                   status.HTTP_400_BAD_REQUEST
+
+    # TODO: duplication from other endpoints
+    # check if user exists in samplebase
+    if not sample_manager.user_exists(username):
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+
+    # TODO: duplication from other endpoints
+    # check if file exists in samplebase
+    if not sample_manager.file_exists(username, sampletype, samplename):
+        return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
+                status.HTTP_400_BAD_REQUEST
+
+    plot_path, file_bytes = sample_manager.create_plot_for_sample(plot_type=sent_json_dict['type'],
+                                                               set_type=sampletype,
+                                                               username=username,
+                                                               sample_name=samplename,
+                                                               file_extension=sent_json_dict['file_extension'])
+
+
+    # TODO: if a SM rework fails, sending file with the attachment_filename
+    #  can be replaced with just plot_path instead of file
+
+    return send_file(io.BytesIO(file_bytes),
+                               mimetype=f"image/{sent_json_dict['file_extension']}"),\
+           status.HTTP_200_OK
 
 
 if __name__ == "__main__":
