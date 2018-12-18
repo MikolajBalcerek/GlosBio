@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 from werkzeug.datastructures import FileStorage
-from .SampleManager import SampleManager, UsernameException
+from sample_manager.SampleManager import SampleManager, UsernameException
 
 
 class TestSampleManager(unittest.TestCase):
@@ -81,20 +81,20 @@ class TestSampleManager(unittest.TestCase):
         example_path_wav = "C:/a.wav"
         example_path_webm = "/home/train/5.webm"
 
-        suggested_json_path_wav = self.sample_manager.get_new_json_path(
-            audio_path=example_path_wav)
+        suggested_json_path_wav = self.sample_manager._get_new_extension_path(
+            audio_path = example_path_wav, format="json")
         self.assertEqual(suggested_json_path_wav, "C:/a.json")
 
-        suggested_json_path_wav = self.sample_manager.get_new_json_path(
-            audio_path=example_path_webm)
+        suggested_json_path_wav = self.sample_manager._get_new_extension_path(
+            audio_path=example_path_webm, format="json")
         self.assertEqual(suggested_json_path_wav, "/home/train/5.json")
 
     def test_create_json_with_content(self):
         """ test for creating a new sample properties json"""
         self.sample_manager.create_user("Mikołaj Balcerek")
-        json_Path = Path(SampleManager.create_a_new_sample_properties_json("Mikołaj Balcerek",
-                                                          {"recognized_speech": "test"},
-                                                        self.sample_manager.path+"/mikolaj_balcerek/1.wav"))
+        json_Path = Path(self.sample_manager.create_new_sample_properties_json("Mikołaj Balcerek",
+                                                                         {"recognized_speech": "test"},
+                                                                         self.sample_manager.path +"/mikolaj_balcerek/1.wav"))
 
         self.assertTrue(json_Path.exists(), "Example JSON file was not created")
 
@@ -117,6 +117,43 @@ class TestSampleManager(unittest.TestCase):
         self.assertFalse(SampleManager.is_allowed_file_extension(file),
                         "file with content type audio/webm was allowed"
                         " (should fail the test to be later converted)")
+
+    def test_get_new_extension_path(self):
+        path = self.sample_manager._get_new_extension_path("C:/asda.wav", "json")
+        self.assertEqual("C:/asda.json", path, "Wrong replacement of extension"
+                                               "in the given path")
+
+        path = self.sample_manager._get_new_extension_path("C:\\ad/asd.gpoo",
+                                                           "pdf")
+        self.assertEqual("C:\\ad/asd.pdf", path, "Wrong replacement of extension"
+                                               "in the given path")
+
+    def test_get_sample_file_name(self):
+        # TODO some tests for windows - style? Will net to change the underlying
+        #  _get_sample_file_name_from_path function..
+
+        path = self.sample_manager._get_sample_file_name_from_path("/usr/src/axe.gpoo")
+        self.assertEqual("axe", path,  "Wrong last element of the path returned"
+                                             "(without extension returned for Linux"
+                                      "style path")
+
+        path = self.sample_manager._get_sample_file_name_from_path("/usr/src/CAPSLOCKED.GPOO")
+        self.assertEqual("CAPSLOCKED", path,  "Wrong last element of the path returned"
+                                             "(without extension returned for Linux"
+                                      "style path with capitalized filename")
+
+
+    #TODO: Add a helper function to add a new user with a file
+    # Hard to do due to add_sample not being integrated
+    # and save_sample requiring FileStorage and overall being a mess
+
+
+    #TODO: Unit tests for create_new... (json, mfcc_plot)
+    # Require the aforementioned helper function
+    # For now both are tested using the integration tests
+
+    #TODO: Unit test for _get_wav_sample_expected_file_path
+    # Require the aforementioned helper function
 
 
 if __name__ == '__main__':
