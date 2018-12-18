@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import unicodedata
@@ -268,7 +269,7 @@ class SampleManager:
 
     def create_plot_for_sample(self, plot_type: str, set_type: str,
                                username: str, sample_name: str,
-                               file_extension: str = "png", **parameters) -> Tuple[str, BytesIO]:
+                               file_extension: str = "png", **parameters) -> Tuple[str, bytes]:
         """
         Master method that creates a plot of given plot_type (e.g. "mfcc")
         for a given set_type (train, test), username and specific sample
@@ -291,21 +292,21 @@ class SampleManager:
         # see if a plot already exists
         # if it does, send it instead of remaking it
         try:
-            return self._get_plot_for_sample_file(wav_path, plot_type, file_extension)
+            file_path, file_bytes = self._get_plot_for_sample_file(wav_path, plot_type, file_extension)
         except FileNotFoundError:
             # the plot does not exists, gonna make it!
             if plot_type == "mfcc":
-                file_path, file_io = self._create_plot_mfcc_for_sample(audio_path=wav_path,
+                file_path, file_bytes = self._create_plot_mfcc_for_sample(audio_path=wav_path,
                                                   directory_path=directory_path,
                                                   file_extension=file_extension)
             else:
                 raise ValueError("plot_type should be of type str, of value one of "
                                  f"{ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
 
-            return file_path, file_io
+            return file_path, file_bytes
 
     def _create_plot_mfcc_for_sample(self, audio_path: str, directory_path: str,
-                                     file_extension: str = "png") -> Tuple[str, BytesIO]:
+                                     file_extension: str = "png") -> Tuple[str, bytes]:
         """
         This creates a MFCC plot file of file_extension file (pdf or png)
         for the audio_path file given.
@@ -324,11 +325,11 @@ class SampleManager:
                                                          file_name, file_extension)
 
         print(f"#LOG {self.__class__.__name__}: mfcc plot file saved to: " + file_path)
-        return file_path, file_io
+        return file_path, file_io.getvalue()
 
 
     def _get_plot_for_sample_file(self, audio_path: str, plot_type: str,
-                                  file_extension: str = "png") -> Tuple[str, BytesIO]:
+                                  file_extension: str = "png") -> Tuple[str, bytes]:
         """
         This helper gets str plot's path and plot's content as BytesIO
         based on str audio_path of the
@@ -345,7 +346,7 @@ class SampleManager:
         # TODO: NOT UNIT TESTED AWAITING FOR CHANGE
         expected_plot_path =  f"{self._get_sample_file_name_from_path(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
         with open(expected_plot_path, mode='rb') as plot_file:
-            return expected_plot_path, BytesIO(plot_file.read())
+            return expected_plot_path, io.BytesIO(plot_file.read()).getvalue()
 
 
     def _get_sample_file_name_from_path(self, file_path: str) -> str:

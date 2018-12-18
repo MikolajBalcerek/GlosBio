@@ -350,7 +350,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
 
         r = self.client.post(request_path)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
-                         "lack of type (no data)specified when querying plot endpoint "
+                         "lack of type (no data) specified when querying plot endpoint "
                          "should result in a failure")
 
     def test_failing_empty_json_url_specified(self):

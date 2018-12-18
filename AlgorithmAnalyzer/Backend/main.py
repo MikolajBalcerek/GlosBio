@@ -1,3 +1,4 @@
+import io
 import urllib
 import os
 import json
@@ -209,7 +210,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
 
-    plot_path, file_io = sample_manager.create_plot_for_sample(plot_type=sent_json_dict['type'],
+    plot_path, file_bytes = sample_manager.create_plot_for_sample(plot_type=sent_json_dict['type'],
                                                                set_type=sampletype,
                                                                username=username,
                                                                sample_name=samplename,
@@ -218,8 +219,10 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
-    return send_file(file_io, as_attachment=True,
-                     attachment_filename=f"generated_mfcc.{sent_json_dict['file_extension']}"), status.HTTP_200_OK
+
+    return send_file(io.BytesIO(file_bytes),
+                               mimetype=f"image/{sent_json_dict['file_extension']}"),\
+           status.HTTP_200_OK
 
 
 if __name__ == "__main__":
