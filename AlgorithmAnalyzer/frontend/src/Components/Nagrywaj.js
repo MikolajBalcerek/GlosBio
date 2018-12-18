@@ -33,8 +33,12 @@ class Recorder extends Component {
 			openSuccess: false,
 			openErrorNoUser: false,
 			openErrorSave: false,
+			openErrorFileType: false,
+			openErrorFileSize: false,
+			openSuccessFile: false,
 			recognizedText: '',
-			type: 'test'
+			type: 'test',
+			fileErr: false
 		};
 		this.onPressButtonRecord = this.onPressButtonRecord.bind(this);
 		this.onPressButtonStop = this.onPressButtonStop.bind(this);
@@ -103,6 +107,10 @@ class Recorder extends Component {
 				})
 			}
 		}
+		setTimeout(() => {
+			console.log('odświerzam userów')
+			this.props.getUsers()
+		}, 2000);
 	}
 	onInputChange(e) {
 		this.setState({ username: e.target.value });
@@ -119,14 +127,53 @@ class Recorder extends Component {
 	  };
 
 	onFilesChange(file) {
+		console.log('lol', file)
 		this.setState({
-			blob_audio_data: null,
-			blob_audio_data2: file[0],
-			recorded: true
+			fileErr: false
 		})
-		console.log(this.state.blob_audio_data2)
+		this.onFilesError.bind(this)
+		if(!this.state.fileErr){
+			this.setState({
+				blob_audio_data: null,
+				blob_audio_data2: file[0],
+				recorded: true,
+				openUploadSuccess: true
+			})
+			setTimeout(() => {
+				this.setState({
+					openUploadSuccess: false
+				})
+			}, 2000);
+			console.log(this.state.blob_audio_data2)
+		} else{
+			console.log('błąd')
+		}
 	  }
 
+	onFilesError(error, file) {
+		if(error.code === 1) {
+				this.setState({
+					fileErr: true,
+					openErrorFileType: true
+				})
+			setTimeout(() => {
+				this.setState({
+					openErrorFileType: false
+				})
+			}, 2000);
+		} else if(error.code === 2) {
+			this.setState({
+				fileErr: true,
+				openErrorFileSize: true
+			})
+		setTimeout(() => {
+			this.setState({
+				openErrorFileSize: false
+			})
+		}, 2000);
+	}
+		console.log('error code ' + error.code + ': ' + error.message)
+	}
 	render() {
 		return (
 			<Paper
@@ -247,11 +294,11 @@ class Recorder extends Component {
 						<Files
 							className='files-dropzone'
 							onChange={this.onFilesChange.bind(this)}
-							onError={this.onFilesError}
-							accepts={['audio/*']}
+							onError={this.onFilesError.bind(this)}
+							accepts={['.wav']}
 							multiple
-							maxFiles={1}
-							maxFileSize={10000000}
+							maxFiles={10}
+							maxFileSize={100000000}
 							minFileSize={0}
 							clickable
 							style={{width: 300}}
@@ -319,6 +366,9 @@ class Recorder extends Component {
 					openErrorNoUser={this.state.openErrorNoUser}
 					openErrorSave={this.state.openErrorSave}
 					SnackbarHandleClose={()=>this.SnackbarHandleClose}
+					openErrorFileType={this.state.openErrorFileType}
+					openErrorFileSize={this.state.openErrorFileSize}
+					openUploadSuccess={this.state.openUploadSuccess}
 				/>
 			</Paper>
 		);

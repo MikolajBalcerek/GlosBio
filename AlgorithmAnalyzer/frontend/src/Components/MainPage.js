@@ -30,7 +30,8 @@ class MainPage extends Component {
 			userList: array
 		})
 	}
-	getUsers() {
+	getUsers = () => {
+		console.log('działam')
         var self = this
         axios
             .get('http://localhost:5000/users')
@@ -57,7 +58,7 @@ class MainPage extends Component {
 					handleChange3={this.handleChange3}
 					getUsers={this.getUsers}
 				/>
-				{value === 1 && <Recorder />}
+				{value === 1 && <Recorder getUsers={()=>this.getUsers()} />}
 				{value === 2 && <Przeglad userlist={this.state.userList} />}
 				{value === 3 && <Trenuj />}
 				{value === 4 && <Testuj1 />}

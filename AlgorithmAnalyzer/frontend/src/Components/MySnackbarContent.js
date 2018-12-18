@@ -89,6 +89,8 @@ MySnackbarContent.propTypes = {
   onClose: PropTypes.func,
   openUploadSuccess: PropTypes.bool,
   openUploadError: PropTypes.bool,
+  openErrorFileType: PropTypes.bool,
+  openErrorFileSize: PropTypes.bool,
   variant: PropTypes.oneOf(['success', 'warning', 'error', 'info']).isRequired,
 };
 
@@ -166,6 +168,38 @@ class CustomizedSnackbars extends React.Component {
           variant="error"
           className={classes.margin}
           message="Nie można zapisać pliku, nie został nagrany"
+        />
+        </Snackbar>
+        <Snackbar
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          open={this.props.openErrorFileType}
+          autoHideDuration={2000}
+          onClose={this.props.SnackbarHandleClose()}
+        >
+         <MySnackbarContentWrapper
+          onClose={this.props.SnackbarHandleClose()}
+          variant="error"
+          className={classes.margin}
+          message="Format pliku jest niepoprawny"
+        />
+        </Snackbar>
+        <Snackbar
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          open={this.props.openErrorFileSize}
+          autoHideDuration={2000}
+          onClose={this.props.SnackbarHandleClose()}
+        >
+         <MySnackbarContentWrapper
+          onClose={this.props.SnackbarHandleClose()}
+          variant="error"
+          className={classes.margin}
+          message="Plik jest zbyt duży"
         />
         </Snackbar>
         <Snackbar
