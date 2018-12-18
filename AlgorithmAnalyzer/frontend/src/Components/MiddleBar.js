@@ -6,13 +6,20 @@ export default class MiddleBar extends Component {
     state = {
         isLogo: false
     }
-    setLogo(){
-        console.log('lol', this.state.isLogo)
+    setLogo=()=>{
+        console.log(this.state.isLogo)
         this.setState({
             isLogo: !this.state.isLogo
         })
     }
+
     render(){
+        const Hover = ({ onHover, children }) => (
+            <div className="hover">
+                <div className="hover__no-hover">{children}</div>
+                <div className="hover__hover">{onHover}</div>
+            </div>
+        )
         const styles ={
             button: {
                 fontSize: '40px',
@@ -29,16 +36,13 @@ export default class MiddleBar extends Component {
         }
         return(
             <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-around'}}>
-                {this.isLogo ? <img  
-                    onMouseEnter={() => this.setLogo()} 
-                    src={logo} 
-                    style={{width: 150, height: 150}}
-                /> : 
                 <img  
-                    onMouseLeave={() => this.setLogo()}
-                    src={logo2} 
-                    style={{width: 150, height: 150}}
-                />}
+                    onMouseEnter={this.setLogo}
+                    onMouseLeave={this.setLogo}
+                    src={this.state.isLogo ? logo : logo2} 
+                    style={{width: 150, height: 150, cursor: 'pointer'}}
+                    onClick={()=>this.props.handleChange1()}
+                />
                 <Button 
                     variant="outlined" 
                     style={this.props.value === 1 ? styles.button : styles.buttonHidden } 
