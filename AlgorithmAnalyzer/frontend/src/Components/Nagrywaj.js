@@ -127,6 +127,7 @@ class Recorder extends Component {
 	  };
 
 	onFilesChange(file) {
+		file.splice()
 		console.log('lol', file)
 		this.setState({
 			fileErr: false
@@ -135,7 +136,7 @@ class Recorder extends Component {
 		if(!this.state.fileErr){
 			this.setState({
 				blob_audio_data: null,
-				blob_audio_data2: file[0],
+				blob_audio_data2: file[file.length-1],
 				recorded: true,
 				openUploadSuccess: true
 			})
@@ -297,8 +298,8 @@ class Recorder extends Component {
 							onError={this.onFilesError.bind(this)}
 							accepts={['.wav']}
 							multiple
-							maxFiles={10}
-							maxFileSize={100000000}
+							maxFiles={1}
+							maxFileSize={10000000}
 							minFileSize={0}
 							clickable
 							style={{width: 300}}
@@ -307,7 +308,7 @@ class Recorder extends Component {
 								color='primary' 
 								variant="contained"
 								>
-								Upuść tutaj pliki, lub kliknij aby wybrać plik z komputera
+								Upuść tutaj plik, lub kliknij aby wybrać plik z komputera
 							</Button>
 						</Files>
 					</div>

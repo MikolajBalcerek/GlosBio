@@ -33,7 +33,7 @@ export default class MiddleBar extends Component {
                 <img  
                     onMouseEnter={this.setLogo}
                     onMouseLeave={this.setLogo}
-                    src={this.state.isLogo ? logo : logo2} 
+                    src={this.state.isLogo ? logo2 : logo} 
                     style={{width: 150, height: 150, cursor: 'pointer'}}
                     onClick={()=>this.props.handleChange1()}
                 />
