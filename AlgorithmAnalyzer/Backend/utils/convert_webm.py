@@ -14,7 +14,8 @@ def convert_webm_to_format_from_bytesIO(source_bytesIO: BytesIO, format : str = 
     sound = AudioSegment.from_file(
         source_bytesIO,
         codec="opus"
-    ).export(export_file_bytesIO_in_memory, format=format)
+    ).export(export_file_bytesIO_in_memory, format=format,
+             parameters=["-sample_fmt", "s16"])
 
     return export_file_bytesIO_in_memory
 
@@ -31,5 +32,5 @@ def convert_webm_to_format_from_path(source_path: str, destination_path: str,
     sound = AudioSegment.from_file(
         source_path,
         codec="opus"
-    ).export(export_path, format=format)
+    ).export(export_path, format=format, parameters=["-sample_fmt", "s16"])
     return export_path
