@@ -230,8 +230,21 @@ class SampleManager:
             file.save(temp_path)
 
             # convert to webm
-            wav_path = convert_webm.convert_webm_to_format(
-                temp_path, temp_path,  "wav")
+
+            # get a BytesIO object
+            with open(temp_path, 'rb') as webm_input_file_handle:
+                webm_input_bytesIO = BytesIO(webm_input_file_handle.read())
+
+            # convert in memory webm to wav
+            wav_output_bytesIO = convert_webm.convert_webm_to_format(
+                webm_input_bytesIO,  "wav")
+
+            # get a new wav path
+            wav_path = os.path.splitext(temp_path)[0]+'.wav'
+            # save the newly converted file to wav_path
+            with open(wav_path, 'wb') as new_wav_file:
+                new_wav_file.write(wav_output_bytesIO.getvalue())
+
             print("#LOG {self.__class__.__name__}: .wav file converted and saved to: " + wav_path)
 
             # delete temp file
