@@ -12,7 +12,7 @@ class Trenuj extends Component {
 
     render(){
         return(
-            <Paper style={{paddingLeft: 200, paddingRight: 200, paddingTop: 30, paddingBottom: 30, margin: 20}}>   
+            <Paper style={{paddingLeft: 200, paddingRight: 200, paddingTop: 30, paddingBottom: 30, margin: 20,backgroundColor: 'rgba(0, 0, 0, .6)'}}>   
                 <Grid item xs={12} style={{display: 'flex',  justifyContent:'center', alignItems:'center'}}> 
                 <Button variant="outlined" color="primary">
                     Trenuj
