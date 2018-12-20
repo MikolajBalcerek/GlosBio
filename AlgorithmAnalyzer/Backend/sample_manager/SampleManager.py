@@ -236,7 +236,7 @@ class SampleManager:
                 webm_input_bytesIO = BytesIO(webm_input_file_handle.read())
 
             # convert in memory webm to wav
-            wav_output_bytesIO = convert_webm.convert_webm_to_format(
+            wav_output_bytesIO = convert_webm.convert_webm_to_format_from_bytesIO(
                 webm_input_bytesIO,  "wav")
 
             # get a new wav path
