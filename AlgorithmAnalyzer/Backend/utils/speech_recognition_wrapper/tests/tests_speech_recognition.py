@@ -1,5 +1,5 @@
 ﻿import os
-import sys
+from io import BytesIO
 import unittest
 import speech_recognition as sr
 
@@ -36,6 +36,16 @@ class TestSpeechToText(unittest.TestCase):
                       wrapper.recognize_speech_from_path(
                           self.AUDIO_Kornelia_Cwik),
                       "Failed test to recognize speech \"Kornelia Ćwik\" in a noisy polish wav ALREADY PREPARED recording taking from PATH (instead of file)")
+
+    # test recognize speech from BytesIO object
+    def test_recognize_speech_from_BytesIO(self):
+        with open(self.AUDIO_Kornelia_Cwik, 'rb') as input_file_handle:
+            input_bytes_io = BytesIO(input_file_handle.read())
+        self.assertIn("Kornelia Ćwik",
+                      wrapper.recognize_speech_from_bytesIO(
+                          input_bytes_io),
+                      "Failed test to recognize speech \"Kornelia Ćwik\" in a noisy polish wav ALREADY PREPARED recording taking from PATH (instead of file)")
+
 
 if __name__ == '__main__':
     unittest.main()
