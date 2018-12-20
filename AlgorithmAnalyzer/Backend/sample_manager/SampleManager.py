@@ -251,7 +251,11 @@ class SampleManager:
             os.remove(temp_path)
 
         # recognize speech
-        recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(wav_path)
+        # read a wav from wav_path to bytesIO and pass to the function
+        with open(wav_path, 'rb') as wav_input_file_handle:
+            recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(
+                BytesIO(wav_input_file_handle.read()))
+
         print(f"#LOG {self.__class__.__name__}: Recognized words: {recognized_speech}")
 
         # save the new sample json
