@@ -11,7 +11,6 @@ from config import *
 from sample_manager.SampleManager import SampleManager, UsernameException
 
 app = FlaskAPI(__name__)
-sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 
 CORS(app)
 
@@ -120,8 +119,8 @@ def handle_get_file(filetype, sampletype, username, filename):
     #  JSON/test/mikolaj/1.json..
 
     # check for proper sample set type
-    if sampletype not in ALLOWED_SAMPLE_TYPES:
-        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {ALLOWED_SAMPLE_TYPES}"], \
+    if sampletype not in app.config['ALLOWED_SAMPLE_TYPES']:
+        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {app.config['ALLOWED_SAMPLE_TYPES']}"], \
                 status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
@@ -129,7 +128,7 @@ def handle_get_file(filetype, sampletype, username, filename):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # check if requested file have allowed extension
-    allowed_extensions = ALLOWED_FILES_TO_GET[filetype]
+    allowed_extensions = app.config['ALLOWED_FILES_TO_GET'][filetype]
     proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
     if not proper_extension:
         return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
@@ -186,17 +185,17 @@ def handle_plot_endpoint(sampletype, username, samplename):
         return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
     # check for type
-    if sent_json_dict.get('type') not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+    if sent_json_dict.get('type') not in app.config['ALLOWED_PLOT_TYPES_FROM_SAMPLES']:
+        return [f"Plot of non-existing type was requested,supported plots {app.config['ALLOWED_PLOT_TYPES_FROM_SAMPLES']}"],\
                status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
-    if sent_json_dict.get('file_extension') not in ALLOWED_PLOT_FILE_EXTENSIONS:
+    if sent_json_dict.get('file_extension') not in app.config['ALLOWED_PLOT_FILE_EXTENSIONS']:
         if sent_json_dict.get('file_extension') is None:
             sent_json_dict['file_extension'] = 'png'
         else:
             return ["Plot requested cannot be returned with that file extension,"
-                    f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}"],\
+                    f"supported extensions {app.config['ALLOWED_PLOT_FILE_EXTENSIONS']}"],\
                    status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
@@ -226,4 +225,6 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
 
 if __name__ == "__main__":
+    app.config.from_object('config.DevelopmentConfig')
+    sample_manager = SampleManager(app.config['SAMPLE_UPLOAD_PATH'])
     app.run(debug=True)
