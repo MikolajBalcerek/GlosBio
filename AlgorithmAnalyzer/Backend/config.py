@@ -1,3 +1,7 @@
+# not app related configs
+ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
+
+
 class BaseConfig(object):
     DEBUG = False
     TESTING = False
@@ -16,7 +20,7 @@ class BaseConfig(object):
     ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
 
     # allowed plot from samples' types
-    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
+    object.ALLOWED_PLOT_TYPES_FROM_SAMPLES = ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
 
 class ProductionConfig(BaseConfig):

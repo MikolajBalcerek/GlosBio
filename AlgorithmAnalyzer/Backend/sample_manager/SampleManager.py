@@ -285,6 +285,7 @@ class SampleManager:
         :return file_path, file_io: str file_path to the saved file,
         BytesIO containing the requested plot
         """
+
         wav_path = self._get_wav_sample_expected_file_path(username, sample_type=set_type,
                                                            sample_name=sample_name)
         directory_path = self.get_user_dirpath(username, set_type=set_type)
