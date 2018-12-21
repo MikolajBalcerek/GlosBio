@@ -11,11 +11,8 @@ from flask_api import status
 import config
 from main import app
 from sample_manager.SampleManager import SampleManager
-
-
-
+SAMPLE_UPLOAD_PATH = config.BaseConfig.SAMPLE_UPLOAD_PATH
 TEST_USERNAMES = ["Train Person", "Test Person"]
-
 # a nifty search for test audio file that will work both from test dir
 # and backend dir
 # however will return a false copy if two trzynascie.webm exist
@@ -29,16 +26,12 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         ''' setup before tests_integration form this class '''
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
+        self.app = app
+        self.app.config.from_object('config.TestingConfig')
+        self.sm = self.app.config['SAMPLE_MANAGER']
         self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
                               TEST_USERNAMES]
-
-    @property
-    def client(self):
-        """ this is a getter for client """
-        return self.app
+        self.client = self.app.test_client()
 
     def tearDown(self):
         ''' cleanup after every test '''
@@ -141,16 +134,17 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         ''' setup before tests_integration for this class '''
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
+        self.app = app
+        app.config.from_object('config.TestingConfig')
+        self.sm = self.app.config['SAMPLE_MANAGER']
         self.test_dirnames = [self.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
+        self.client = self.app.test_client()
         with open('./tests_integration/trzynascie.webm', 'rb') as f:
-            self.app.post('/audio/train',
+            self.client.post('/audio/train',
                           data={"username": TEST_USERNAMES[0], "file": f})
             f.close()
         with open(test_audio_path_trzynascie, 'rb') as f:
-            self.app.post('/audio/test',
+            self.client.post('/audio/test',
                           data={"username": TEST_USERNAMES[1], "file": f})
             f.close()
 
@@ -160,11 +154,6 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         paths_to_be_deleted = [*self.test_dirnames]
         for _path in paths_to_be_deleted:
             shutil.rmtree(_path)
-
-    @property
-    def client(self):
-        """ this is a getter for client """
-        return self.app
 
     def test_get_all_users(self):
         r = self.client.get('/users')
@@ -225,7 +214,7 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_3} wrong status code, expected 400, got {r.status_code}")
         
-        expected_message = [f"Accepted extensions for filetype 'audio': {config.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
+        expected_message = [f"Accepted extensions for filetype 'audio': {config.BaseConfig.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
         self.assertEqual(r.json, expected_message, "expected different message")
 
     def test_get_sample(self):
@@ -274,19 +263,20 @@ class PlotEndpointForSampleTests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         ''' setup before tests_integration for this class '''
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
+        self.app = app
+        app.config.from_object('config.TestingConfig')
+        self.sm = self.app.config['SAMPLE_MANAGER']
         self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
                               TEST_USERNAMES]
+        self.client = self.app.test_client()
         with open(test_audio_path_trzynascie, 'rb') as f:
-            r = self.app.post('/audio/train',
+            r = self.client.post('/audio/train',
                           data={"username": TEST_USERNAMES[0], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
             f.close()
         with open(test_audio_path_trzynascie, 'rb') as f:
-            r = self.app.post('/audio/test',
+            r = self.client.post('/audio/test',
                           data={"username": TEST_USERNAMES[1], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
@@ -301,10 +291,6 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         for _path in paths_to_be_deleted:
             shutil.rmtree(_path)
 
-    @property
-    def client(self):
-        """ this is a getter for client """
-        return self.app
 
     def test_POST_mfcc_plot_train_json_no_file_extension_specified(self):
         """ tests for MFCC plot being requested
