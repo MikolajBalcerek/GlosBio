@@ -15,7 +15,8 @@ from pathlib import Path
 from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
 from plots import mfcc_plot
-from config import ALLOWED_PLOT_TYPES_FROM_SAMPLES
+
+ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
 
 ''''''''''''''''
 example of directory structure

@@ -226,5 +226,5 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
-    sample_manager = SampleManager(app.config['SAMPLE_UPLOAD_PATH'])
+    sample_manager = app.config['SAMPLE_MANAGER']
     app.run(debug=True)

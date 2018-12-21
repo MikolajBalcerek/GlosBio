@@ -14,8 +14,8 @@ from sample_manager.SampleManager import SampleManager
 
 
 
-SAMPLE_UPLOAD_PATH = config.SAMPLE_UPLOAD_PATH
 TEST_USERNAMES = ["Train Person", "Test Person"]
+
 # a nifty search for test audio file that will work both from test dir
 # and backend dir
 # however will return a false copy if two trzynascie.webm exist

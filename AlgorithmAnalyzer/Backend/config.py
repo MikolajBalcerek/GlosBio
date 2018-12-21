@@ -1,5 +1,4 @@
-# not app related configs
-ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
+from sample_manager.SampleManager import SampleManager, ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
 
 class BaseConfig(object):
@@ -20,8 +19,10 @@ class BaseConfig(object):
     ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
 
     # allowed plot from samples' types
-    object.ALLOWED_PLOT_TYPES_FROM_SAMPLES = ALLOWED_PLOT_TYPES_FROM_SAMPLES
+    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
+    # sample manager
+    SAMPLE_MANAGER = SampleManager(SAMPLE_UPLOAD_PATH)
 
 class ProductionConfig(BaseConfig):
     pass
