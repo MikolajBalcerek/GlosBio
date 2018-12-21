@@ -50,7 +50,7 @@ def handle_users_endpoint():
     """
     serve list of registered users
     """
-    return {'users': sample_manager.get_all_usernames()}, status.HTTP_200_OK
+    return {'users': app.config['SAMPLE_MANAGER'].get_all_usernames()}, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])
@@ -75,7 +75,7 @@ def handling_audio_endpoint(type):
         file = request.files.get('file')
 
         try:
-            path, recognized_speech = sample_manager.save_new_sample(username, file, type)
+            path, recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(username, file, type)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
@@ -98,9 +98,9 @@ def handle_list_samples_for_user(type, username):
     if type not in ['train', 'test']:
         return ["Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
-    if sample_manager.user_exists(username):
+    if app.config['SAMPLE_MANAGER'].user_exists(username):
         app.logger.info(f'{type} {username}')
-        return {'samples': sample_manager.get_samples(username, type)}, status.HTTP_200_OK
+        return {'samples': app.config['SAMPLE_MANAGER'].get_samples(username, type)}, status.HTTP_200_OK
     else:
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
@@ -124,23 +124,23 @@ def handle_get_file(filetype, sampletype, username, filename):
                 status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
-    if not sample_manager.user_exists(username):
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # check if requested file have allowed extension
     allowed_extensions = app.config['ALLOWED_FILES_TO_GET'][filetype]
-    proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
+    proper_extension, extension = app.config['SAMPLE_MANAGER'].file_has_proper_extension(filename, allowed_extensions)
     if not proper_extension:
         return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
                 status.HTTP_400_BAD_REQUEST
 
     # check if file exists in samplebase
-    if not sample_manager.file_exists(username, sampletype, filename):
+    if not app.config['SAMPLE_MANAGER'].file_exists(username, sampletype, filename):
         return [f"There is no such sample '{filename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
 
     # serve file
-    user_dir = sample_manager.get_user_dirpath(username)
+    user_dir = app.config['SAMPLE_MANAGER'].get_user_dirpath(username)
     if sampletype == 'test':
         user_dir = os.path.join(user_dir, sampletype)
 
@@ -200,16 +200,16 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # TODO: duplication from other endpoints
     # check if user exists in samplebase
-    if not sample_manager.user_exists(username):
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
     # check if file exists in samplebase
-    if not sample_manager.file_exists(username, sampletype, samplename):
+    if not app.config['SAMPLE_MANAGER'].file_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
 
-    plot_path, file_bytes = sample_manager.create_plot_for_sample(plot_type=sent_json_dict['type'],
+    plot_path, file_bytes = app.config['SAMPLE_MANAGER'].create_plot_for_sample(plot_type=sent_json_dict['type'],
                                                                set_type=sampletype,
                                                                username=username,
                                                                sample_name=samplename,
@@ -226,5 +226,4 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
-    sample_manager = app.config['SAMPLE_MANAGER']
     app.run(debug=True)
