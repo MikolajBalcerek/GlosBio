@@ -30,7 +30,7 @@ class TestConfigVariableSetting(unittest.TestCase):
                                                    "should be set to False")
 
     def test_development_app_variables(self):
-        """ tests if app takes correct variables after being set up as production"""
+        """ tests if app takes correct variables after being set up as development"""
         self.app = app
         self.app.config.from_object('config.DevelopmentConfig')
 
