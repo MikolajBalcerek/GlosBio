@@ -210,7 +210,7 @@ class SampleManager:
         '''
         get single file document template
         '''
-        return {"filename": filename, "id": id}
+        return {"filename": filename, "id": id, "recognizedSpeech": ""}
 
     def _get_user_mongo_id(self, username: str) -> ObjectId:
         '''
