@@ -85,12 +85,13 @@ def handling_audio_endpoint(type):
     if 'username' not in request.data:
         return ['No username'], status.HTTP_400_BAD_REQUEST
 
-    app.logger.info(f"add new sample to {type} set")
+    app.logger.info(f"try to add new sample to {type} set")
     username = request.data.get('username')
     file = request.files.get('file')
 
     try:
         sample_manager.save_new_sample(username, type, file)
+        app.logger.info(f"new sample added successfully")
     except UsernameException:
         return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
