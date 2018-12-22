@@ -4,14 +4,30 @@ from flask import request, current_app, send_file
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 from io import BytesIO
+from functools import wraps
 
 import config
 from sample_manager.SampleManager import SampleManager, UsernameException
+
 
 app = FlaskAPI(__name__)
 sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}", config.DATABASE_NAME)
 
 CORS(app)
+
+
+def requires_db_connection():
+    '''
+    decorator function for routes where database connection can occur
+    '''
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if not sample_manager.is_db_avaliable():
+                return "", status.HTTP_503_SERVICE_UNAVAILABLE
+            return f(*args, **kwargs)
+        return wrapped
+    return wrapper
 
 
 @app.route("/", methods=['GET'])
@@ -42,15 +58,19 @@ def landing_documentation_page():
 
 
 @app.route("/users", methods=['GET'])
+@requires_db_connection()
 def handle_users_endpoint():
     """
     serve list of registered users
     """
+    # if not sample_manager.is_db_avaliable():
+    #     return "", status.HTTP_503_SERVICE_UNAVAILABLE
     usernames = sample_manager.get_all_usernames()
     return {'users': usernames}, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])
+@requires_db_connection()
 def handling_audio_endpoint(type):
     """
     This handles generic operations that have to do with audio
@@ -84,6 +104,7 @@ def handling_audio_endpoint(type):
 
 
 @app.route("/audio/<string:type>/<string:username>", methods=['GET'])
+@requires_db_connection()
 def handle_list_samples_for_user(type, username):
     """
     it handles request for listing samples from train or test set
@@ -102,6 +123,7 @@ def handle_list_samples_for_user(type, username):
 
 
 @app.route("/audio/<string:sampletype>/<string:username>/<string:samplename>", methods=['GET'])
+@requires_db_connection()
 def handle_get_file(sampletype, username, samplename):
     """
     serve audio sample or json file

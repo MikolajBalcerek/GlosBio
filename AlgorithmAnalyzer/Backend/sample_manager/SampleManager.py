@@ -22,11 +22,11 @@ example of single MongoDB document representing single 'user'
     "created" : ISODate("2018-12-03T22:48:08.449Z"),   // creation timestamp
     "samples" : {                                      // here store samples
         "train" : [
-            { "filename" : "1.wav", "id" : ObjectId("5c05b2a837aeab2bca848c75") },  //single sample document
-            { "filename" : "2.wav", "id" : ObjectId("5c05b7ae37aeab2f3e779659") }
+            { "filename" : "1.wav", "id" : ObjectId("5c05b2a837aeab2bca848c75"), recognizedSpeech: "" },  //single sample document
+            { "filename" : "2.wav", "id" : ObjectId("5c05b7ae37aeab2f3e779659"), recognizedSpeech: "" }
                   ]
         "test" : [
-            { "filename" : "1.wav", "id" : ObjectId("5c05c17c37aeab3cf2e5cb76") },
+            { "filename" : "1.wav", "id" : ObjectId("5c05c17c37aeab3cf2e5cb76"), recognizedSpeech: "" },
                  ]
     },
     "tags" : {"gender": "male", "age": "20-29"}        // all user-specific tags
@@ -42,7 +42,7 @@ class SampleManager:
         :param testing: bool - used to suppress log messages
         '''
         # setup MongoDB database connetion
-        self.db_client = MongoClient(db_url)
+        self.db_client = MongoClient(db_url, serverSelectionTimeoutMS=5000)
         self.db_database = self.db_client[db_name]
         self.db_collection = self.db_database.samples
         self.db_file_storage = gridfs.GridFS(self.db_database)
@@ -54,6 +54,16 @@ class SampleManager:
             raise Exception("Could not connect to MongoDB database...")
 
         self.show_logs = show_logs
+
+    def is_db_avaliable(self) -> bool:
+        '''
+        check database connection
+        '''
+        try:
+            self.db_client.server_info()
+            return True
+        except errors.AutoReconnect or errors.ServerSelectionTimeoutError:
+            return False
 
     def get_all_usernames(self) -> list:
         '''
