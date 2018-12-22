@@ -120,7 +120,7 @@ class SampleManager:
             sample_names.append(sample['filename'])
         return sample_names
 
-    def save_new_sample(self, username: str, set_type: str, file: FileStorage) -> str:
+    def save_new_sample(self, username: str, set_type: str, file: FileStorage):
         '''
         saves new sample in samplebase, creates new user if
         it wasn't created yet
@@ -141,8 +141,6 @@ class SampleManager:
             self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
         except Exception:
             raise
-
-        return ""
 
     def get_samplefile(self, username: str, set_type: str, samplename: str):
         '''
@@ -168,6 +166,12 @@ class SampleManager:
         id = list(temp_doc)[0]['id']
         fileObj = self.db_file_storage.get(id)
         return fileObj
+
+    def sample_speech_to_text(self):
+        '''
+        TO DO: speech to text
+        '''
+        return ""
 
     def _invalid_username(self, username: str) -> bool:
         '''

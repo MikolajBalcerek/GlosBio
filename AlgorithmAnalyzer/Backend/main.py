@@ -63,8 +63,6 @@ def handle_users_endpoint():
     """
     serve list of registered users
     """
-    # if not sample_manager.is_db_avaliable():
-    #     return "", status.HTTP_503_SERVICE_UNAVAILABLE
     usernames = sample_manager.get_all_usernames()
     return {'users': usernames}, status.HTTP_200_OK
 
@@ -92,14 +90,14 @@ def handling_audio_endpoint(type):
     file = request.files.get('file')
 
     try:
-        recognized_speech = sample_manager.save_new_sample(username, type, file)
+        sample_manager.save_new_sample(username, type, file)
     except UsernameException:
         return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
     return {"username": username,
             "text": f"Uploaded file for {username}, "
-                    f"recognized: {recognized_speech}",
-            "recognized_speech": str(recognized_speech)
+                    f"recognized: ''",
+            "recognized_speech": ""
             }, status.HTTP_201_CREATED
 
 
