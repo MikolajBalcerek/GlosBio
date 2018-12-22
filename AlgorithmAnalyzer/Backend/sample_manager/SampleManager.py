@@ -18,7 +18,7 @@ example of single MongoDB document representing single 'user'
 {
     "_id" : ObjectId("5c05b2a837aeab2bca848c74"),      // mongo document id
     "name" : "Test Test",                              // base username, set during new user creation
-    "name-normalized" : "test_test",                   // normalized name, unique for every user
+    "nameNormalized" : "test_test",                   // normalized name, unique for every user
     "created" : ISODate("2018-12-03T22:48:08.449Z"),   // creation timestamp
     "samples" : {                                      // here store samples
         "train" : [
@@ -74,7 +74,7 @@ class SampleManager:
         :param username: str - eg. "Hugo Kołątaj"
         '''
         norm_name = self._get_normalized_username(username)
-        return True if self.db_collection.find_one({"name-normalized": norm_name}) else False
+        return True if self.db_collection.find_one({"nameNormalized": norm_name}) else False
 
     def sample_exists(self, username: str, set_type: str, samplename: str) -> bool:
         '''
@@ -200,7 +200,7 @@ class SampleManager:
         need for 'fresh' document templete, eg. creating new user
         '''
         return {"name": username,
-                "name-normalized": self._get_normalized_username(username),
+                "nameNormalized": self._get_normalized_username(username),
                 "created": datetime.datetime.utcnow(),
                 "samples": {"train": [], "test": []},
                 "tags": []
@@ -217,7 +217,7 @@ class SampleManager:
         needed when we want to refere to db document via mongo _id
         and have username
         '''
-        doc = self.db_collection.find_one({"name-normalized": self._get_normalized_username(username)})
+        doc = self.db_collection.find_one({"nameNormalized": self._get_normalized_username(username)})
         return doc['_id'] if doc else None
 
     def _save_file_to_db(self, filename: str, fileObj=None, content_type: str = None):
