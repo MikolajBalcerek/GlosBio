@@ -64,7 +64,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "User wasn't create")
 
             # check if sample exists in database in proper sample set
-            self.assertEqual(self.sm.sample_exists(_username, "train", "1.wav"), True,
+            self.assertEqual(self.sm.does_sample_exist(_username, "train", "1.wav"), True,
                              "Could not find sample in database")
 
 
@@ -90,7 +90,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "User wasn't create")
 
             # check if sample exists in database in proper sample set
-            self.assertEqual(self.sm.sample_exists(_username, "test", "1.wav"), True,
+            self.assertEqual(self.sm.does_sample_exist(_username, "test", "1.wav"), True,
                              "Could not find sample in database")
 
     def test_post_file_no_file(self):

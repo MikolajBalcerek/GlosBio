@@ -90,7 +90,7 @@ class SampleManager:
             raise DatabaseException(e)
         return True if out else False
 
-    def sample_exists(self, username: str, set_type: str, samplename: str) -> bool:
+    def does_sample_exist(self, username: str, set_type: str, samplename: str) -> bool:
         """
         check if sample exists in samplebase
         :param username: str - eg. 'Hugo Kołątaj'
@@ -181,7 +181,7 @@ class SampleManager:
         """
         return ""
 
-    def _invalid_username(self, username: str) -> bool:
+    def _is_username_valid(self, username: str) -> bool:
         """
         check if given username is valid
         """
@@ -210,7 +210,7 @@ class SampleManager:
             temp = temp.replace(diac, normal)
         temp = temp.replace(" ", "_")
         temp = unicodedata.normalize('NFKD', temp).encode('ascii', 'ignore').decode('ascii')
-        if self._invalid_username(temp):
+        if self._is_username_valid(temp):
             raise UsernameException(
                 'Incorrect username "{}" !'.format(temp)
             )
