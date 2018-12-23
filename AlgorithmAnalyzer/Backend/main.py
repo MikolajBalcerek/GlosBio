@@ -21,12 +21,13 @@ def requires_db_connection(f):
     decorator function for routes where database connection can occur
     """
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapped(*args, **kwargs):
         if not sample_manager.is_db_available():
             app.logger.error("Database is unavailable...")
             return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
         return f(*args, **kwargs)
-    return wrapper
+        
+    return wrapped
 
 
 @app.route("/", methods=['GET'])
