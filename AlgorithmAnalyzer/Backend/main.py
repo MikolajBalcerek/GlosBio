@@ -16,16 +16,16 @@ sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}", 
 CORS(app)
 
 
-def requires_db_connection():
-    '''
+def requires_db_connection(fnc):
+    """
     decorator function for routes where database connection can occur
-    '''
+    """
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
             if not sample_manager.is_db_available():
                 app.logger.error("Database is unavailable...")
-                return "", status.HTTP_503_SERVICE_UNAVAILABLE
+                return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
             return f(*args, **kwargs)
         return wrapped
     return wrapper
@@ -59,7 +59,7 @@ def landing_documentation_page():
 
 
 @app.route("/users", methods=['GET'])
-@requires_db_connection()
+@requires_db_connection
 def handle_users_endpoint():
     """
     serve list of registered users

@@ -216,7 +216,7 @@ class SampleManager:
             )
         return secure_filename(temp)
 
-    def _get_sample_class_document_template(self, username: str ="No Name") -> dict:
+    def _get_sample_class_document_template(self, username: str) -> dict:
         """
         get single sample class document template, needed when there is
         need for 'fresh' document templete, eg. creating new user
