@@ -55,7 +55,7 @@ class SampleManager:
 
         self.show_logs = show_logs
 
-    def is_db_avaliable(self) -> bool:
+    def is_db_available(self) -> bool:
         """
         check database connection
         """
@@ -74,8 +74,8 @@ class SampleManager:
             usernames = self.db_collection.find({}, ["name"])
             for user in usernames:
                 out.append(user['name'])
-        except Exception:
-            raise
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
         return out
 
     def user_exists(self, username: str) -> bool:
@@ -84,7 +84,11 @@ class SampleManager:
         :param username: str - eg. 'Hugo Kołątaj'
         """
         norm_name = self._get_normalized_username(username)
-        return True if self.db_collection.find_one({"nameNormalized": norm_name}) else False
+        try:
+            out = self.db_collection.find_one({"nameNormalized": norm_name})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return True if out else False
 
     def sample_exists(self, username: str, set_type: str, samplename: str) -> bool:
         """
@@ -102,7 +106,10 @@ class SampleManager:
         :param username: str - eg. 'Hugo Kołątaj'
         """
         new_sample = self._get_sample_class_document_template(username)
-        id = self.db_collection.insert_one(new_sample).inserted_id
+        try:
+            id = self.db_collection.insert_one(new_sample).inserted_id
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
         return id
 
     def get_user_sample_list(self, username: str, set_type: str) -> list:
@@ -138,8 +145,8 @@ class SampleManager:
             new_file_doc = self._get_sample_file_document_template(filename, file_id)
 
             self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
-        except Exception:
-            raise
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
 
     def get_samplefile(self, username: str, set_type: str, samplename: str):
         """
@@ -158,12 +165,14 @@ class SampleManager:
             {'$match': {f"samples.{set_type}.filename": samplename}},
             {'$project': {"id": f"$samples.{set_type}.id"}}
             ]
-
-        temp_doc = list(self.db_collection.aggregate(aggregation_pipeline))
-        if not temp_doc:
-            return None
-        id = list(temp_doc)[0]['id']
-        fileObj = self.db_file_storage.get(id)
+        try:
+            temp_doc = list(self.db_collection.aggregate(aggregation_pipeline))
+            if not temp_doc:
+                return None
+            id = list(temp_doc)[0]['id']
+            fileObj = self.db_file_storage.get(id)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
         return fileObj
 
     def sample_speech_to_text(self):
@@ -230,7 +239,10 @@ class SampleManager:
         needed when we want to refer to db document via mongo _id
         and have username
         """
-        doc = self.db_collection.find_one({"nameNormalized": self._get_normalized_username(username)})
+        try:
+            doc = self.db_collection.find_one({"nameNormalized": self._get_normalized_username(username)})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
         return doc['_id'] if doc else None
 
     def _save_file_to_db(self, filename: str, fileObj=None, content_type: str = None):
@@ -241,7 +253,11 @@ class SampleManager:
             content_type, _ = guess_type(filename)
 
         storage = self.db_file_storage
-        id = storage.put(fileObj, filename=filename, content_type=content_type)
+        try:
+            id = storage.put(fileObj, filename=filename, content_type=content_type)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        
         return id
 
     def _get_file_from_db(self, id: ObjectId):
@@ -251,8 +267,9 @@ class SampleManager:
         storage = self.db_file_storage
         try:
             fileObj = storage.get(id)
-        except Exception:
-            raise
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
         return fileObj
 
     def _get_next_filename(self, username: str, set_type: str) -> str:
@@ -294,5 +311,10 @@ class SampleManager:
 
 
 class UsernameException(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+
+
+class DatabaseException(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)

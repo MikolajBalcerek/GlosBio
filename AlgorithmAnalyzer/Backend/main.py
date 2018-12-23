@@ -7,7 +7,7 @@ from io import BytesIO
 from functools import wraps
 
 import config
-from sample_manager.SampleManager import SampleManager, UsernameException
+from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 
 
 app = FlaskAPI(__name__)
@@ -23,7 +23,8 @@ def requires_db_connection():
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            if not sample_manager.is_db_avaliable():
+            if not sample_manager.is_db_available():
+                app.logger.error("Database is unavailable...")
                 return "", status.HTTP_503_SERVICE_UNAVAILABLE
             return f(*args, **kwargs)
         return wrapped
@@ -58,12 +59,16 @@ def landing_documentation_page():
 
 
 @app.route("/users", methods=['GET'])
-@requires_db_connection()
+# @requires_db_connection()
 def handle_users_endpoint():
     """
     serve list of registered users
     """
     usernames = sample_manager.get_all_usernames()
+    # alternatywa do dekoratora requires_db_connection:
+    # except DatabaseException as e:
+    #     app.logger.error(e.error)
+    #     return "", status.HTTP_503_SERVICE_UNAVAILABLE
     return {'users': usernames}, status.HTTP_200_OK
 
 
@@ -91,10 +96,10 @@ def handling_audio_endpoint(type):
 
     try:
         sample_manager.save_new_sample(username, type, file)
-        app.logger.info(f"new sample added successfully")
     except UsernameException:
         return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
+    app.logger.info(f"new sample added successfully")
     return {"username": username,
             "text": f"Uploaded file for {username}, "
                     f"recognized: ''",
