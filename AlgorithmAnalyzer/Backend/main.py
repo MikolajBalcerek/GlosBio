@@ -129,7 +129,7 @@ def handle_get_file(sampletype, username, samplename):
 
     sampletype: sample set type 'train' or 'test'
     username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
-    samplename: full name of requested sample eg. '1', '150'
+    samplename: full name of requested sample eg. '1.wav', '150.wav'
     """
 
     # check for proper sample set type
