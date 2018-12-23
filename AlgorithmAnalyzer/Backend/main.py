@@ -59,7 +59,7 @@ def landing_documentation_page():
 
 
 @app.route("/users", methods=['GET'])
-# @requires_db_connection()
+@requires_db_connection()
 def handle_users_endpoint():
     """
     serve list of registered users
