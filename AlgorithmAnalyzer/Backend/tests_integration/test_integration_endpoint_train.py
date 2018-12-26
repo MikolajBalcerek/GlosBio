@@ -42,24 +42,7 @@ class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
                 shutil.rmtree(_path)
 
 
-class Audio_Add_Sample_Tests(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(self):
-        ''' setup before tests_integration form this class '''
-        self.app = app
-        self.app.config.from_object('config.TestingConfig')
-        self.sm = self.app.config['SAMPLE_MANAGER']
-        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
-                              TEST_USERNAMES]
-        self.client = self.app.test_client()
-
-    def tearDown(self):
-        ''' cleanup after every test '''
-        paths_to_be_deleted = [*self.test_dirnames]
-        for _path in paths_to_be_deleted:
-            if os.path.exists(_path):
-                shutil.rmtree(_path)
+class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
 
     def test_post_train_file_username_correct(self):
         """ test for happy path for send file train endpoint """
@@ -84,8 +67,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
             # check for existence of JSON file
             _json_path = Path(
-                f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(
-                    TEST_USERNAMES[0])}/1.json")
+                f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json")
             self.assertEqual(_json_path.exists(), True,
                              "Sample was not accompanied by .json file")
 
@@ -128,13 +110,11 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                                                  '1.wav')
             my_wav = Path(new_wav_expected_path)
             self.assertEqual(my_wav.exists(), True,
-                             f"Missing converted .wav file in '{
-                             self.test_dirnames[1]}/test' directory")
+                             f"Missing converted .wav file in '{self.test_dirnames[1]}/test' directory")
 
             # check for existence of JSON file
             _json_path = Path(
-                f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(
-                    TEST_USERNAMES[1])}/test/1.json")
+                f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1.json")
             self.assertEqual(_json_path.exists(), True,
                              "Sample was not accompanied by .json file")
 
@@ -158,7 +138,7 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "wrong string for lack of username")
 
 
-class Audio_Get_Sample_Tests(unittest.TestCase):
+class AudioGetSampleTests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         ''' setup before tests_integration for this class '''
@@ -227,29 +207,24 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
 
     def test_get_json(self):
         # file exists
-        request_path_1 = f"/json/train/{self.sm.username_to_dirname(
-            TEST_USERNAMES[0])}/1.json"
+        request_path_1 = f"/json/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
         r = self.client.get(request_path_1)
         self.assertEqual(r.status_code, status.HTTP_200_OK,
                          f"request: {request_path_1}\nwrong status code, expected 200, got {r.status_code}")
 
         # file doesn't exist
-        request_path_2 = f"/json/train/{self.sm.username_to_dirname(
-            TEST_USERNAMES[0])}/2.json"
+        request_path_2 = f"/json/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/2.json"
         r = self.client.get(request_path_2)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_2}\nwrong status code, expected 400, got {r.status_code}")
 
         # file exists but wrong filetype (audio) is applied
-        request_path_3 = f"/audio/train/{self.sm.username_to_dirname(
-            TEST_USERNAMES[0])}/1.json"
+        request_path_3 = f"/audio/train/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json"
         r = self.client.get(request_path_3)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_3} wrong status code, expected 400, got {r.status_code}")
 
-        expected_message = [f"Accepted extensions for filetype 'audio': {
-        config.BaseConfig.ALLOWED_FILES_TO_GET[
-            'audio']}, but got 'json' instead"]
+        expected_message = [f"Accepted extensions for filetype 'audio': {config.BaseConfig.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
         self.assertEqual(r.json, expected_message,
                          "expected different message")
 
