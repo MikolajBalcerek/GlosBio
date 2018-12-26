@@ -17,13 +17,13 @@ def convert_webm_to_format(source: Union[BytesIO, str],
    where the file was saved, depending on destination_path value
    """
 
-    if type(source) is BytesIO:
+    if destination_path is None:
         export_file = BytesIO()
-    elif type(source) is str:
+    elif type(destination_path) is str:
         export_file = destination_path + "." + format
     else:
-        raise TypeError("source given is of wrong type, should be BytesIO or str,"
-                        f"is {type(source)}")
+        raise TypeError("destination_path given is of wrong type, should be None or str,"
+                        f"is {type(destination_path)}")
 
     sound = AudioSegment.from_file(
         source,
