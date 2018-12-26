@@ -173,15 +173,19 @@ def handle_plot_endpoint(sampletype, username, samplename):
     #  alongside with handle_get_file could be done - already tasked
 
     # get the request's JSON
+    sent_json: dict = request.get_json(force=True, cache=True, silent=True)
+    if sent_json is None:
+        sent_json = request.form
+
     try:
-        # try to get a json
-        sent_json_dict: dict = json.loads(request.get_json(force=True, cache=True, silent=True))
+        sent_json_dict = json.loads(sent_json, encoding='utf8')
     except TypeError:
-        # not a json was sent, let's see if a standard HTTP data was sent
-        sent_json_dict = request.form
+        # sent_json was already a type of dict
+        sent_json_dict = sent_json
     except:
         return ["Invalid request"], status.HTTP_400_BAD_REQUEST
-    # or return a 400 if an invalid one/none was passed
+
+    # return a 400 if an invalid one/none was passed
     if sent_json_dict is None or not sent_json_dict:
         return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
