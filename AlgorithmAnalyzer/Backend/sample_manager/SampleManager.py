@@ -230,15 +230,32 @@ class SampleManager:
             file.save(temp_path)
 
             # convert to webm
-            wav_path = convert_webm.convert_webm_to_format(
-                temp_path, temp_path,  "wav")
+
+            # get a BytesIO object
+            with open(temp_path, 'rb') as webm_input_file_handle:
+                webm_input_bytesIO = BytesIO(webm_input_file_handle.read())
+
+            # convert in memory webm to wav
+            wav_output_bytesIO = convert_webm.convert_webm_to_format_from_bytesIO(
+                webm_input_bytesIO,  "wav")
+
+            # get a new wav path
+            wav_path = os.path.splitext(temp_path)[0]+'.wav'
+            # save the newly converted file to wav_path
+            with open(wav_path, 'wb') as new_wav_file:
+                new_wav_file.write(wav_output_bytesIO.getvalue())
+
             print("#LOG {self.__class__.__name__}: .wav file converted and saved to: " + wav_path)
 
             # delete temp file
             os.remove(temp_path)
 
         # recognize speech
-        recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(wav_path)
+        # read a wav from wav_path to bytesIO and pass to the function
+        with open(wav_path, 'rb') as wav_input_file_handle:
+            recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(
+                BytesIO(wav_input_file_handle.read()))
+
         print(f"#LOG {self.__class__.__name__}: Recognized words: {recognized_speech}")
 
         # save the new sample json
