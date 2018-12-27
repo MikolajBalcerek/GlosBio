@@ -10,7 +10,7 @@ from functools import wraps
 
 import config
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
-
+from utils import convert_webm
 
 app = FlaskAPI(__name__)
 sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}", config.DATABASE_NAME)
@@ -171,6 +171,8 @@ def handle_get_file(sampletype, username, samplename):
     #             status.HTTP_400_BAD_REQUEST
 
     file = sample_manager.get_samplefile(username, sampletype, samplename)
+    file_mp3 = convert_webm.convert_wav_to_mp3(file)
+    file.seek(0)
 
     # check if file exists in samplebase
     if not file:
@@ -178,7 +180,7 @@ def handle_get_file(sampletype, username, samplename):
                 status.HTTP_400_BAD_REQUEST
 
     app.logger.info(f"send file '{samplename}' from database")
-    return send_file(BytesIO(file.read()), mimetype=file.content_type)
+    return send_file(BytesIO(file_mp3.read()), mimetype=file.content_type)
 
 
 @app.route("/plot/<string:sampletype>/<string:username>/<string:samplename>",
@@ -269,3 +271,17 @@ if __name__ == "main":
     sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}",
                                    f"{config.DATABASE_NAME}_test",
                                    show_logs=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
