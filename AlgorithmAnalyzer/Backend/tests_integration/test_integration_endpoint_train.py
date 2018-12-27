@@ -34,15 +34,20 @@ class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
                              TEST_USERNAMES]
         cls.client = cls.app.test_client()
 
-    def tearDown(self):
-        """ cleanup after every test """
-        paths_to_be_deleted = [*self.test_dirnames]
+    @classmethod
+    def tearDownClass(cls):
+        """ cleanup after all test cases in a class"""
+        paths_to_be_deleted = [*cls.test_dirnames]
         for _path in paths_to_be_deleted:
             if os.path.exists(_path):
                 shutil.rmtree(_path)
 
 
 class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
+
+    def tearDown(self):
+        """ cleanup after each tests"""
+        super().tearDownClass()
 
     def test_post_train_file_username_correct(self):
         """ test for happy path for send file train endpoint """
@@ -144,17 +149,21 @@ class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
     def setUpClass(cls):
         """ setup before tests_integration for this class """
         super().setUpClass()
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+
+        with open(test_audio_path_trzynascie, 'rb') as f:
             r = cls.client.post('/audio/train', data={"username": TEST_USERNAMES[0], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, \
                 f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
             f.close()
+
         with open(test_audio_path_trzynascie, 'rb') as f:
             r = cls.client.post('/audio/test',
                              data={"username": TEST_USERNAMES[1], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, \
                 f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
             f.close()
+
+
 
     def test_get_all_users(self):
         r = self.client.get('/users')
