@@ -15,7 +15,6 @@ from pathlib import Path
 from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
 from plots import mfcc_plot
-from config import ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
 ''''''''''''''''
 example of directory structure
@@ -57,6 +56,10 @@ class SampleManager:
     #  Needs to follow underscore (_get..) convention to denote private methods
     #  Some methods not used at all
     #  Rewrite to use DB?
+
+    # allowed plots' file extensions
+    ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
+    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
 
     def __init__(self, path):
         """path:  string or path; path to root directory"""
@@ -302,6 +305,7 @@ class SampleManager:
         :return file_path, file_io: str file_path to the saved file,
         BytesIO containing the requested plot
         """
+
         wav_path = self._get_wav_sample_expected_file_path(username, sample_type=set_type,
                                                            sample_name=sample_name)
         directory_path = self.get_user_dirpath(username, set_type=set_type)
@@ -318,7 +322,7 @@ class SampleManager:
                                                   file_extension=file_extension)
             else:
                 raise ValueError("plot_type should be of type str, of value one of "
-                                 f"{ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
+                                 f"{self.ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
 
             return file_path, file_bytes
 
