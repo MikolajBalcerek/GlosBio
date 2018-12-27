@@ -276,39 +276,28 @@ class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
                          "expected different message")
 
 
-class PlotEndpointForSampleTests(unittest.TestCase):
+class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
+
     @classmethod
-    def setUpClass(self):
-        ''' setup before tests_integration for this class '''
-        self.app = app
-        app.config.from_object('config.TestingConfig')
-        self.sm = self.app.config['SAMPLE_MANAGER']
-        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
-                              TEST_USERNAMES]
-        self.client = self.app.test_client()
+    def setUpClass(cls):
+        """ setup before tests_integration for this class """
+        super().setUpClass()
         with open(test_audio_path_trzynascie, 'rb') as f:
-            r = self.client.post('/audio/train',
-                                 data={"username": TEST_USERNAMES[0],
+            r = cls.client.post('/audio/train',
+                                data={"username": TEST_USERNAMES[0],
                                        "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
             f.close()
         with open(test_audio_path_trzynascie, 'rb') as f:
-            r = self.client.post('/audio/test',
-                                 data={"username": TEST_USERNAMES[1],
+            r = cls.client.post('/audio/test',
+                                data={"username": TEST_USERNAMES[1],
                                        "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
             f.close()
 
-        self.good_trzynascie_plot_mfcc_path = "./tests_integration/trzynascie_mfcc.png"
-
-    @classmethod
-    def tearDownClass(self):
-        ''' cleanup after every test '''
-        paths_to_be_deleted = [*self.test_dirnames]
-        for _path in paths_to_be_deleted:
-            shutil.rmtree(_path)
+        cls.good_trzynascie_plot_mfcc_path = "./tests_integration/trzynascie_mfcc.png"
 
     def test_POST_mfcc_plot_train_json_no_file_extension_specified(self):
         """ tests for MFCC plot being requested
@@ -428,4 +417,4 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         r = self.client.get(f"/plot/{type}/{user_name}/{sample_name}")
 
         self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED,
-                         f"Expected resposne status code 405 but got {r.status_code}")
+                         f"Expected response status code 405 but got {r.status_code}")
