@@ -154,7 +154,8 @@ class SampleManager:
             webm_bytesIO = BytesIO(file_bytes)
             wav_bytesIO = convert_webm.convert_webm_to_format(webm_bytesIO,  "wav")
 
-        recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
+        # recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
+        recognized_speech = ""
         wav_bytesIO.seek(0)
 
         try:

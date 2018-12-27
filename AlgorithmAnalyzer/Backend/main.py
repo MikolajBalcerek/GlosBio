@@ -172,19 +172,19 @@ def handle_get_file(sampletype, username, samplename):
 
     # get file from samplebase and convert in to mp3
     file = sample_manager.get_samplefile(username, sampletype, samplename)
-    file_mp3 = convert_webm.convert_wav_to_mp3(file)
 
     # check if file exists in samplebase
     if not file:
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
 
+    file_mp3 = convert_webm.convert_wav_to_mp3(file)
     app.logger.info(f"send file '{samplename}' from database")
     return send_file(BytesIO(file_mp3.read()), mimetype=file.content_type)
 
 
 @app.route("/plot/<string:sampletype>/<string:username>/<string:samplename>",
-           methods=['POST', 'GET'])
+           methods=['GET'])
 @requires_db_connection
 def handle_plot_endpoint(sampletype, username, samplename):
     """
@@ -248,7 +248,6 @@ def handle_plot_endpoint(sampletype, username, samplename):
     if not sample_manager.sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
-
     file_bytes = sample_manager.get_plot_for_sample(plot_type=sent_json_dict['type'],
                                                                set_type=sampletype,
                                                                username=username,
@@ -271,17 +270,3 @@ if __name__ == "main":
     sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}",
                                    f"{config.DATABASE_NAME}_test",
                                    show_logs=False)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
