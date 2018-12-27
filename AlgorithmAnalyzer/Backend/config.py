@@ -13,3 +13,8 @@ ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
 
 # allowed plot from samples' types
 ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
+
+# MongoDB database settings
+DATABASE_URL = "127.0.0.1"
+DATABASE_PORT = "27018"
+DATABASE_NAME = "samplebase"

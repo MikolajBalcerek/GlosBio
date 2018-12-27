@@ -5,16 +5,15 @@ import shutil
 import os
 import json
 
-
 from flask_api import status
+from pymongo import MongoClient
 
 import config
+
 from main import app
 from sample_manager.SampleManager import SampleManager
 
-
-
-SAMPLE_UPLOAD_PATH = config.SAMPLE_UPLOAD_PATH
+# SAMPLE_UPLOAD_PATH = config.SAMPLE_UPLOAD_PATH
 TEST_USERNAMES = ["Train Person", "Test Person"]
 # a nifty search for test audio file that will work both from test dir
 # and backend dir
@@ -31,21 +30,15 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
         ''' setup before tests_integration form this class '''
         app.config['TESTING'] = True
         self.app = app.test_client()
-        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
-        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
-                              TEST_USERNAMES]
 
-    @property
-    def client(self):
-        """ this is a getter for client """
-        return self.app
+        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
+        self.db_name = f"{config.DATABASE_NAME}_test"
+        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
 
     def tearDown(self):
         ''' cleanup after every test '''
-        paths_to_be_deleted = [*self.test_dirnames]
-        for _path in paths_to_be_deleted:
-            if os.path.exists(_path):
-                shutil.rmtree(_path)
+        client = MongoClient(self.db_url)
+        client.drop_database(self.db_name)
 
     def test_post_train_file_username_correct(self):
         """ test for happy path for send file train endpoint """
@@ -64,30 +57,17 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "wrong username returned for correct upload")
 
             # check for recognized_speech
-            self.assertIn(r.json["recognized_speech"], ["trzynaście", 13, '13'],
-                          "wrong recognized speech returned for trzynascie")
+            # self.assertIn(r.json["recognized_speech"], ["trzynaście", 13, '13'],
+            #               "wrong recognized speech returned for trzynascie")
 
-            # check for existence of JSON file
-            _json_path = Path(f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[0])}/1.json")
-            self.assertEqual(_json_path.exists(), True,
-                             "Sample was not accompanied by .json file")
+            # check for existence of new user in db
+            _username = r.json["username"]
+            self.assertEqual(self.sm.user_exists(_username), True,
+                             "User wasn't create")
 
-            # check whether JSON includes name and recognized_speech
-
-            with open(_json_path, 'r') as _json_file:
-                json_dict = json.loads(_json_file.read(), encoding='utf8')
-                self.assertIn(json_dict["recognized_speech"], ["trzynaście", 13, '13'],
-                              "incorrect recognized_speech in JSON")
-
-                self.assertEqual(json_dict["name"], TEST_USERNAMES[0],
-                                 "incorrect name in JSON")
-
-            # check whether webm was converted and saved to wav
-            new_wav_expected_path = os.path.join(self.test_dirnames[0], '1.wav')
-            my_wav = Path(new_wav_expected_path)
-            self.assertEqual(my_wav.exists(), True,
-                             "File was not converted and saved as .wav")
-
+            # check if sample exists in database in proper sample set
+            self.assertEqual(self.sm.does_sample_exist(_username, "train", "1.wav"), True,
+                             "Could not find sample in database")
 
     def test_post_test_file_username_correct(self):
         """ test for happy path for send file test endpoint """
@@ -105,17 +85,14 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
             self.assertEqual(r.json["username"], TEST_USERNAMES[1],
                              "wrong username returned for correct upload")
 
-            # check whether webm was converted and saved to wav
-            new_wav_expected_path = os.path.join(self.test_dirnames[1], 'test', '1.wav')
-            my_wav = Path(new_wav_expected_path)
-            self.assertEqual(my_wav.exists(), True,
-                             f"Missing converted .wav file in '{self.test_dirnames[1]}/test' directory")
+            # check for existence of new user in db
+            _username = r.json["username"]
+            self.assertEqual(self.sm.user_exists(_username), True,
+                             "User wasn't create")
 
-            # check for existence of JSON file
-            _json_path = Path(f"{SAMPLE_UPLOAD_PATH}/{self.sm.username_to_dirname(TEST_USERNAMES[1])}/test/1.json")
-            self.assertEqual(_json_path.exists(), True,
-                             "Sample was not accompanied by .json file")
-
+            # check if sample exists in database in proper sample set
+            self.assertEqual(self.sm.does_sample_exist(_username, "test", "1.wav"), True,
+                             "Could not find sample in database")
 
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
@@ -143,8 +120,11 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         ''' setup before tests_integration for this class '''
         app.config['TESTING'] = True
         self.app = app.test_client()
-        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
-        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in TEST_USERNAMES]
+
+        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
+        self.db_name = f"{config.DATABASE_NAME}_test"
+        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
+
         with open('./tests_integration/trzynascie.webm', 'rb') as f:
             self.app.post('/audio/train',
                           data={"username": TEST_USERNAMES[0], "file": f})
@@ -157,9 +137,8 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         ''' cleanup after every test '''
-        paths_to_be_deleted = [*self.test_dirnames]
-        for _path in paths_to_be_deleted:
-            shutil.rmtree(_path)
+        client = MongoClient(self.db_url)
+        client.drop_database(self.db_name)
 
     @property
     def client(self):
@@ -168,12 +147,11 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
 
     def test_get_all_users(self):
         r = self.client.get('/users')
-        expected_usrnames = set([self.sm.username_to_dirname(p) for p in TEST_USERNAMES])
 
         self.assertEqual(r.status_code, status.HTTP_200_OK,
                          f"wrong status code, expected 200, got {r.status_code}")
 
-        for username in expected_usrnames:
+        for username in TEST_USERNAMES:
             self.assertIn(username, r.json['users'],
                           f"expected user {username} in all-users list, got: {r.data}")
 
@@ -200,7 +178,7 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
                          f"wrong status code, expected 400, got {r.status_code}")
 
     def test_get_samples_for_wrong_type(self):
-        """ tests for 400    if a bad endpoint is given"""
+        """ tests for 400 if a bad endpoint is given"""
         r = self.client.get('/random_endpoint_name/train/mr_nobody')
 
         self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND,
@@ -224,7 +202,7 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         r = self.client.get(request_path_3)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_3} wrong status code, expected 400, got {r.status_code}")
-        
+
         expected_message = [f"Accepted extensions for filetype 'audio': {config.ALLOWED_FILES_TO_GET['audio']}, but got 'json' instead"]
         self.assertEqual(r.json, expected_message, "expected different message")
 
@@ -249,17 +227,16 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
 
         expected_message = ["There is no such sample '1000.wav' in users 'train_person' train samplebase"]
         self.assertEqual(r.json, expected_message, "expected different message")
-        
-        
+
         # file doesn't exist - test set
         request_path_4 = f"/audio/test/test_person/1000.wav"
         r = self.client.get(request_path_4)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_4}\nwrong status code, expected 400, got {r.status_code}")
-        
+
         expected_message = ["There is no such sample '1000.wav' in users 'test_person' test samplebase"]
         self.assertEqual(r.json, expected_message, "expected different message")
-        
+
         # user doesn't exist
         request_path_5 = f"/audio/train/mr_nobody12345qwerty/1.wav"
         r = self.client.get(request_path_5)
@@ -276,18 +253,22 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         ''' setup before tests_integration for this class '''
         app.config['TESTING'] = True
         self.app = app.test_client()
-        self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
-        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
-                              TEST_USERNAMES]
+        # self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
+        # self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
+                              # TEST_USERNAMES]
+        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
+        self.db_name = f"{config.DATABASE_NAME}_test"
+        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
+
         with open(test_audio_path_trzynascie, 'rb') as f:
             r = self.app.post('/audio/train',
-                          data={"username": TEST_USERNAMES[0], "file": f})
+                              data={"username": TEST_USERNAMES[0], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
             f.close()
         with open(test_audio_path_trzynascie, 'rb') as f:
             r = self.app.post('/audio/test',
-                          data={"username": TEST_USERNAMES[1], "file": f})
+                              data={"username": TEST_USERNAMES[1], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
             f.close()
@@ -296,9 +277,11 @@ class PlotEndpointForSampleTests(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         ''' cleanup after every test '''
-        paths_to_be_deleted = [*self.test_dirnames]
-        for _path in paths_to_be_deleted:
-            shutil.rmtree(_path)
+        # paths_to_be_deleted = [*self.test_dirnames]
+        # for _path in paths_to_be_deleted:
+        #     shutil.rmtree(_path)
+        client = MongoClient(self.db_url)
+        client.drop_database(self.db_name)
 
     @property
     def client(self):
@@ -354,7 +337,6 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         self.assertTrue(len(r.data) > 0,
                          "Generated MFCC plot PNG file from memory is less than 0")
 
-
     # TODO: tests for pdf
     # TODO: tests for test endpoint
     def test_failing_lack_of_data_url_specified(self):
@@ -404,7 +386,6 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         request_json = json.dumps({"type": "mfcc"})
 
         r = self.client.post(request_path, json=request_json)
-
 
         self.assertEqual([f"There is no such sample '{sample_name}' in users '{user_name}' {type} samplebase"],
                          r.json, "Differing string returned for bad username")
