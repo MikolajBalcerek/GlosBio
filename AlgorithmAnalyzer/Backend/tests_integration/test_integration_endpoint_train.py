@@ -10,7 +10,6 @@ from flask_api import status
 
 import config
 from main import app
-from sample_manager.SampleManager import SampleManager
 
 
 class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
