@@ -132,7 +132,6 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         with open(test_audio_path_trzynascie, 'rb') as f:
             self.app.post('/audio/test',
                           data={"username": TEST_USERNAMES[1], "file": f})
-            f.close()
 
     @classmethod
     def tearDownClass(self):
