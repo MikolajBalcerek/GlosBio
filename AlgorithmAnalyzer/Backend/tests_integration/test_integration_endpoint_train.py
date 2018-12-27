@@ -25,14 +25,14 @@ test_audio_path_trzynascie = next(_trzynascie_file_finder_generator)
 class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         """ setup before tests_integration form this class """
-        self.app = app
-        self.app.config.from_object('config.TestingConfig')
-        self.sm = self.app.config['SAMPLE_MANAGER']
-        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
-                              TEST_USERNAMES]
-        self.client = self.app.test_client()
+        cls.app = app
+        cls.app.config.from_object('config.TestingConfig')
+        cls.sm = cls.app.config['SAMPLE_MANAGER']
+        cls.test_dirnames = [cls.sm.get_user_dirpath(person) for person in
+                             TEST_USERNAMES]
+        cls.client = cls.app.test_client()
 
     def tearDown(self):
         """ cleanup after every test """
@@ -138,31 +138,23 @@ class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
                              "wrong string for lack of username")
 
 
-class AudioGetSampleTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(self):
-        ''' setup before tests_integration for this class '''
-        self.app = app
-        app.config.from_object('config.TestingConfig')
-        self.sm = self.app.config['SAMPLE_MANAGER']
-        self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
-                              TEST_USERNAMES]
-        self.client = self.app.test_client()
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
-            self.client.post('/audio/train',
-                             data={"username": TEST_USERNAMES[0], "file": f})
-            f.close()
-        with open(test_audio_path_trzynascie, 'rb') as f:
-            self.client.post('/audio/test',
-                             data={"username": TEST_USERNAMES[1], "file": f})
-            f.close()
+class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
 
     @classmethod
-    def tearDownClass(self):
-        ''' cleanup after every test '''
-        paths_to_be_deleted = [*self.test_dirnames]
-        for _path in paths_to_be_deleted:
-            shutil.rmtree(_path)
+    def setUpClass(cls):
+        """ setup before tests_integration for this class """
+        super().setUpClass()
+        with open('./tests_integration/trzynascie.webm', 'rb') as f:
+            r = cls.client.post('/audio/train', data={"username": TEST_USERNAMES[0], "file": f})
+            assert r.status_code == status.HTTP_201_CREATED, \
+                f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
+            f.close()
+        with open(test_audio_path_trzynascie, 'rb') as f:
+            r = cls.client.post('/audio/test',
+                             data={"username": TEST_USERNAMES[1], "file": f})
+            assert r.status_code == status.HTTP_201_CREATED, \
+                f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
+            f.close()
 
     def test_get_all_users(self):
         r = self.client.get('/users')
