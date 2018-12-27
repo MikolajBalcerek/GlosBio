@@ -202,30 +202,41 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # TODO: Perhaps handle both '1.wav' and '1' when new SampleManager is
     #  available
 
+    # TODO: later some kind of smart duplication of this endpoint's steps
+    #  alongside with handle_get_file could be done - already tasked
+
     # get the request's JSON
     sent_json: dict = request.get_json(force=True, cache=True, silent=True)
-    # if sent_json is None:
-    #     sent_json = request.form
+    if sent_json is None:
+        sent_json = request.form
 
-    # try:
-    #     sent_json_dict = json.loads(sent_json, encoding='utf8')
-    # except TypeError:
-    #     # sent_json was already a type of dict
-    #     sent_json_dict = sent_json
-    # except:
-    #     return ["Invalid request"], status.HTTP_400_BAD_REQUEST
+    try:
+        sent_json_dict = json.loads(sent_json, encoding='utf8')
+    except TypeError:
+        # sent_json was already a type of dict
+        sent_json_dict = sent_json
+    except:
+        return ["Invalid request"], status.HTTP_400_BAD_REQUEST
 
-    # # return a 400 if an invalid one/none was passed
-    # if sent_json_dict is None or not sent_json_dict:
-    #     return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
+    # return a 400 if an invalid one/none was passed
+    if sent_json_dict is None or not sent_json_dict:
+        return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
-    # # check for type
-    # print(req_data["type"], config.ALLOWED_PLOT_TYPES_FROM_SAMPLES)
-    # if req_data["type"] not in config.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-    #     return [f"Plot of non-existing type was requested,supported plots {config.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
-    #            status.HTTP_400_BAD_REQUEST
+    # check for type
+    if sent_json_dict.get('type') not in config.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type was requested,supported plots {config.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+               status.HTTP_400_BAD_REQUEST
 
-    # # TODO: duplication from other endpoints
+    # check for file_extension
+    if sent_json_dict.get('file_extension') not in config.ALLOWED_PLOT_FILE_EXTENSIONS:
+        if sent_json_dict.get('file_extension') is None:
+            sent_json_dict['file_extension'] = 'png'
+        else:
+            return ["Plot requested cannot be returned with that file extension,"
+                    f"supported extensions {config.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
+                   status.HTTP_400_BAD_REQUEST
+
+    # TODO: duplication from other endpoints
     # check if user exists in samplebase
     if not sample_manager.user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
@@ -235,17 +246,20 @@ def handle_plot_endpoint(sampletype, username, samplename):
     if not sample_manager.sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
-    file_extension = "png"
-    file_bytes = sample_manager.get_plot_for_sample(plot_type="mfcc",
-                                                        set_type=sampletype,
-                                                        username=username,
-                                                        sample_name=samplename,
-                                                        file_extension="png")
-    
-    return send_file(io.BytesIO(file_bytes),
-                     mimetype=f"image/{file_extension}"),\
-                     status.HTTP_200_OK
 
+    file_bytes = sample_manager.get_plot_for_sample(plot_type=sent_json_dict['type'],
+                                                               set_type=sampletype,
+                                                               username=username,
+                                                               sample_name=samplename,
+                                                               file_extension=sent_json_dict['file_extension'])
+
+
+    # TODO: if a SM rework fails, sending file with the attachment_filename
+    #  can be replaced with just plot_path instead of file
+
+    return send_file(io.BytesIO(file_bytes),
+                               mimetype=f"image/{sent_json_dict['file_extension']}"),\
+status.HTTP_200_OK
 
 if __name__ == "__main__":
     app.run(debug=True)
