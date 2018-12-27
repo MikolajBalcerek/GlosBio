@@ -2,7 +2,19 @@ from sample_manager.SampleManager import SampleManager
 
 
 class BaseConfig(object):
+
+    # Debug from Flask's documentation:
+    # 'If you enable debug support the server will reload itself on code changes,
+    #  and it will also provide you with a helpful debugger if things go wrong.'
+    #  (on localhost:port)
     DEBUG = False
+
+    # Testing from Flask's documentation:
+    # 'What this does is disable error catching during request handling,
+    # so that you get better error reports when performing test requests
+    # against the application.'
+    # also allows to setup a test client to send requests using
+    # werkezeug (Flask's) tools
     TESTING = False
 
     # directory where samples will be stored
