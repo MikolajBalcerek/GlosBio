@@ -185,17 +185,17 @@ def handle_plot_endpoint(sampletype, username, samplename):
         return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
     # check for type
-    if sent_json_dict.get('type') not in app.config['ALLOWED_PLOT_TYPES_FROM_SAMPLES']:
-        return [f"Plot of non-existing type was requested,supported plots {app.config['ALLOWED_PLOT_TYPES_FROM_SAMPLES']}"],\
+    if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
                status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
-    if sent_json_dict.get('file_extension') not in app.config['ALLOWED_PLOT_FILE_EXTENSIONS']:
+    if sent_json_dict.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
         if sent_json_dict.get('file_extension') is None:
             sent_json_dict['file_extension'] = 'png'
         else:
             return ["Plot requested cannot be returned with that file extension,"
-                    f"supported extensions {app.config['ALLOWED_PLOT_FILE_EXTENSIONS']}"],\
+                    f"supported extensions {SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
                    status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
@@ -226,4 +226,4 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
-    app.run(debug=True)
+    app.run()

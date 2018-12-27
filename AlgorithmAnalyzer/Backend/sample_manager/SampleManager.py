@@ -16,8 +16,6 @@ from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
 from plots import mfcc_plot
 
-ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
-
 ''''''''''''''''
 example of directory structure
 
@@ -58,6 +56,10 @@ class SampleManager:
     #  Needs to follow underscore (_get..) convention to denote private methods
     #  Some methods not used at all
     #  Rewrite to use DB?
+
+    # allowed plots' file extensions
+    ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
+    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
 
     def __init__(self, path):
         """path:  string or path; path to root directory"""
@@ -303,7 +305,7 @@ class SampleManager:
                                                   file_extension=file_extension)
             else:
                 raise ValueError("plot_type should be of type str, of value one of "
-                                 f"{ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
+                                 f"{self.ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
 
             return file_path, file_bytes
 

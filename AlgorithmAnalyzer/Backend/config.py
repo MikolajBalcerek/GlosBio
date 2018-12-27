@@ -1,8 +1,32 @@
-from sample_manager.SampleManager import SampleManager, ALLOWED_PLOT_TYPES_FROM_SAMPLES
+from sample_manager.SampleManager import SampleManager
+
+# this file provides configs for Backend Flask's app (db settings, global singletons)
+# Configs can be loaded like this: app.config.from_object('config.YourConfig')
+# read more here: http://flask.pocoo.org/docs/1.0/config/
 
 
 class BaseConfig(object):
+    """
+    This is a BaseConfig that is usually not used anywhere explicitly,
+    but shares common variables for all other configs.
+    If expanding the app, add a config option here if it is not
+    testing/production/development environment specific.
+
+    This should by default contain the safest configuration
+    """
+
+    # Debug from Flask's documentation:
+    # 'If you enable debug support the server will reload itself on code changes,
+    #  and it will also provide you with a helpful debugger if things go wrong.'
+    #  (on localhost:port)
     DEBUG = False
+
+    # Testing from Flask's documentation:
+    # 'What this does is disable error catching during request handling,
+    # so that you get better error reports when performing test requests
+    # against the application.'
+    # also allows to setup a test client to send requests using
+    # werkezeug (Flask's) tools
     TESTING = False
 
     # directory where samples will be stored
@@ -15,24 +39,28 @@ class BaseConfig(object):
     ALLOWED_FILES_TO_GET = {'audio': ['wav', 'webm'],
                             'json': ['json']}
 
-    # allowed plots' file extensions
-    ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
-
-    # allowed plot from samples' types
-    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ALLOWED_PLOT_TYPES_FROM_SAMPLES
-
     # sample manager
     SAMPLE_MANAGER = SampleManager(SAMPLE_UPLOAD_PATH)
 
+
 class ProductionConfig(BaseConfig):
+    """
+    This is a config for Production
+    """
     pass
 
 
 class DevelopmentConfig(BaseConfig):
+    """
+    This config is used during the development of the app on localhost
+    """
     DEBUG = True
 
 
 class TestingConfig(BaseConfig):
+    """
+    This config is used during automated tests
+    """
     TESTING = True
 
 
