@@ -29,6 +29,6 @@ def convert_webm_to_format(source: Union[BytesIO, str],
         source,
         codec="opus"
     ).export(export_file, format=format)
+    export_file.seek(0)
 
     return export_file
-

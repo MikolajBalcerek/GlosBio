@@ -135,60 +135,29 @@ class SampleManager:
             sample_names.append(sample['filename'])
         return sample_names
 
-    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type=None):
+    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str):
         """
         saves new sample in samplebase, creates new user if
         it wasn't created yet
         :param username: str - eg. 'Hugo Kołątaj'
         :param set_type: str - one of available sample classes from config
-        :param file: FileStorage
+        :param file_bytes: bytes - audio file as bytes
+        :param content_type: str - type of provided file, eg: 'audio/wav', 'audio/webm'
         """
-        # TODO: FileStorage is hard to mock in tests
-        #  Perhaps could handle both standard and FileStorage files
         print(content_type)
         if not self.user_exists(username):
             self.create_user(username)
+
+        if(self._is_allowed_file_extension(content_type)):
+            wav_bytesIO = BytesIO(file_bytes)
+        else:
+            webm_bytesIO = BytesIO(file_bytes)
+            wav_bytesIO = convert_webm.convert_webm_to_format(webm_bytesIO,  "wav")
         try:
-            webm_input_bytesIO = BytesIO(file_bytes)
-            # webm_input_bytesIO.seek(0)
-            # convert in memory webm to wav
-            wav_output_bytesIO = convert_webm.convert_webm_to_format(webm_input_bytesIO,  "wav")
-            wav_output_bytesIO.seek(0)
             filename = self._get_next_filename(username, set_type)
             user_id = self._get_user_mongo_id(username)
-            file_id = self._save_file_to_db(filename, file_bytes=wav_output_bytesIO.read(), content_type=content_type)
+            file_id = self._save_file_to_db(filename, file_bytes=wav_bytesIO.read(), content_type=content_type)
             new_file_doc = self._get_sample_file_document_template(filename, file_id)
-
-#         if self.is_allowed_file_extension(file):
-#             wav_path = self.get_new_sample_path(username, set_type=set_type, filetype="wav")
-#             file.save(wav_path)
-#             print(f"#LOG {self.__class__.__name__}: .wav file saved to: " + wav_path)
-#         else:
-#             # not-wav file is temporarily saved
-#             temp_path = self.get_new_sample_path(username, set_type=set_type, no_file_type=True)
-#             print()
-#             file.save(temp_path)
-
-#             # convert to webm
-
-#             # get a BytesIO object
-#             with open(temp_path, 'rb') as webm_input_file_handle:
-#                 webm_input_bytesIO = BytesIO(webm_input_file_handle.read())
-
-#             # convert in memory webm to wav
-#             wav_output_bytesIO = convert_webm.convert_webm_to_format(
-#                 webm_input_bytesIO,  "wav")
-
-#             # get a new wav path
-#             wav_path = os.path.splitext(temp_path)[0]+'.wav'
-#             # save the newly converted file to wav_path
-#             with open(wav_path, 'wb') as new_wav_file:
-#                 new_wav_file.write(wav_output_bytesIO.getvalue())
-
-#             print("#LOG {self.__class__.__name__}: .wav file converted and saved to: " + wav_path)
-
-#             # delete temp file
-#             os.remove(temp_path)
 
 #         # recognize speech
 #         # read a wav from wav_path to bytesIO and pass to the function
@@ -196,15 +165,6 @@ class SampleManager:
 #             recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(
 #                 BytesIO(wav_input_file_handle.read()))
 
-#         print(f"#LOG {self.__class__.__name__}: Recognized words: {recognized_speech}")
-
-#         # save the new sample json
-#         json_path = self.create_new_sample_properties_json(username, audio_path=wav_path,
-#                                                            data={"recognized_speech": recognized_speech})
-#         print(f"#LOG {self.__class__.__name__}: Created a JSON file: {json_path}")
-
-
-#         return wav_path, recognized_speech
 
             self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
         except errors.PyMongoError as e:
@@ -278,6 +238,14 @@ class SampleManager:
         """
         return not re.match('^\w+$', username)
 
+    def _is_allowed_file_extension(self, file_type: str) -> bool:
+        """
+        checks whether mimetype of the file is allowed
+        :param file_type: str
+        :return: True/False
+        """
+        return True if file_type == "audio/wav" else False
+    
     # def _create_plot_mfcc_for_sample(self, audio_bytes,
     #                                  file_extension: str = "png") -> bytes:
     #     """
