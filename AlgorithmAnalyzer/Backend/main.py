@@ -209,8 +209,8 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # get the request's JSON
     sent_json: dict = request.get_json(force=True, cache=True, silent=True)
-    if sent_json is None:
-        sent_json = request.form
+    # if sent_json is None:
+    #     sent_json = request.form
 
     try:
         sent_json_dict = json.loads(sent_json, encoding='utf8')

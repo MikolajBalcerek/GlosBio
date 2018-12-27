@@ -314,22 +314,22 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         self.assertTrue(len(r.data) > 0,
                          "Generated MFCC plot PNG file from memory is less than 0")
 
-    def test_GET_mfcc_plot_train_no_json_no_file_extension_specified(self):
-        """ tests for MFCC plot being requested
-        without json passed (just correct data in request)
-        without having specified a file extension
-        for an existing user
-        in train category """
-        request_path = f"/plot/train/{TEST_USERNAMES[0]}/1.wav"
+    # def test_GET_mfcc_plot_train_no_json_no_file_extension_specified(self):
+    #     """ tests for MFCC plot being requested
+    #     without json passed (just correct data in request)
+    #     without having specified a file extension
+    #     for an existing user
+    #     in train category """
+    #     request_path = f"/plot/train/{TEST_USERNAMES[0]}/1.wav"
 
-        r = self.client.get(request_path, data={"type": "mfcc"})
+    #     r = self.client.post(request_path, data={"type": "mfcc"})
 
-        self.assertEqual(r.content_type, 'image/png',
-                         "Wrong content_type was returned"
-                         f"for mfcc plot, should be image/png, is {r.content_type}")
+    #     self.assertEqual(r.content_type, 'image/png',
+    #                      "Wrong content_type was returned"
+    #                      f"for mfcc plot, should be image/png, is {r.content_type}")
 
-        self.assertTrue(len(r.data) > 0,
-                         "Generated MFCC plot PNG file from memory is less than 0")
+    #     self.assertTrue(len(r.data) > 0,
+    #                     "Generated MFCC plot PNG file from memory is less than 0")
 
     # TODO: tests for pdf
     # TODO: tests for test endpoint
