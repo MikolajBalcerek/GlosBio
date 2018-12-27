@@ -16,7 +16,7 @@ from pymongo import MongoClient, errors
 from bson.objectid import ObjectId
 
 from utils import convert_webm
-# from utils.speech_recognition_wrapper import speech_to_text_wrapper
+from utils.speech_recognition_wrapper import speech_to_text_wrapper
 from plots import mfcc_plot
 from config import ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
@@ -135,7 +135,7 @@ class SampleManager:
             sample_names.append(sample['filename'])
         return sample_names
 
-    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str):
+    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str) -> str:
         """
         saves new sample in samplebase, creates new user if
         it wasn't created yet
@@ -143,8 +143,8 @@ class SampleManager:
         :param set_type: str - one of available sample classes from config
         :param file_bytes: bytes - audio file as bytes
         :param content_type: str - type of provided file, eg: 'audio/wav', 'audio/webm'
+        :returns recognized_speech: str - recognized speech from provided audio sample
         """
-        print(content_type)
         if not self.user_exists(username):
             self.create_user(username)
 
@@ -153,26 +153,24 @@ class SampleManager:
         else:
             webm_bytesIO = BytesIO(file_bytes)
             wav_bytesIO = convert_webm.convert_webm_to_format(webm_bytesIO,  "wav")
+
+        recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
+        wav_bytesIO.seek(0)
+
         try:
             filename = self._get_next_filename(username, set_type)
             user_id = self._get_user_mongo_id(username)
             file_id = self._save_file_to_db(filename, file_bytes=wav_bytesIO.read(), content_type=content_type)
-            new_file_doc = self._get_sample_file_document_template(filename, file_id)
-
-#         # recognize speech
-#         # read a wav from wav_path to bytesIO and pass to the function
-#         with open(wav_path, 'rb') as wav_input_file_handle:
-#             recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(
-#                 BytesIO(wav_input_file_handle.read()))
-
-
+            new_file_doc = self._get_sample_file_document_template(filename, file_id, rec_speech=recognized_speech)
             self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
         except errors.PyMongoError as e:
             raise DatabaseException(e)
 
+        return recognized_speech
+
     def get_plot_for_sample(self, plot_type: str, set_type: str,
-                               username: str, sample_name: str,
-                               file_extension: str = "png", **parameters) -> BytesIO:
+                            username: str, sample_name: str,
+                            file_extension: str="png", **parameters) -> BytesIO:
         """
         Master method that creates a plot of given plot_type (e.g. "mfcc")
         for a given set_type (train, test), username and specific sample
@@ -325,11 +323,11 @@ class SampleManager:
                 "tags": []
                 }
 
-    def _get_sample_file_document_template(self, filename, id: ObjectId) -> dict:
+    def _get_sample_file_document_template(self, filename: str, id: ObjectId, rec_speech: str = None) -> dict:
         """
         get single file document template
         """
-        return {"filename": filename, "id": id, "recognizedSpeech": ""}
+        return {"filename": filename, "id": id, "recognizedSpeech": rec_speech}
 
     def _get_user_mongo_id(self, username: str) -> ObjectId:
         """
@@ -413,6 +411,6 @@ class UsernameException(Exception):
 
 
 class DatabaseException(Exception):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, mongo_error, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
-
+        self.__str__ = mongo_error.__str__

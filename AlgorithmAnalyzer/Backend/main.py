@@ -112,14 +112,14 @@ def handling_audio_endpoint(type):
     file = request.files.get('file')
 
     try:
-        sample_manager.save_new_sample(username, type, file.read(), content_type=file.mimetype)
+        recognized_speech = sample_manager.save_new_sample(username, type, file.read(), content_type=file.mimetype)
     except UsernameException:
         return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
     app.logger.info(f"new sample added successfully")
     return {"username": username,
             "text": f"Uploaded file for {username}, "
-                    f"recognized: ''",
+                    f"recognized: '{recognized_speech}'",
             "recognized_speech": ""
             }, status.HTTP_201_CREATED
 
@@ -170,9 +170,9 @@ def handle_get_file(sampletype, username, samplename):
     #     return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
     #             status.HTTP_400_BAD_REQUEST
 
+    # get file from samplebase and convert in to mp3
     file = sample_manager.get_samplefile(username, sampletype, samplename)
     file_mp3 = convert_webm.convert_wav_to_mp3(file)
-    file.seek(0)
 
     # check if file exists in samplebase
     if not file:
