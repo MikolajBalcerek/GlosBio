@@ -2,19 +2,53 @@ import unittest
 
 from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
-from sample_manager.SampleManager import SampleManager, UsernameException
+from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 
 import config
 
 
-class TestSampleManager(unittest.TestCase):
-
-    def setUp(self):
+class TestSampleManagerSaveToDB(unittest.TestCase):
+     @classmethod
+    def setUpClass(self):
         self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
         self.db_name = f"{config.DATABASE_NAME}_test"
-        self.sample_manager = SampleManager(self.db_url, self.db_name, show_logs=False)
+        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
+        client = MongoClient(self.db_url)
+        client.drop_database(self.db_name)
+
+    def test_fnc_create_user(self):
+        pass
+
+    def test_fnc_save_new_sample(self):
+        pass
+
+    def test_fnc_save_file_to_db(self):
+        pass
+
+
+    
+
+class TestSampleManager(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
+        self.db_name = f"{config.DATABASE_NAME}_test"
+        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
+
+        # try to connect to db which should be down, should throw DatabaseException
+        # db_wrong_url = f"i_do_not_exist:45454"
+        # try:
+        #     self.sm_db_down = SampleManager(db_wrong_url, self.db_name, show_logs=False, allow_no_db=True)
+        #     raise Exception("Should not connect to fake database: '{db_url}'")
+        # except DatabaseException as e:
+        #     pass
+
+    @classmethod
+    def tearDownClass(self):
         client = MongoClient(self.db_url)
         client.drop_database(self.db_name)
 
@@ -22,14 +56,54 @@ class TestSampleManager(unittest.TestCase):
         username_simple = 'Abcd Efgh'
         username_complex = "Aąbc ĆdęŁ Ściąö"
 
-        out_simple = self.sample_manager._get_normalized_username(username_simple)
-        out_complex = self.sample_manager._get_normalized_username(username_complex)
+        out_simple = self.sm._get_normalized_username(username_simple)
+        out_complex = self.sm._get_normalized_username(username_complex)
         
         self.assertEqual(out_simple, 'abcd_efgh',
                          f"Wrong name normalization: '{username_simple}' --> '{out_simple}'")
         self.assertEqual(out_complex, 'aabc_cdel_sciao',
                          f"Wrong name normalization: '{username_complex}' --> '{out_complex}'")
 
+    def test_fnc_is_db_available(self):
+        """
+        """
+        self.assertTrue(self.sm.is_db_available(),
+                        "Database should be available but is_db_available() returned 'False'")
+        # print(self.sm_db_down)
+        # self.assertFalse(self.sm_db_down.is_db_available(),
+        #                  "Database should not be available but is_db_available() returned 'True'")    
+
+
+'''
+SAVE:
+    def create_user(self, username: str) -> ObjectId:
+    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str) -> str:
+    def _save_file_to_db(self, filename: str, file_bytes=None, content_type: str = None):
+RETRIVE:
+    def get_all_usernames(self) -> list:
+    def user_exists(self, username: str) -> bool:
+    def sample_exists(self, username: str, set_type: str, samplename: str) -> bool:
+    def get_user_sample_list(self, username: str, set_type: str) -> list:
+    def get_samplefile(self, username: str, set_type: str, samplename: str):
+    def _get_user_mongo_id(self, username: str) -> ObjectId:
+    def _get_file_from_db(self, id: ObjectId):
+OTHERS:
+    def is_db_available(self) -> bool:
+    def get_plot_for_sample(self, plot_type: str, set_type: str,
+                            username: str, sample_name: str,
+                            file_extension: str="png", **parameters) -> BytesIO:  
+    def _is_username_valid(self, username: str) -> bool:
+    def _is_allowed_file_extension(self, file_type: str) -> bool:
+    def _get_normalized_username(self, username: str) -> str:
+    def _get_sample_class_document_template(self, username: str) -> dict:
+    def _get_sample_file_document_template(self, filename: str, id: ObjectId, rec_speech: str = None) -> dict:
+    def _get_next_filename(self, username: str, set_type: str) -> str:
+
+'''
+
+
+
+    
     # def test_username_to_dirname_invalid_username(self):
     #     username = 'a ?'
     #     with self.assertRaises(UsernameException) as ctx:
@@ -98,7 +172,7 @@ class TestSampleManager(unittest.TestCase):
     #         audio_path=example_path_webm)
     #     self.assertEqual(suggested_json_path_wav, "/home/train/5.json")
 
-    # def test_create_json_with_content(self):
+p    # def test_create_json_with_content(self):
     #     """ test for creating a new sample properties json"""
     #     self.sample_manager.create_user("Mikołaj Balcerek")
     #     json_Path = Path(SampleManager.create_a_new_sample_properties_json("Mikołaj Balcerek",

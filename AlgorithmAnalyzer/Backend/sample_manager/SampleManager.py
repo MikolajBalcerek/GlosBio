@@ -58,8 +58,8 @@ class SampleManager:
             if show_logs:
                 print(f" * #INFO: testing db connection: '{db_url}'...")
             self.db_client.server_info()
-        except errors.ServerSelectionTimeoutError:
-            raise Exception("Could not connect to MongoDB database...")
+        except errors.ServerSelectionTimeoutError as e:
+            raise DatabaseException("Could not connect to MongoDB at '{db_url}'")
 
         self.show_logs = show_logs
 
@@ -224,12 +224,6 @@ class SampleManager:
         except errors.PyMongoError as e:
             raise DatabaseException(e)
         return fileObj
-
-    def sample_speech_to_text(self):
-        """
-        TO DO: speech to text
-        """
-        return ""
 
     def _is_username_valid(self, username: str) -> bool:
         """
@@ -412,6 +406,6 @@ class UsernameException(Exception):
 
 
 class DatabaseException(Exception):
-    def __init__(self, mongo_error, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
-        self.__str__ = mongo_error.__str__
+        # self.__str__ = mongo_error.__str__
