@@ -1,4 +1,5 @@
 import unittest
+import abc
 
 from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
@@ -6,10 +7,11 @@ from sample_manager.SampleManager import SampleManager, UsernameException, Datab
 from main import app
 
 
-class TestSampleManagerSaveToDB(unittest.TestCase):
+class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
 
     @classmethod
     def setUpClass(self):
+        """ setup before tests_integration form this class """
         temp_app = app
         temp_app.config.from_object('config.TestingConfig')
         self.config = temp_app.config
@@ -18,7 +20,12 @@ class TestSampleManagerSaveToDB(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
+        """ cleanup after all test cases in a class"""
         MongoClient(self.sm.db_url).drop_database(self.db_name)
+
+
+class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
+    """ tests for functions related to saving to database """
 
     def test_fnc_create_user(self):
         pass
@@ -30,19 +37,32 @@ class TestSampleManagerSaveToDB(unittest.TestCase):
         pass
 
 
-class TestSampleManager(unittest.TestCase):
+class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
+    """ tests for functions realted to loading from database """
+    def test_get_all_usernames(self):
+        pass
 
-    @classmethod
-    def setUpClass(self):
-        temp_app = app
-        temp_app.config.from_object('config.TestingConfig')
-        self.config = temp_app.config
-        self.sm = self.config['SAMPLE_MANAGER']
-        self.db_name = self.config['DATABASE_NAME']
+    def test_user_exists(self):
+        pass
 
-    @classmethod
-    def tearDownClass(self):
-        MongoClient(self.sm.db_url).drop_database(self.db_name)
+    def test_sample_exists(self):
+        pass
+
+    def get_user_sample_list(self):
+        pass
+
+    def get_samplefile(self):
+        pass
+
+    def _get_user_mongo_id(self):
+        pass
+
+    def _get_file_from_db(self):
+        pass
+
+
+class TestSampleManager(BaseAbstractSampleManagerTestsClass):
+    """ tests for functions which do not operate on database """
 
     def test_get_normalized_username(self):
         username_simple = 'Abcd Efgh'
