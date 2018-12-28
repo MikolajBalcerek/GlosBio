@@ -15,7 +15,6 @@ from pathlib import Path
 from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
 from plots import mfcc_plot
-from config import ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
 ''''''''''''''''
 example of directory structure
@@ -57,6 +56,10 @@ class SampleManager:
     #  Needs to follow underscore (_get..) convention to denote private methods
     #  Some methods not used at all
     #  Rewrite to use DB?
+
+    # allowed plots' file extensions
+    ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
+    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
 
     def __init__(self, path):
         """path:  string or path; path to root directory"""
@@ -230,15 +233,32 @@ class SampleManager:
             file.save(temp_path)
 
             # convert to webm
-            wav_path = convert_webm.convert_webm_to_format(
-                temp_path, temp_path,  "wav")
+
+            # get a BytesIO object
+            with open(temp_path, 'rb') as webm_input_file_handle:
+                webm_input_bytesIO = BytesIO(webm_input_file_handle.read())
+
+            # convert in memory webm to wav
+            wav_output_bytesIO = convert_webm.convert_webm_to_format(
+                webm_input_bytesIO,  "wav")
+
+            # get a new wav path
+            wav_path = os.path.splitext(temp_path)[0]+'.wav'
+            # save the newly converted file to wav_path
+            with open(wav_path, 'wb') as new_wav_file:
+                new_wav_file.write(wav_output_bytesIO.getvalue())
+
             print("#LOG {self.__class__.__name__}: .wav file converted and saved to: " + wav_path)
 
             # delete temp file
             os.remove(temp_path)
 
         # recognize speech
-        recognized_speech = speech_to_text_wrapper.recognize_speech_from_path(wav_path)
+        # read a wav from wav_path to bytesIO and pass to the function
+        with open(wav_path, 'rb') as wav_input_file_handle:
+            recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(
+                BytesIO(wav_input_file_handle.read()))
+
         print(f"#LOG {self.__class__.__name__}: Recognized words: {recognized_speech}")
 
         # save the new sample json
@@ -285,6 +305,7 @@ class SampleManager:
         :return file_path, file_io: str file_path to the saved file,
         BytesIO containing the requested plot
         """
+
         wav_path = self._get_wav_sample_expected_file_path(username, sample_type=set_type,
                                                            sample_name=sample_name)
         directory_path = self.get_user_dirpath(username, set_type=set_type)
@@ -301,7 +322,7 @@ class SampleManager:
                                                   file_extension=file_extension)
             else:
                 raise ValueError("plot_type should be of type str, of value one of "
-                                 f"{ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
+                                 f"{self.ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
 
             return file_path, file_bytes
 

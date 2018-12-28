@@ -1,19 +1,34 @@
+from typing import Union
+from io import BytesIO
 from pydub import AudioSegment
 
 
-def convert_webm_to_format(source_path: str, destination_path: str,
-                           format : str = "wav"):
+def convert_webm_to_format(source: Union[BytesIO, str],
+                           format: str = "wav", destination_path: str = None) -> Union[BytesIO, str]:
     """ Helper function converting webm to wav so it can be handled
    by mainstream libraries
+   Works in memory from BytesIO object and returns bytesIO as well
 
-   :param source_path: str path to source
-   :param destination_path: str path to save to without format
+   :param source: BytesIO object or str path to the source file
    :param format: intended format without ., e.g. wav
+   :param destination_path: None for the file to be saved in memory as BytesIO,
+   or str path to save to without format (e.g ~/tests/1)
+   :returns: BytesIO object of the converted file or full str path
+   where the file was saved, depending on destination_path value
    """
-    export_path = destination_path+"."+format
+
+    if destination_path is None:
+        export_file = BytesIO()
+    elif type(destination_path) is str:
+        export_file = destination_path + "." + format
+    else:
+        raise TypeError("destination_path given is of wrong type, should be None or str,"
+                        f"is {type(destination_path)}")
+
     sound = AudioSegment.from_file(
-        source_path,
+        source,
         codec="opus"
-    ).export(export_path, format=format)
-    return export_path
+    ).export(export_file, format=format)
+
+    return export_file
 

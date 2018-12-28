@@ -11,7 +11,6 @@ from config import *
 from sample_manager.SampleManager import SampleManager, UsernameException
 
 app = FlaskAPI(__name__)
-sample_manager = SampleManager(SAMPLE_UPLOAD_PATH)
 
 CORS(app)
 
@@ -51,7 +50,7 @@ def handle_users_endpoint():
     """
     serve list of registered users
     """
-    return {'users': sample_manager.get_all_usernames()}, status.HTTP_200_OK
+    return {'users': app.config['SAMPLE_MANAGER'].get_all_usernames()}, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])
@@ -76,7 +75,7 @@ def handling_audio_endpoint(type):
         file = request.files.get('file')
 
         try:
-            path, recognized_speech = sample_manager.save_new_sample(username, file, type)
+            path, recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(username, file, type)
         except UsernameException:
             return ['Bad username'], status.HTTP_400_BAD_REQUEST
 
@@ -99,9 +98,9 @@ def handle_list_samples_for_user(type, username):
     if type not in ['train', 'test']:
         return ["Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
-    if sample_manager.user_exists(username):
+    if app.config['SAMPLE_MANAGER'].user_exists(username):
         app.logger.info(f'{type} {username}')
-        return {'samples': sample_manager.get_samples(username, type)}, status.HTTP_200_OK
+        return {'samples': app.config['SAMPLE_MANAGER'].get_samples(username, type)}, status.HTTP_200_OK
     else:
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
@@ -120,28 +119,28 @@ def handle_get_file(filetype, sampletype, username, filename):
     #  JSON/test/mikolaj/1.json..
 
     # check for proper sample set type
-    if sampletype not in ALLOWED_SAMPLE_TYPES:
-        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {ALLOWED_SAMPLE_TYPES}"], \
+    if sampletype not in app.config['ALLOWED_SAMPLE_TYPES']:
+        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {app.config['ALLOWED_SAMPLE_TYPES']}"], \
                 status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
-    if not sample_manager.user_exists(username):
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # check if requested file have allowed extension
-    allowed_extensions = ALLOWED_FILES_TO_GET[filetype]
-    proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
+    allowed_extensions = app.config['ALLOWED_FILES_TO_GET'][filetype]
+    proper_extension, extension = app.config['SAMPLE_MANAGER'].file_has_proper_extension(filename, allowed_extensions)
     if not proper_extension:
         return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
                 status.HTTP_400_BAD_REQUEST
 
     # check if file exists in samplebase
-    if not sample_manager.file_exists(username, sampletype, filename):
+    if not app.config['SAMPLE_MANAGER'].file_exists(username, sampletype, filename):
         return [f"There is no such sample '{filename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
 
     # serve file
-    user_dir = sample_manager.get_user_dirpath(username)
+    user_dir = app.config['SAMPLE_MANAGER'].get_user_dirpath(username)
     if sampletype == 'test':
         user_dir = os.path.join(user_dir, sampletype)
 
@@ -173,44 +172,48 @@ def handle_plot_endpoint(sampletype, username, samplename):
     #  alongside with handle_get_file could be done - already tasked
 
     # get the request's JSON
+    sent_json: dict = request.get_json(force=True, cache=True, silent=True)
+    if sent_json is None:
+        sent_json = request.form
+
     try:
-        # try to get a json
-        sent_json_dict: dict = json.loads(request.get_json(force=True, cache=True, silent=True))
+        sent_json_dict = json.loads(sent_json, encoding='utf8')
     except TypeError:
-        # not a json was sent, let's see if a standard HTTP data was sent
-        sent_json_dict = request.form
+        # sent_json was already a type of dict
+        sent_json_dict = sent_json
     except:
         return ["Invalid request"], status.HTTP_400_BAD_REQUEST
-    # or return a 400 if an invalid one/none was passed
+
+    # return a 400 if an invalid one/none was passed
     if sent_json_dict is None or not sent_json_dict:
         return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
     # check for type
-    if sent_json_dict.get('type') not in ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type was requested,supported plots {ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+    if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
                status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
-    if sent_json_dict.get('file_extension') not in ALLOWED_PLOT_FILE_EXTENSIONS:
+    if sent_json_dict.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
         if sent_json_dict.get('file_extension') is None:
             sent_json_dict['file_extension'] = 'png'
         else:
             return ["Plot requested cannot be returned with that file extension,"
-                    f"supported extensions {ALLOWED_PLOT_FILE_EXTENSIONS}"],\
+                    f"supported extensions {SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
                    status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
     # check if user exists in samplebase
-    if not sample_manager.user_exists(username):
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
     # check if file exists in samplebase
-    if not sample_manager.file_exists(username, sampletype, samplename):
+    if not app.config['SAMPLE_MANAGER'].file_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
 
-    plot_path, file_bytes = sample_manager.create_plot_for_sample(plot_type=sent_json_dict['type'],
+    plot_path, file_bytes = app.config['SAMPLE_MANAGER'].create_plot_for_sample(plot_type=sent_json_dict['type'],
                                                                set_type=sampletype,
                                                                username=username,
                                                                sample_name=samplename,
@@ -226,4 +229,5 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.config.from_object('config.DevelopmentConfig')
+    app.run()
