@@ -21,7 +21,9 @@
     "react-mic": "^12.2.2",
     "react-native-material-textfield": "^0.12.0",
     "react-player": "^1.6.6",
-    "react-scripts": "2.0.3"
+    "react-scripts": "2.0.3",
+    "react-select": "^2.1.2",
+    "react-select-material-ui": "^1.1.2"
   },
   "scripts": {
     "start": "react-scripts start",
