@@ -18,7 +18,6 @@ from bson.objectid import ObjectId
 from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
 from plots import mfcc_plot
-from config import ALLOWED_PLOT_TYPES_FROM_SAMPLES
 
 ''''''''''''''''
 example of single MongoDB document representing single 'user'
@@ -43,6 +42,10 @@ example of single MongoDB document representing single 'user'
 
 
 class SampleManager:
+    # allowed plots' file extensions
+    ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
+    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
+
     def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
         """
         :param db_url: str - url to MongoDB database, it can contain port eg: 'localhost:27017'
@@ -50,6 +53,7 @@ class SampleManager:
         :param show_logs: bool - used to suppress log messages
         """
         # setup MongoDB database connection
+        self.db_url = db_url
         self.db_client = MongoClient(db_url, serverSelectionTimeoutMS=5000)
         self.db_database = self.db_client[db_name]
         self.db_collection = self.db_database.samples
@@ -59,7 +63,7 @@ class SampleManager:
                 print(f" * #INFO: testing db connection: '{db_url}'...")
             self.db_client.server_info()
         except errors.ServerSelectionTimeoutError as e:
-            raise DatabaseException("Could not connect to MongoDB at '{db_url}'")
+            raise DatabaseException(f"Could not connect to MongoDB at '{db_url}'")
 
         self.show_logs = show_logs
 
@@ -154,8 +158,8 @@ class SampleManager:
             webm_bytesIO = BytesIO(file_bytes)
             wav_bytesIO = convert_webm.convert_webm_to_format(webm_bytesIO,  "wav")
 
-        # recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
-        recognized_speech = ""
+        recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
+        # recognized_speech = ""
         wav_bytesIO.seek(0)
 
         try:

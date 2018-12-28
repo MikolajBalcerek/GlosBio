@@ -4,6 +4,7 @@ import unittest
 import shutil
 import os
 import json
+import abc
 
 from flask_api import status
 from pymongo import MongoClient
@@ -11,46 +12,41 @@ from pymongo import MongoClient
 import config
 
 from main import app
-from sample_manager.SampleManager import SampleManager
-
-# SAMPLE_UPLOAD_PATH = config.SAMPLE_UPLOAD_PATH
-TEST_USERNAMES = ["Train Person", "Test Person"]
-# a nifty search for test audio file that will work both from test dir
-# and backend dir
-# however will return a false copy if two trzynascie.webm exist
-_trzynascie_file_finder_generator = glob.iglob("./**/trzynascie.webm",
-                                               recursive=True)
-test_audio_path_trzynascie = next(_trzynascie_file_finder_generator)
 
 
-class Audio_Add_Sample_Tests(unittest.TestCase):
+class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
+
+    TEST_USERNAMES = ["Train Person", "Test Person"]
+    TEST_AUDIO_PATH_TRZYNASCIE = next(glob.iglob("./**/trzynascie.webm",
+                                                 recursive=True))
 
     @classmethod
-    def setUpClass(self):
-        ''' setup before tests_integration form this class '''
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-
-        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
-        self.db_name = f"{config.DATABASE_NAME}_test"
-        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
+    def setUpClass(cls):
+        """ setup before tests_integration form this class """
+        cls.app = app
+        cls.app.config.from_object('config.TestingConfig')
+        cls.sm = cls.app.config['SAMPLE_MANAGER']
+        cls.db_name = cls.app.config['DATABASE_NAME']
+        cls.db_url = cls.sm.db_url
+        cls.client = cls.app.test_client()
 
     @classmethod
+    def tearDownClass(cls):
+        """ cleanup after all test cases in a class"""
+        MongoClient(cls.db_url).drop_database(cls.db_name)
+
+
+class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
+
     def tearDown(self):
-        ''' cleanup after every test '''
-        client = MongoClient(self.db_url)
-        client.drop_database(self.db_name)
-
-    @property
-    def client(self):
-        """ this is a getter for client """
-        return self.app
+        """ cleanup after each tests"""
+        super().tearDownClass()
 
     def test_post_train_file_username_correct(self):
         """ test for happy path for send file train endpoint """
-        with open(test_audio_path_trzynascie, 'rb') as f:
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
             r = self.client.post('/audio/train',
-                                 data={"username": TEST_USERNAMES[0],
+                                 data={"username": self.TEST_USERNAMES[0],
                                        "file": f})
             # r type wrappers.Response
 
@@ -59,27 +55,27 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "wrong status code for file upload")
 
             # checking whether a person's username was process correctly
-            self.assertEqual(r.json["username"], TEST_USERNAMES[0],
+            self.assertEqual(r.json["username"], self.TEST_USERNAMES[0],
                              "wrong username returned for correct upload")
 
             # check for recognized_speech
-            # self.assertIn(r.json["recognized_speech"], ["trzynaście", 13, '13'],
-            #               "wrong recognized speech returned for trzynascie")
+            self.assertIn(r.json["recognized_speech"], ["trzynaście", 13, '13'],
+                          "wrong recognized speech returned for trzynascie")
 
             # check for existence of new user in db
             _username = r.json["username"]
-            self.assertEqual(self.sm.user_exists(_username), True,
-                             "User wasn't create")
+            self.assertTrue(self.sm.user_exists(_username),
+                            "User wasn't create")
 
             # check if sample exists in database in proper sample set
-            self.assertEqual(self.sm.sample_exists(_username, "train", "1.wav"), True,
-                             "Could not find sample in database")
+            self.assertTrue(self.sm.sample_exists(_username, "train", "1.wav"),
+                            "Could not find sample in database")
 
     def test_post_test_file_username_correct(self):
         """ test for happy path for send file test endpoint """
-        with open(test_audio_path_trzynascie, 'rb') as f:
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
             r = self.client.post('/audio/test',
-                                 data={"username": TEST_USERNAMES[1],
+                                 data={"username": self.TEST_USERNAMES[1],
                                        "file": f})
             # r type wrappers.Response
 
@@ -88,17 +84,17 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
                              "wrong status code for file upload")
 
             # checking whether a person's username was process correctly
-            self.assertEqual(r.json["username"], TEST_USERNAMES[1],
+            self.assertEqual(r.json["username"], self.TEST_USERNAMES[1],
                              "wrong username returned for correct upload")
 
             # check for existence of new user in db
             _username = r.json["username"]
-            self.assertEqual(self.sm.user_exists(_username), True,
-                             "User wasn't create")
+            self.assertTrue(self.sm.user_exists(_username),
+                            "User wasn't create")
 
             # check if sample exists in database in proper sample set
-            self.assertEqual(self.sm.sample_exists(_username, "test", "1.wav"), True,
-                             "Could not find sample in database")
+            self.assertTrue(self.sm.sample_exists(_username, "test", "1.wav"),
+                            "Could not find sample in database")
 
     def test_post_file_no_file(self):
         """ test for endpoint send without a file """
@@ -111,44 +107,72 @@ class Audio_Add_Sample_Tests(unittest.TestCase):
 
     def test_post_file_no_username(self):
         """ test for endpoint send without an username """
-        with open(test_audio_path_trzynascie, 'rb') as f:
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
             r = self.client.post('/audio/train',
                                  data={'file': f})
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                              "wrong status code for no username file upload")
-            self.assertEqual(r.data, b'["No username"]',
-                             "wrong string for lack of username")
+            self.assertEqual(r.data, b'["Missing \'username\' field in request body"]',
+                             "wrong string")
+
+    # def test_post_file_special_characters_username(self):
+    #     """ test for endpoint send with invalid username """
+    #     special_char_username = "(();})()=+"
+
+    #     with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+    #         r = self.client.post('/audio/train',
+    #                              data={'username': special_char_username,
+    #                                    'file': f})
+            
+    #         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+    #                          "wrong status code for no username file upload")
+    #         self.assertEqual(r.data, b'["Provided username contains special characters"]',
+    #                          "wrong string")
 
 
-class Audio_Get_Sample_Tests(unittest.TestCase):
+class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
+
+    # def setUpClass(self):
+    #     ''' setup before tests_integration for this class '''
+    #     app.config['TESTING'] = True
+    #     self.app = app.test_client()
+
+    #     self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
+    #     self.db_name = f"{config.DATABASE_NAME}_test"
+    #     self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
+
+    #     with open('./tests_integration/trzynascie.webm', 'rb') as f:
+    #         self.app.post('/audio/train',
+    #                       data={"username": TEST_USERNAMES[0], "file": f})
+    #         f.close()
+    #     with open(test_audio_path_trzynascie, 'rb') as f:
+    #         self.app.post('/audio/test',
+    #                       data={"username": TEST_USERNAMES[1], "file": f})
+
+    # @classmethod
+    # def tearDownClass(self):
+    #     ''' cleanup after every test '''
+    #     client = MongoClient(self.db_url)
+    #     client.drop_database(self.db_name)
+
     @classmethod
-    def setUpClass(self):
-        ''' setup before tests_integration for this class '''
-        app.config['TESTING'] = True
-        self.app = app.test_client()
+    def setUpClass(cls):
+        """ setup before tests_integration for this class """
+        super().setUpClass()
 
-        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
-        self.db_name = f"{config.DATABASE_NAME}_test"
-        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
-
-        with open('./tests_integration/trzynascie.webm', 'rb') as f:
-            self.app.post('/audio/train',
-                          data={"username": TEST_USERNAMES[0], "file": f})
+        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = cls.client.post('/audio/train', data={"username": cls.TEST_USERNAMES[0], "file": f})
+            assert r.status_code == status.HTTP_201_CREATED, \
+                f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
             f.close()
-        with open(test_audio_path_trzynascie, 'rb') as f:
-            self.app.post('/audio/test',
-                          data={"username": TEST_USERNAMES[1], "file": f})
 
-    @classmethod
-    def tearDownClass(self):
-        ''' cleanup after every test '''
-        client = MongoClient(self.db_url)
-        client.drop_database(self.db_name)
+        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = cls.client.post('/audio/test',
+                             data={"username": cls.TEST_USERNAMES[1], "file": f})
+            assert r.status_code == status.HTTP_201_CREATED, \
+                f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
+            f.close()
 
-    @property
-    def client(self):
-        """ this is a getter for client """
-        return self.app
 
     def test_get_all_users(self):
         r = self.client.get('/users')
@@ -156,13 +180,13 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK,
                          f"wrong status code, expected 200, got {r.status_code}")
 
-        for username in TEST_USERNAMES:
+        for username in self.TEST_USERNAMES:
             self.assertIn(username, r.json['users'],
                           f"expected user {username} in all-users list, got: {r.data}")
 
     def test_get_train_person_sample_list(self):
-        r1 = self.client.get(f'/audio/train/{TEST_USERNAMES[0]}')
-        r2 = self.client.get(f'/audio/test/{TEST_USERNAMES[0]}')
+        r1 = self.client.get(f'/audio/train/{self.TEST_USERNAMES[0]}')
+        r2 = self.client.get(f'/audio/test/{self.TEST_USERNAMES[0]}')
 
         # check status code
         self.assertEqual(r1.status_code, status.HTTP_200_OK,
@@ -230,8 +254,10 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_3}\nwrong status code, expected 400, got {r.status_code}")
 
-        expected_message = ["There is no such sample '1000.wav' in users 'train_person' train samplebase"]
-        self.assertEqual(r.json, expected_message, "expected different message")
+        expected_message = [
+            "There is no such sample '1000.wav' in users 'train_person' train samplebase"]
+        self.assertEqual(r.json, expected_message,
+                         "expected different message")
 
         # file doesn't exist - test set
         request_path_4 = f"/audio/test/test_person/1000.wav"
@@ -239,8 +265,10 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_4}\nwrong status code, expected 400, got {r.status_code}")
 
-        expected_message = ["There is no such sample '1000.wav' in users 'test_person' test samplebase"]
-        self.assertEqual(r.json, expected_message, "expected different message")
+        expected_message = [
+            "There is no such sample '1000.wav' in users 'test_person' test samplebase"]
+        self.assertEqual(r.json, expected_message,
+                         "expected different message")
 
         # user doesn't exist
         request_path_5 = f"/audio/train/mr_nobody12345qwerty/1.wav"
@@ -248,50 +276,32 @@ class Audio_Get_Sample_Tests(unittest.TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"request: {request_path_5}\nwrong status code, expected 400, got {r.status_code}")
 
-        expected_message = ["There is no such user 'mr_nobody12345qwerty' in sample base"]
-        self.assertEqual(r.json, expected_message, "expected different message")
+        expected_message = [
+            "There is no such user 'mr_nobody12345qwerty' in sample base"]
+        self.assertEqual(r.json, expected_message,
+                         "expected different message")
 
 
-class PlotEndpointForSampleTests(unittest.TestCase):
+class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
+
     @classmethod
-    def setUpClass(self):
-        ''' setup before tests_integration for this class '''
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-        # self.sm = SampleManager(SAMPLE_UPLOAD_PATH)
-        # self.test_dirnames = [self.sm.get_user_dirpath(person) for person in
-                              # TEST_USERNAMES]
-        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
-        self.db_name = f"{config.DATABASE_NAME}_test"
-        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
-
-        with open(test_audio_path_trzynascie, 'rb') as f:
-            r = self.app.post('/audio/train',
-                              data={"username": TEST_USERNAMES[0], "file": f})
+    def setUpClass(cls):
+        """ setup before tests_integration for this class """
+        super().setUpClass()
+        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = cls.client.post('/audio/train',
+                                data={"username": cls.TEST_USERNAMES[0],
+                                      "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
             f.close()
-        with open(test_audio_path_trzynascie, 'rb') as f:
-            r = self.app.post('/audio/test',
-                              data={"username": TEST_USERNAMES[1], "file": f})
+        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = cls.client.post('/audio/test',
+                                data={"username": cls.TEST_USERNAMES[1],
+                                      "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
             f.close()
-
-
-    @classmethod
-    def tearDownClass(self):
-        ''' cleanup after every test '''
-        # paths_to_be_deleted = [*self.test_dirnames]
-        # for _path in paths_to_be_deleted:
-        #     shutil.rmtree(_path)
-        client = MongoClient(self.db_url)
-        client.drop_database(self.db_name)
-
-    @property
-    def client(self):
-        """ this is a getter for client """
-        return self.app
 
     def test_GET_mfcc_plot_train_json_no_file_extension_specified(self):
         """ tests for MFCC plot being requested
@@ -299,7 +309,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         without having specified a file extension
         for an existing user
         in train category """
-        request_path = f"/plot/train/{TEST_USERNAMES[0]}/1.wav"
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
         request_json = json.dumps({"type": "mfcc"})
 
         r = self.client.get(request_path, json=request_json)
@@ -312,7 +322,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
                          f"for mfcc plot, should be image/png, is {r.content_type}")
 
         self.assertTrue(len(r.data) > 0,
-                         "Generated MFCC plot PNG file from memory is less than 0")
+                        "Generated MFCC plot PNG file from memory is less than 0")
 
     # def test_GET_mfcc_plot_train_no_json_no_file_extension_specified(self):
     #     """ tests for MFCC plot being requested
@@ -321,13 +331,11 @@ class PlotEndpointForSampleTests(unittest.TestCase):
     #     for an existing user
     #     in train category """
     #     request_path = f"/plot/train/{TEST_USERNAMES[0]}/1.wav"
-
     #     r = self.client.post(request_path, data={"type": "mfcc"})
 
     #     self.assertEqual(r.content_type, 'image/png',
     #                      "Wrong content_type was returned"
     #                      f"for mfcc plot, should be image/png, is {r.content_type}")
-
     #     self.assertTrue(len(r.data) > 0,
     #                     "Generated MFCC plot PNG file from memory is less than 0")
 
@@ -336,7 +344,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
     def test_failing_lack_of_data_url_specified(self):
         """ tests for a post being send to plot endpoint
         without any data specified, but with a correct url """
-        request_path = f"/plot/train/{TEST_USERNAMES[0]}/1.wav"
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
 
         r = self.client.get(request_path)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
@@ -346,7 +354,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
     def test_failing_empty_json_url_specified(self):
         """ tests for a post being send to plot endpoint
         with an empty json file, but with a correct url """
-        request_path = f"/plot/train/{TEST_USERNAMES[0]}/1.wav"
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
 
         empty_json = json.dumps(dict())
         r = self.client.get(request_path, json=empty_json)
@@ -364,8 +372,9 @@ class PlotEndpointForSampleTests(unittest.TestCase):
 
         r = self.client.get(request_path, json=request_json)
 
-        self.assertEqual([f"There is no such user '{username}' in sample base"],
-                         r.json, "Differing string returned for bad username")
+        self.assertEqual(
+            [f"There is no such user '{username}' in sample base"],
+            r.json, "Differing string returned for bad username")
         self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
                          "Nonexisting username should return 400 during plots")
 
@@ -374,7 +383,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         """ tests for a post being send to plot endpoint
         with non-existing file, but with a correct existing username"""
         sample_name = "2.wav"
-        user_name = TEST_USERNAMES[0]
+        user_name = self.TEST_USERNAMES[0]
         type = 'train'
         request_path = f"/plot/{type}/{user_name}/2.wav"
         request_json = json.dumps({"type": "mfcc"})
@@ -382,6 +391,7 @@ class PlotEndpointForSampleTests(unittest.TestCase):
         r = self.client.get(request_path, json=request_json)
 
         self.assertEqual([f"There is no such sample '{sample_name}' in users '{user_name}' {type} samplebase"],
+
                          r.json, "Differing string returned for bad username")
         self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
                          "Nonexisting filename for existing user should return 400 during plots")
@@ -389,9 +399,9 @@ class PlotEndpointForSampleTests(unittest.TestCase):
     def test_incorrect_try_POST_should_405(self):
         """ test for response code on GET request """
         sample_name = "1.wav"
-        user_name = TEST_USERNAMES[0]
+        user_name = self.TEST_USERNAMES[0]
         type = 'train'
         r = self.client.post(f"/plot/{type}/{user_name}/{sample_name}")
 
         self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED,
-                         f"Expected resposne status code 405 but got {r.status_code}")
+                         f"Expected response status code 405 but got {r.status_code}")

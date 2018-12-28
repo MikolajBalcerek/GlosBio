@@ -3,21 +3,22 @@ import unittest
 from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
-
-import config
+from main import app
 
 
 class TestSampleManagerSaveToDB(unittest.TestCase):
-     @classmethod
+
+    @classmethod
     def setUpClass(self):
-        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
-        self.db_name = f"{config.DATABASE_NAME}_test"
-        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
+        temp_app = app
+        temp_app.config.from_object('config.TestingConfig')
+        self.config = temp_app.config
+        self.sm = self.config['SAMPLE_MANAGER']
+        self.db_name = self.config['DATABASE_NAME']
 
     @classmethod
     def tearDownClass(self):
-        client = MongoClient(self.db_url)
-        client.drop_database(self.db_name)
+        MongoClient(self.sm.db_url).drop_database(self.db_name)
 
     def test_fnc_create_user(self):
         pass
@@ -29,28 +30,19 @@ class TestSampleManagerSaveToDB(unittest.TestCase):
         pass
 
 
-    
-
 class TestSampleManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
-        self.db_name = f"{config.DATABASE_NAME}_test"
-        self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
-
-        # try to connect to db which should be down, should throw DatabaseException
-        # db_wrong_url = f"i_do_not_exist:45454"
-        # try:
-        #     self.sm_db_down = SampleManager(db_wrong_url, self.db_name, show_logs=False, allow_no_db=True)
-        #     raise Exception("Should not connect to fake database: '{db_url}'")
-        # except DatabaseException as e:
-        #     pass
+        temp_app = app
+        temp_app.config.from_object('config.TestingConfig')
+        self.config = temp_app.config
+        self.sm = self.config['SAMPLE_MANAGER']
+        self.db_name = self.config['DATABASE_NAME']
 
     @classmethod
     def tearDownClass(self):
-        client = MongoClient(self.db_url)
-        client.drop_database(self.db_name)
+        MongoClient(self.sm.db_url).drop_database(self.db_name)
 
     def test_get_normalized_username(self):
         username_simple = 'Abcd Efgh'
@@ -172,7 +164,7 @@ OTHERS:
     #         audio_path=example_path_webm)
     #     self.assertEqual(suggested_json_path_wav, "/home/train/5.json")
 
-p    # def test_create_json_with_content(self):
+    # def test_create_json_with_content(self):
     #     """ test for creating a new sample properties json"""
     #     self.sample_manager.create_user("Mikołaj Balcerek")
     #     json_Path = Path(SampleManager.create_a_new_sample_properties_json("Mikołaj Balcerek",

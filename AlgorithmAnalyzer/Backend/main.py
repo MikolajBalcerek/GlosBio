@@ -13,7 +13,6 @@ from sample_manager.SampleManager import SampleManager, UsernameException, Datab
 from utils import convert_webm
 
 app = FlaskAPI(__name__)
-sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}", config.DATABASE_NAME)
 
 CORS(app)
 
@@ -27,7 +26,7 @@ def requires_db_connection(f):
     """
     @wraps(f)
     def wrapped(*args, **kwargs):
-        if not sample_manager.is_db_available():
+        if not app.config['SAMPLE_MANAGER'].is_db_available():
             app.logger.error("Database is unavailable...")
             return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
         return f(*args, **kwargs)
@@ -40,7 +39,7 @@ def requires_db_connection(f):
     """
     @wraps(f)
     def wrapped(*args, **kwargs):
-        if not sample_manager.is_db_available():
+        if not app.config['SAMPLE_MANAGER'].is_db_available():
             app.logger.error("Database is unavailable...")
             return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
         return f(*args, **kwargs)
@@ -81,12 +80,7 @@ def handle_users_endpoint():
     """
     serve list of registered users
     """
-    usernames = sample_manager.get_all_usernames()
-    # alternatywa do dekoratora requires_db_connection:
-    # except DatabaseException as e:
-    #     app.logger.error(e.error)
-    #     return "", status.HTTP_503_SERVICE_UNAVAILABLE
-    return {'users': usernames}, status.HTTP_200_OK
+    return {'users': app.config['SAMPLE_MANAGER'].get_all_usernames()}, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])
@@ -105,22 +99,22 @@ def handling_audio_endpoint(type):
         return ['No file part'], status.HTTP_400_BAD_REQUEST
 
     if 'username' not in request.data:
-        return ['No username'], status.HTTP_400_BAD_REQUEST
-
+        return ["Missing 'username' field in request body"], status.HTTP_400_BAD_REQUEST
+  
     app.logger.info(f"try to add new sample to {type} set")
     username = request.data.get('username')
     file = request.files.get('file')
 
     try:
-        recognized_speech = sample_manager.save_new_sample(username, type, file.read(), content_type=file.mimetype)
+        recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(username, type, file.read(), content_type=file.mimetype)
     except UsernameException:
-        return ['Bad username'], status.HTTP_400_BAD_REQUEST
+        return ['Provided username contains special characters'], status.HTTP_400_BAD_REQUEST
 
     app.logger.info(f"new sample added successfully")
     return {"username": username,
             "text": f"Uploaded file for {username}, "
                     f"recognized: '{recognized_speech}'",
-            "recognized_speech": ""
+            "recognized_speech": recognized_speech
             }, status.HTTP_201_CREATED
 
 
@@ -137,8 +131,9 @@ def handle_list_samples_for_user(type, username):
     if type not in ['train', 'test']:
         return ["Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
-    if sample_manager.user_exists(username):
-        return {'samples': sample_manager.get_user_sample_list(username, type)}, status.HTTP_200_OK
+    if app.config['SAMPLE_MANAGER'].user_exists(username):
+        app.logger.info(f'{type} {username}')
+        return {'samples': app.config['SAMPLE_MANAGER'].get_user_sample_list(username, type)}, status.HTTP_200_OK
     else:
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
@@ -155,12 +150,12 @@ def handle_get_file(sampletype, username, samplename):
     """
 
     # check for proper sample set type
-    if sampletype not in config.ALLOWED_SAMPLE_TYPES:
-        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {config.ALLOWED_SAMPLE_TYPES}"], \
+    if sampletype not in app.config['ALLOWED_SAMPLE_TYPES']:
+        return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {app.config['ALLOWED_SAMPLE_TYPES']}"], \
                 status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
-    if not sample_manager.user_exists(username):
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # check if requested file have allowed extension
@@ -171,7 +166,7 @@ def handle_get_file(sampletype, username, samplename):
     #             status.HTTP_400_BAD_REQUEST
 
     # get file from samplebase and convert in to mp3
-    file = sample_manager.get_samplefile(username, sampletype, samplename)
+    file = app.config['SAMPLE_MANAGER'].get_samplefile(username, sampletype, samplename)
 
     # check if file exists in samplebase
     if not file:
@@ -225,48 +220,43 @@ def handle_plot_endpoint(sampletype, username, samplename):
         return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
 
     # check for type
-    if sent_json_dict.get('type') not in config.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type was requested,supported plots {config.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+    if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
                status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
-    if sent_json_dict.get('file_extension') not in config.ALLOWED_PLOT_FILE_EXTENSIONS:
+    if sent_json_dict.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
         if sent_json_dict.get('file_extension') is None:
             sent_json_dict['file_extension'] = 'png'
         else:
             return ["Plot requested cannot be returned with that file extension,"
-                    f"supported extensions {config.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
+                    f"supported extensions {SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
                    status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
     # check if user exists in samplebase
-    if not sample_manager.user_exists(username):
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
     # check if file exists in samplebase
-    if not sample_manager.sample_exists(username, sampletype, samplename):
+    if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
-    file_bytes = sample_manager.get_plot_for_sample(plot_type=sent_json_dict['type'],
-                                                               set_type=sampletype,
-                                                               username=username,
-                                                               sample_name=samplename,
-                                                               file_extension=sent_json_dict['file_extension'])
+    file_bytes = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_json_dict['type'],
+                                                                  set_type=sampletype,
+                                                                  username=username,
+                                                                  sample_name=samplename,
+                                                                  file_extension=sent_json_dict['file_extension'])
 
 
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
-
     return send_file(io.BytesIO(file_bytes),
-                               mimetype=f"image/{sent_json_dict['file_extension']}"),\
-status.HTTP_200_OK
+                     mimetype=f"image/{sent_json_dict['file_extension']}"),\
+                     status.HTTP_200_OK
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
-
-if __name__ == "main":
-    # to set proper database name during tests
-    sample_manager = SampleManager(f"{config.DATABASE_URL}:{config.DATABASE_PORT}",
-                                   f"{config.DATABASE_NAME}_test",
-                                   show_logs=False)
+    app.config.from_object('config.DevelopmentConfig')
+    app.run()
