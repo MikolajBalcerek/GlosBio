@@ -6,7 +6,7 @@ import Testuj1 from "./Testuj1";
 import Testuj2 from "./Testuj2";
 import axios from 'axios';
 import MiddleBar from './MiddleBar'
-
+import { SnackbarProvider } from 'notistack';
 class MainPage extends Component {
 	state = {
 		value: 1,
@@ -26,6 +26,7 @@ class MainPage extends Component {
 		this.getUsers()
 	}
 	setData (array)  {
+		console.log('luj', array)
 		this.setState({
 			userList: array
 		})
@@ -58,8 +59,8 @@ class MainPage extends Component {
 					handleChange3={this.handleChange3}
 					getUsers={this.getUsers}
 				/>
-				{value === 1 && <Recorder getUsers={()=>this.getUsers()} />}
-				{value === 2 && <Przeglad userlist={this.state.userList} />}
+				{value === 1 && <SnackbarProvider maxSnack={20}><Recorder getUsers={()=>this.getUsers()} /></SnackbarProvider>}
+				{value === 2 && <SnackbarProvider maxSnack={20}><Przeglad userList={this.state.userList} /></SnackbarProvider>}
 				{value === 3 && <Trenuj />}
 				{value === 4 && <Testuj1 />}
 				{value === 5 && <Testuj2 />}

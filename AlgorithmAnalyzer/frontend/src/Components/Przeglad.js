@@ -14,7 +14,8 @@ import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Radio from '@material-ui/core/Radio';
 import AudioSpectrum from "react-audio-spectrum"
-import MySnackbarContent from './MySnackbarContent'
+import { withSnackbar } from 'notistack'
+import MFCC from './MFCC'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -27,8 +28,8 @@ class Przeglad extends Component {
             type: 'train',
             sound: '',
             url: '',
-            openUploadSuccess: false,
-            openUploadError: false
+            mfcc: null,
+            mfccOpen: false
         }
     }
 
@@ -37,7 +38,11 @@ class Przeglad extends Component {
             isPlay: !this.state.isPlay
                 })  
     }
-
+    handleOpenMfcc =()=>{
+        this.setState({
+            mfccOpen: !this.state.mfccOpen
+        })
+    }
     handleChangeSound = event => {
         this.setState({ [event.target.name]: event.target.value });
       };
@@ -45,7 +50,7 @@ class Przeglad extends Component {
     handleChangeUser = event => {
         this.setState({ [event.target.name]: event.target.value });
         
-        this.getAllUserSounds(this.props.userlist[event.target.value])
+        this.getAllUserSounds(this.props.userList[event.target.value])
       };
 
     setData (array)  {
@@ -54,18 +59,11 @@ class Przeglad extends Component {
 		})
     }
 
-    SnackbarHandleClose = (event, reason) => {
-		if (reason === 'clickaway') {
-			return;
-		  }
-		this.setState({ openUploadSuccess: false, openUploadError: false });
-      };
-      
     handleTypeChange = event => {
         let self = this
         this.setState({ type: event.target.value });
         setTimeout(function(){
-            self.getAllUserSounds(self.props.userlist[self.state.user])
+            self.getAllUserSounds(self.props.userList[self.state.user])
         }, 300);
       };
     
@@ -84,10 +82,17 @@ class Przeglad extends Component {
                 console.log(error);
 			})
     }
+    
+    handleClickVariant(text, variant){
+		// variant could be success, error, warning or info
+		this.props.enqueueSnackbar(text, { variant });
+      }
+
     getSound() {
+        this.getMfcc()
         var self = this
         axios({
-            url: `http://localhost:5000/audio/${this.state.type}/${this.props.userlist[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            url: `http://localhost:5000/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
             responseType: 'blob',
           })
@@ -95,14 +100,44 @@ class Przeglad extends Component {
                 console.log(response)
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 self.setState({
-                    url: url,
-                    openUploadSuccess: true
+                    url: url
                 })
+                self.handleClickVariant("Plik wczytano poprawnie!", 'success')
             })
             .catch(function(error) {
+                self.handleClickVariant("Podczas wczytywania pliku wystąpił błąd!", 'error')
+                console.log(error);
+			})
+    }
+
+    getMfcc() {
+        var self = this
+        var data = { 
+            "type": "mfcc"
+        }
+        axios({
+            url: `http://localhost:5000/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            method: 'POST',
+            data: data,
+            headers: {
+                'Content-type': 'application/x-www-form-urlencoded'
+            },
+            responseType: 'arraybuffer'
+          })
+            .then(function(response) {
+                console.log(response)
+                let blob = new Blob(
+                    [response.data], 
+                    { type: response.headers['content-type'] }
+                  )
+                  let image = URL.createObjectURL(blob)
                 self.setState({
-                    openUploadError: true
+                    mfcc: image
                 })
+                self.handleClickVariant("Wykres mfcc wczytano poprawnie!", 'success')
+            })
+            .catch(function(error) {
+                self.handleClickVariant("Podczas wczytywania wykresu mfcc wystąpił błąd!", 'error')
                 console.log(error);
 			})
     }
@@ -141,7 +176,7 @@ class Przeglad extends Component {
                         <MenuItem value="">
                         <em>None</em>
                     </MenuItem>
-                    {this.props.userlist && this.props.userlist.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
+                    {this.props.userList && this.props.userList.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
 
                     </Select>
                 </FormControl>
@@ -171,7 +206,7 @@ class Przeglad extends Component {
                 </FormControl>
                             <Button onClick={()=>this.getSound()} color='primary' variant="contained">Załaduj próbkę</Button>
                 </Grid>
-                <Grid item xs={12} style={{display: 'flex',  justifyContent:'space-around', alignItems:'center', width: '100%', marginTop: 30, minHeight: 200 }}> 
+                <Grid item xs={12} style={{display: 'flex',  justifyContent:'space-around', alignItems:'center', width: '100%', marginTop: 30, minHeight: 300 }}> 
                 <Typography variant="headline" gutterBottom>
                         Analiza próbki
                 </Typography>     
@@ -196,19 +231,30 @@ class Przeglad extends Component {
                             ]}
                             gap={4}
                             />
+                            {this.state.mfcc &&<Button>
+                              <img 
+                                src={this.state.mfcc} 
+                                style={{
+                                    width:280, backgroundColor: 'white', borderRadius: 10
+                                    }} 
+                                onClick={()=>this.handleOpenMfcc()}
+                                    />
+                            </Button>}
                 </Grid>
                 </div>
               </div>
-              <MySnackbarContent 
-                    openUploadSuccess={this.state.openUploadSuccess}
-                    openUploadError={this.state.openUploadError}
-					SnackbarHandleClose={()=>this.SnackbarHandleClose}
-				/>
+              <MFCC 
+                mfcc={this.state.mfcc} 
+                mfccOpen={this.state.mfccOpen}
+                handleOpenMfcc={()=>this.handleOpenMfcc}
+                />
             </Paper>
         )
     }
 }
 Przeglad.propTypes = {
-    userlist: PropTypes.array
+    enqueueSnackbar: PropTypes.func.isRequired,
+    userList: PropTypes.array
   };
-export default Przeglad
+  
+  export default withSnackbar(Przeglad)
