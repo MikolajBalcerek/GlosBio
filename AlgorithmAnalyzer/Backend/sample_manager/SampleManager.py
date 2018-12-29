@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 from mimetypes import guess_type
 from pymongo import MongoClient, errors
 from bson.objectid import ObjectId
+from gridfs import GridOut
 
 from utils import convert_webm
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
@@ -207,12 +208,14 @@ class SampleManager:
                              f"{ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
         return file_bytes
 
-    def get_samplefile(self, username: str, set_type: str, samplename: str):
+    def get_samplefile(self, username: str, set_type: str, samplename: str) -> GridOut:
         """
         retrive sample from database, return as file-like object (with read() method)
         :param username: str - eg. 'Hugo Kołątaj'
         :param set_type: str - one of avalible sample classes from config
-        :param samplename str - eg. '1.wav'
+        :param samplename: str - eg. '1.wav'
+        :returns fileObj: GridOut - file-like object with read() method,
+                                    it contains content_type and file_name
         """
         user_id = self._get_user_mongo_id(username)
 

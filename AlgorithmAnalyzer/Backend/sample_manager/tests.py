@@ -1,10 +1,12 @@
 import unittest
 import abc
 import glob
+import hashlib
 
 from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
 from bson.objectid import ObjectId
+from gridfs import GridOut
 
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from main import app
@@ -16,8 +18,14 @@ class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
     it provides basic setup and cleanup before and after tests
     """
 
+    # TO DO: move it to test config?
     TEST_AUDIO_WAV_PATH = next(glob.iglob("./**/Kornelia_Cwik.wav",
-                                                 recursive=True))
+                               recursive=True))
+
+    TEST_AUDIO_WEBM_PATH = next(glob.iglob("./**/trzynascie.webm",
+                                recursive=True))
+    
+    
     @classmethod
     def setUpClass(self):
         """ setup before tests_integration form this class """
@@ -63,8 +71,8 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
     def test_fnc_save_new_sample(self):
         username = "Test Test"
-        with open(self.TEST_AUDIO_WAV_PATH, 'rb') as f:
-            self.sm.save_new_sample(username, "train", f.read(), "audio/wav")
+        with open(self.TEST_AUDIO_WEBM_PATH, 'rb') as f:
+            self.sm.save_new_sample(username, "train", f.read(), "audio/webm")
 
         # new user should be created
         db_out = self.db_collection.find_one({'name': username})
@@ -94,16 +102,27 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
     def test_fnc_save_file_to_db(self):
         with open(self.TEST_AUDIO_WAV_PATH, 'rb') as f:
-            id_out = self.sm._save_file_to_db("test_file.wav", f.read())
+            file_bytes = f.read()
+        id_out = self.sm._save_file_to_db("test_file.wav", file_bytes)
 
         # document should be created
         self.assertTrue(self.db_fs.exists(id_out), "Could not find file in file storage")
 
         file_obj = self.db_fs.get(id_out)
 
-        # file is not empty
+        # file should not be empty
         self.assertGreater(file_obj.length, 0,
                            "File storege returned empty file")
+
+        # wav file has exacly the same bytes, compare mp5 hashes
+        bytes_in_hash = hashlib.md5()
+        bytes_in_hash.update(file_bytes)
+        
+        bytes_out_hash = hashlib.md5()
+        bytes_out_hash.update(file_obj.read())
+
+        self.assertEqual(bytes_out_hash.hexdigest(), bytes_in_hash.hexdigest(),
+                         "Retrived file differs from orginal one")
 
         # should have 'audio/x-wav content type
         self.assertEqual(file_obj.content_type, "audio/x-wav",
@@ -116,48 +135,111 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
     @classmethod
     def setUpClass(self):
         super().setUpClass()
-        # create 2 full users (test, and train guy)
+        self.db_collection = self.sm.db_collection
 
-    def test_get_all_usernames(self):
-        pass
+        # populate test collection
+        with open(self.TEST_AUDIO_WAV_PATH, 'rb') as f:
+            test_file_bytes_wav = f.read()
 
-    def test_user_exists(self):
-        pass
+        with open(self.TEST_AUDIO_WEBM_PATH, 'rb') as f:
+            test_file_bytes_webm = f.read()
 
-    def test_sample_exists(self):
-        pass
+        username_1 = "Test Username 1"
+        username_2 = "Test Username 2"
 
-    def get_user_sample_list(self):
-        pass
+        self.sm.save_new_sample(username_1, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+        self.sm.save_new_sample(username_1, "train", test_file_bytes_webm, "audio/webm", recognize=False)
+        self.sm.save_new_sample(username_1, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+        self.sm.save_new_sample(username_1, "test", test_file_bytes_webm, "audio/webm", recognize=False)
+        self.sm.save_new_sample(username_1, "test", test_file_bytes_wav, "audio/wav", recognize=False)
 
-    def get_samplefile(self):
-        pass
-
-    def _get_user_mongo_id(self):
-        pass
-
-    def _get_file_from_db(self):
-        pass
-
-
-class TestSampleManager(BaseAbstractSampleManagerTestsClass):
-    """ tests for functions which do not operate on database """
-
-    def test_get_normalized_username(self):
-        username_simple = 'Abcd Efgh'
-        username_complex = "Aąbc ĆdęŁ Ściąö"
-
-        out_simple = self.sm._get_normalized_username(username_simple)
-        out_complex = self.sm._get_normalized_username(username_complex)
+        self.sm.save_new_sample(username_2, "train", test_file_bytes_webm, "audio/webm", recognize=False)
+        self.sm.save_new_sample(username_2, "test", test_file_bytes_wav, "audio/wav", recognize=False)
         
-        self.assertEqual(out_simple, 'abcd_efgh',
-                         f"Wrong name normalization: '{username_simple}' --> '{out_simple}'")
-        self.assertEqual(out_complex, 'aabc_cdel_sciao',
-                         f"Wrong name normalization: '{username_complex}' --> '{out_complex}'")
+        self.test_usernames = [username_1, username_2]
 
     def test_fnc_is_db_available(self):
         self.assertTrue(self.sm.is_db_available(),
                         "Database should be available but is_db_available() returned 'False'")
+
+    def test_fnc__get_all_usernames(self):
+        out = self.sm.get_all_usernames()
+
+        # should return list
+        self.assertTrue(isinstance(out, list), f"Expected list returned but got '{type(out)}'")
+
+        self.assertEqual(out, self.test_usernames,
+                         f"Retrived usernames differ, expected {self.test_usernames}, but got {out}")
+
+    def test_fnc_user_exists(self):
+        for username in self.test_usernames:
+            self.assertTrue(self.sm.user_exists(username),
+                            f"User '{username}' exists in samplebase, but user_exists() returned False")
+
+        # should return false for unknown user
+        unknown_user = "Mr Nobody"
+        self.assertFalse(self.sm.user_exists(unknown_user),
+                         f"There should not be user '{unknown_user}' in samplebase, but user_exists() returned True")
+
+    def test_fnc_sample_exists(self):
+        # sample should exist
+        out = self.sm.sample_exists(self.test_usernames[0], "test", "1.wav")
+        self.assertTrue(out, "Sample exist but sample_exists() returned False")
+ 
+        # sample should does not exist
+        out = self.sm.sample_exists(self.test_usernames[0], "test", "10.wav")
+        self.assertFalse(out, "Sample does not exist but sample_exists() returned True")
+
+    def test_fnc_get_user_sample_list(self):
+        out_train = self.sm.get_user_sample_list(self.test_usernames[0], "train")
+        out_test = self.sm.get_user_sample_list(self.test_usernames[0], "test")
+
+        self.assertTrue(isinstance(out_train, list), f"Expected list returned but got '{type(out_train)}'")
+        
+
+        self.assertEqual(len(out_train), 3,
+                         f"Expected 3 samplenames in train set but got {len(out_train)}")
+
+        self.assertEqual(len(out_test), 2,
+                         f"Expected 2 samplenames in train set but got {len(out_test)}")
+
+    def test_fnc_get_samplefile(self):
+        out = self.sm.get_samplefile(self.test_usernames[1], "train", "1.wav")
+
+        # returned value should be type of GridOut
+        self.assertTrue(isinstance(out, GridOut), "Expected GridOut returned but got '{type(out)}'")
+
+        # file object should contain filename
+        self.assertEqual(out.filename, "1.wav",
+                         "Wrong filename in returned GridOut object, expected '1.wav', got '{out.filename}'")
+
+        # file object should contain non-empty bytes
+        self.assertGreater(out.length, 0,
+                           "Returned GridOut should contain non-empty audio bytes")
+
+    def test_fnc_get_user_mongo_id(self):
+        out = self.sm._get_user_mongo_id(self.test_usernames[0])
+        self.assertTrue(isinstance(out, ObjectId), f"Expected ObjectId returned but got '{type(out)}'")
+
+        # user which does not exist shoud not have id
+        out = self.sm._get_user_mongo_id("Mr Nobody")
+        self.assertEqual(out, None, f"Got id for non-existing user")
+
+    def test_fnc_get_file_from_db(self):
+        user_1_doc = self.db_collection.find_one({'name': self.test_usernames[0]})
+        user_1_sample = user_1_doc["samples"]["train"][0]
+
+        # should return GridOut
+        out = self.sm._get_file_from_db(user_1_sample["id"])
+        self.assertTrue(isinstance(out, GridOut), "Expected GridOut returned but got '{type(out)}'")
+
+        # should contain non empty bytes
+        self.assertGreater(out.length, 0,
+                           "Returned GridOut should contain non-empty audio bytes")
+
+
+class TestSampleManager(BaseAbstractSampleManagerTestsClass):
+    """ tests for functions which do not operate on database """
 
     def test_fnc_get_plot_for_sample(self):
         pass
@@ -169,7 +251,19 @@ class TestSampleManager(BaseAbstractSampleManagerTestsClass):
         pass
 
     def test_fnc_get_normalized_username(self):
-        pass
+        username_simple = 'Abcd Efgh'
+        username_complex = "Aąbc ĆdęŁ Ściąö"
+        username_special = "{}*=+ ///---.?"
+
+        out_simple = self.sm._get_normalized_username(username_simple)
+        out_complex = self.sm._get_normalized_username(username_complex)
+        
+        self.assertEqual(out_simple, 'abcd_efgh',
+                         f"Wrong name normalization: '{username_simple}' --> '{out_simple}'")
+        self.assertEqual(out_complex, 'aabc_cdel_sciao',
+                         f"Wrong name normalization: '{username_complex}' --> '{out_complex}'")
+
+        self.assertRaises(UsernameException, self.sm._get_normalized_username, username_special)
 
     def test_fnc_get_sample_class_document_template(self):
         pass
