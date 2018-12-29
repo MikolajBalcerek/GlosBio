@@ -45,7 +45,7 @@ class SampleManager:
     # allowed plots' file extensions
     ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
     ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
-
+    
     def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
         """
         :param db_url: str - url to MongoDB database, it can contain port eg: 'localhost:27017'
@@ -115,10 +115,14 @@ class SampleManager:
     def create_user(self, username: str) -> ObjectId:
         """
         create new user in samplebase
+        check if it does not already exist before creating new document in database
         :param username: str - eg. 'Hugo Kołątaj'
+        :returns id: ObjectId - id of freshly added document
         """
-        new_sample = self._get_sample_class_document_template(username)
         try:
+            if(bool(self.db_collection.find_one({"name": username}))):
+                raise UsernameException(f"Can't create new user '{username}', it already axists in samplebase")
+            new_sample = self._get_sample_class_document_template(username)
             id = self.db_collection.insert_one(new_sample).inserted_id
         except errors.PyMongoError as e:
             raise DatabaseException(e)
@@ -139,7 +143,7 @@ class SampleManager:
             sample_names.append(sample['filename'])
         return sample_names
 
-    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str) -> str:
+    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str, recognize=True) -> str:
         """
         saves new sample in samplebase, creates new user if
         it wasn't created yet
@@ -158,9 +162,10 @@ class SampleManager:
             webm_bytesIO = BytesIO(file_bytes)
             wav_bytesIO = convert_webm.convert_webm_to_format(webm_bytesIO,  "wav")
 
-        recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
-        # recognized_speech = ""
-        wav_bytesIO.seek(0)
+        recognized_speech = ""
+        if recognize:
+            recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
+            wav_bytesIO.seek(0)
 
         try:
             filename = self._get_next_filename(username, set_type)
@@ -341,7 +346,7 @@ class SampleManager:
 
     def _save_file_to_db(self, filename: str, file_bytes=None, content_type: str = None):
         """
-        save file-like object, eg. FileStorage, to database
+        save file-like object, eg. FileStorage or BytesIO, to database
         """
         if content_type is None:
             content_type, _ = guess_type(filename)
