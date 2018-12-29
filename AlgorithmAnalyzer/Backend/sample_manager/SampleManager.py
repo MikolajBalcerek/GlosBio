@@ -46,6 +46,7 @@ class SampleManager:
     # allowed plots' file extensions
     ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
     ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
+    ALLOWED_SAMPLE_CONTENT_TYPE = ['audio/wav', 'audio/x-wav']
     
     def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
         """
@@ -137,7 +138,7 @@ class SampleManager:
         """
         id = self._get_user_mongo_id(username)
         doc = self.db_collection.find_one({'_id': id}, {f"samples.{set_type}.filename": 1, '_id': 0})
-        if not doc['samples']:
+        if not doc:
             return []
         sample_names = []
         for sample in doc['samples'][set_type]:
@@ -198,6 +199,9 @@ class SampleManager:
         BytesIO containinng the requested plot
         """
         audio_file_obj = self.get_samplefile(username, set_type, sample_name)
+        if audio_file_obj is None:
+            return None
+
         audio_bytes = audio_file_obj.read()
         if plot_type == "mfcc":
             file_io = mfcc_plot.plot_save_mfcc_color_boxes(audio_bytes, sample_name, file_extension)
@@ -205,7 +209,7 @@ class SampleManager:
             file_bytes = file_io.read()
         else:
             raise ValueError("plot_type should be of type str, of value one of"
-                             f"{ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
+                             f"{self.ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
         return file_bytes
 
     def get_samplefile(self, username: str, set_type: str, samplename: str) -> GridOut:
@@ -237,11 +241,11 @@ class SampleManager:
             raise DatabaseException(e)
         return fileObj
 
-    def _is_username_valid(self, username: str) -> bool:
-        """
-        check if given username is valid
-        """
-        return not re.match('^\w+$', username)
+    # def _is_username_valid(self, username: str) -> bool:
+    #     """
+    #     check if given username is valid
+    #     """
+    #     return not re.match('^\w+$', username)
 
     def _is_allowed_file_extension(self, file_type: str) -> bool:
         """
@@ -249,7 +253,7 @@ class SampleManager:
         :param file_type: str
         :return: True/False
         """
-        return True if file_type == "audio/wav" else False
+        return True if file_type in self.ALLOWED_SAMPLE_CONTENT_TYPE else False
     
     # def _create_plot_mfcc_for_sample(self, audio_bytes,
     #                                  file_extension: str = "png") -> bytes:
@@ -312,7 +316,7 @@ class SampleManager:
             temp = temp.replace(diac, normal)
         temp = temp.replace(" ", "_")
         temp = unicodedata.normalize('NFKD', temp).encode('ascii', 'ignore').decode('ascii')
-        if self._is_username_valid(temp):
+        if not re.match('^\w+$', temp):
             raise UsernameException(
                 'Incorrect username "{}" !'.format(temp)
             )
@@ -330,7 +334,7 @@ class SampleManager:
                 "tags": []
                 }
 
-    def _get_sample_file_document_template(self, filename: str, id: ObjectId, rec_speech: str = None) -> dict:
+    def _get_sample_file_document_template(self, filename: str, id: ObjectId, rec_speech: str = "") -> dict:
         """
         get single file document template
         """

@@ -7,6 +7,7 @@ from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
 from bson.objectid import ObjectId
 from gridfs import GridOut
+from io import BytesIO
 
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from main import app
@@ -24,8 +25,7 @@ class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
 
     TEST_AUDIO_WEBM_PATH = next(glob.iglob("./**/trzynascie.webm",
                                 recursive=True))
-    
-    
+
     @classmethod
     def setUpClass(self):
         """ setup before tests_integration form this class """
@@ -34,7 +34,7 @@ class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
         self.config = temp_app.config
         self.sm = self.config['SAMPLE_MANAGER']
         self.db_name = self.config['DATABASE_NAME']
-        
+
     @classmethod
     def tearDownClass(self):
         """ cleanup after all test cases in a class"""
@@ -154,20 +154,22 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.sm.save_new_sample(username_1, "test", test_file_bytes_wav, "audio/wav", recognize=False)
 
         self.sm.save_new_sample(username_2, "train", test_file_bytes_webm, "audio/webm", recognize=False)
-        self.sm.save_new_sample(username_2, "test", test_file_bytes_wav, "audio/wav", recognize=False)
+        self.sm.save_new_sample(username_2, "train", test_file_bytes_wav, "audio/wav", recognize=False)
         
         self.test_usernames = [username_1, username_2]
 
     def test_fnc_is_db_available(self):
+        # db should be available
         self.assertTrue(self.sm.is_db_available(),
                         "Database should be available but is_db_available() returned 'False'")
 
-    def test_fnc__get_all_usernames(self):
+    def test_fnc_get_all_usernames(self):
         out = self.sm.get_all_usernames()
 
         # should return list
         self.assertTrue(isinstance(out, list), f"Expected list returned but got '{type(out)}'")
 
+        # list should contain usernames from database
         self.assertEqual(out, self.test_usernames,
                          f"Retrived usernames differ, expected {self.test_usernames}, but got {out}")
 
@@ -195,13 +197,16 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         out_test = self.sm.get_user_sample_list(self.test_usernames[0], "test")
 
         self.assertTrue(isinstance(out_train, list), f"Expected list returned but got '{type(out_train)}'")
-        
 
         self.assertEqual(len(out_train), 3,
                          f"Expected 3 samplenames in train set but got {len(out_train)}")
 
         self.assertEqual(len(out_test), 2,
                          f"Expected 2 samplenames in train set but got {len(out_test)}")
+
+        out = self.sm.get_user_sample_list("Mr Nobody", "test")
+        self.assertEqual(out, [],
+                         f"Expected empty list to be returned, got '{out}' instead")
 
     def test_fnc_get_samplefile(self):
         out = self.sm.get_samplefile(self.test_usernames[1], "train", "1.wav")
@@ -231,24 +236,51 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
         # should return GridOut
         out = self.sm._get_file_from_db(user_1_sample["id"])
-        self.assertTrue(isinstance(out, GridOut), "Expected GridOut returned but got '{type(out)}'")
+        self.assertTrue(isinstance(out, GridOut), f"Expected GridOut returned but got '{type(out)}'")
 
         # should contain non empty bytes
         self.assertGreater(out.length, 0,
                            "Returned GridOut should contain non-empty audio bytes")
 
+    def test_fnc_get_plot_for_sample(self):
+        # check for every possible plot type
+        for plot_type in self.sm.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+            out = self.sm.get_plot_for_sample(plot_type, "train", self.test_usernames[0], "1.wav")
+
+            # returned value should be instance of BytesIO
+            self.assertTrue(isinstance(out, bytes), f"Expected bytes returned but got '{type(out)}'")
+
+            # should contain nonempty bytes
+            self.assertGreater(len(out), 0,
+                               "Returned BytesIO should contain non-empty bytes")
+
+        # should throw ValueError for unknown plot type
+        args = ["unknown_plot_type", "train", self.test_usernames[0], "1.wav"]
+        self.assertRaises(ValueError, self.sm.get_plot_for_sample, *args)
+
+        # should return None if sample, set or username does not exist
+        out = self.sm.get_plot_for_sample("mfcc", "train", self.test_usernames[0], "10.wav")
+        self.assertEqual(out, None, f"Expected returned value to be None but it has type of '{type(out)}'")
+
+    def test_fnc_get_next_filename(self):
+        out = self.sm._get_next_filename(self.test_usernames[0], "test")
+        self.assertEqual(out, '3.wav',
+                         f"Next proper name is '3.wav', got '{out}' instead")
+
+        out = self.sm._get_next_filename(self.test_usernames[0], "train")
+        self.assertEqual(out, '4.wav',
+                         f"Next proper name is '4.wav', got '{out}' instead")
+
+        out = self.sm._get_next_filename(self.test_usernames[1], "test")
+        self.assertEqual(out, '1.wav',
+                         f"Next proper name is 1.wav', got '{out}' instead")
+
+        out = self.sm._get_next_filename("Mr Nobody", "train")
+        self.assertEqual(out, '1.wav',
+                         f"Next proper name is 1.wav', got '{out}' instead")
 
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
     """ tests for functions which do not operate on database """
-
-    def test_fnc_get_plot_for_sample(self):
-        pass
-
-    def test_fnc_is_username_valid(self):
-        pass
-
-    def test_fnc_is_allowed_file_extension(self):
-        pass
 
     def test_fnc_get_normalized_username(self):
         username_simple = 'Abcd Efgh'
@@ -265,23 +297,25 @@ class TestSampleManager(BaseAbstractSampleManagerTestsClass):
 
         self.assertRaises(UsernameException, self.sm._get_normalized_username, username_special)
 
+    def test_fnc_is_allowed_file_extension(self):
+        self.assertTrue(self.sm._is_allowed_file_extension("audio/wav"),
+                        "Expected True returned for 'audio/wav'")
+        self.assertFalse(self.sm._is_allowed_file_extension("audio/unknown"),
+                         "Expected False returned for unknown file extension")
+
     def test_fnc_get_sample_class_document_template(self):
-        pass
+        out = self.sm._get_sample_class_document_template("user")
+        expected_fields = set(['name', 'nameNormalized', 'created', 'samples', 'tags'])
+
+        self.assertEqual(set(out.keys()), expected_fields,
+                         f"Expected fields: {expected_fields}, but got {out.keys()}")
 
     def test_fnc_get_sample_file_document_template(self):
-        pass
+        out = self.sm._get_sample_file_document_template('1.wav', ObjectId('555fc7956cda204928c9dbab'))
+        expected_fields = set(['id', 'filename', 'recognizedSpeech'])
 
-    def test_fnc_get_next_filename(self):
-        pass
-
-    # TODO: Add a helper function to add a new user with a file
-    # Hard to do due to add_sample not being integrated
-    # and save_sample requiring FileStorage and overall being a mess
-
-
-    # TODO: Unit tests for create_new... (json, mfcc_plot)
-    # Require the aforementioned helper function
-    # For now both are tested using the integration tests
+        self.assertEqual(set(out.keys()), expected_fields,
+                         f"Expected fields: {expected_fields}, but got {out.keys()}")
 
 
 if __name__ == '__main__':
