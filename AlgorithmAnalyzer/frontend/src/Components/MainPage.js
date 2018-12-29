@@ -26,7 +26,6 @@ class MainPage extends Component {
 		this.getUsers()
 	}
 	setData (array)  {
-		console.log('luj', array)
 		this.setState({
 			userList: array
 		})
