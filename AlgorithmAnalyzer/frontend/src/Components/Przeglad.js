@@ -231,13 +231,12 @@ class Przeglad extends Component {
                             ]}
                             gap={4}
                             />
-                            {this.state.mfcc &&<Button>
+                            {this.state.mfcc &&<Button onClick={()=>this.handleOpenMfcc()}>
                               <img 
                                 src={this.state.mfcc} 
                                 style={{
                                     width:280, backgroundColor: 'white', borderRadius: 10
                                     }} 
-                                onClick={()=>this.handleOpenMfcc()}
                                     />
                             </Button>}
                 </Grid>
