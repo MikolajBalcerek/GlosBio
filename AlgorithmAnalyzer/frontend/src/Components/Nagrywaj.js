@@ -37,7 +37,8 @@ class Recorder extends Component {
 			type: 'train',
 			fileErr: false,
 			value: 0,
-			uploaded: []
+			uploaded: [],
+			apiError: false
 		};
 		this.onPressButtonRecord = this.onPressButtonRecord.bind(this);
 		this.onPressButtonStop = this.onPressButtonStop.bind(this);
@@ -55,6 +56,7 @@ class Recorder extends Component {
 		this.setState({
 			isRecording: true,
 			recorded: false,
+			value: this.state.blob_audio_data.length
 		});
 	}
 	onPressButtonStop() {
@@ -66,19 +68,12 @@ class Recorder extends Component {
 
 	  saveAll(){	
 		if(this.state.blob_audio_data.length > 0){  
-			var promises = this.state.blob_audio_data.map((song,i)=>{return this.onPressButtonUpload(i, false)})
-			Promise.all(promises).then(() => {
-				this.setState({
-					blob_audio_data: [],
-					recorded: false
-				})
-				this.props.getUsers()
-			})
+			this.onPressButtonUpload(0, false, 0)
 		} else 
 		this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
 	}
 	
-	onPressButtonUpload(value, onlyOne) {
+	onPressButtonUpload(value, onlyOne, counter) {
 		if (this.state.recorded && this.state.username) {
 			let fd = new FormData();
 			fd.append("username", this.state.username);
@@ -89,7 +84,7 @@ class Recorder extends Component {
 				uploaded: uploadedlist
 			})
 			let newlist = this.state.blob_audio_data.slice()
-			onlyOne && newlist.splice(value, 1)
+			newlist.splice(value, 1)
 			let isRecorded = newlist.length > 0 ? true : false
 			let self = this;
 			 return axios
@@ -97,7 +92,6 @@ class Recorder extends Component {
 					headers: { "Content-Type": "multipart/form-data" },
 				})
 				.then(function(response) {
-					console.log("to tu",response);
 					self.handleClickVariant(`Plik ${value} zapisano poprawnie! ${response.data.text} `, 'success')
 					self.setState({
 						isRecording: false,
@@ -105,20 +99,32 @@ class Recorder extends Component {
 						blob_audio_data: newlist,
 						recognizedText: response.data.text,
 						uploaded: [],
-						value: 0
+						value: 0,
+						apiError: false
 					});
+					!onlyOne && (value < self.state.blob_audio_data.length) && self.onPressButtonUpload(value, false, counter+1)
+					if(counter === self.state.blob_audio_data.length)
+					{
+						self.setState({
+							blob_audio_data: [],
+							recorded: false
+						})
+						self.props.getUsers()
+					}
 					onlyOne &&setTimeout(() => {
 						console.log('odświerzam userów')
 						self.props.getUsers()
 					}, 2000)
 				})
 				.catch(function(error) {
+					self.setState({
+						apiError: true
+					})
 					self.handleClickVariant(`Podczas zapisu pliku ${value} wystąpił błąd!`, 'error')
 					console.log(error);
 				})
 		} else {
 			if (!this.state.recorded) {
-				console.log('dupsko')
 				return this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
 			}
 			if (!this.state.username) {
@@ -155,9 +161,11 @@ class Recorder extends Component {
 			while(file.length !== 0){
 				file.pop()
 			}
+			console.log('lol', blobList.length-1)
 			this.setState({
 				blob_audio_data: blobList,
-				recorded: true
+				recorded: true,
+				value: blobList.length-1
 			})
 			this.handleClickVariant('Plik wczytano poprawnie!', 'success')
 		} else{
@@ -252,7 +260,7 @@ class Recorder extends Component {
 							variant="contained"
 							color="default"
 							style={{ display: "block", display: 'flex' }}
-							onClick={()=>this.onPressButtonUpload(this.state.value, true)}
+							onClick={()=>this.onPressButtonUpload(this.state.value, true, 0)}
 						>
 							Save
 							<CloudUploadIcon style={{paddingLeft: 5}}/>
@@ -349,7 +357,7 @@ class Recorder extends Component {
 						style={{backgroundColor: 'black'}}
 						>
 						{this.state.blob_audio_data.map((sound, i)=>
-							_.find(this.state.uploaded, {id: i}) ? 
+							_.find(this.state.uploaded, {id: i}) && !this.state.apiError ? 
 								<Tab icon={<img src={spinner} style={{width:30, height: 30}} />} />:
 								<Tab label={i} />
 						)}
