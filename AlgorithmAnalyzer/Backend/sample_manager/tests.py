@@ -124,9 +124,9 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertEqual(bytes_out_hash.hexdigest(), bytes_in_hash.hexdigest(),
                          "Retrived file differs from orginal one")
 
-        # should have 'audio/x-wav content type
-        self.assertEqual(file_obj.content_type, "audio/x-wav",
-                         f"Expected 'audio/x-wav' content type but got '{file_obj.content_type}'")
+        # should have 'audio/x-wav' or 'audio/wav' content type
+        self.assertTrue(file_obj.content_type in ["audio/x-wav", "audio/wav"]
+                        f"Expected 'audio/x-wav' content type but got '{file_obj.content_type}'")
 
 
 class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
