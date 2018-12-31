@@ -67,9 +67,5 @@ class TestingConfig(BaseConfig):
     This config is used during automated tests
     """
     TESTING = True
-
-    DATABASE_URL = "127.0.0.1"
-    DATABASE_PORT = "27018"
-    DATABASE_NAME = "samplebase_test"
-
-    SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME, show_logs="False")
+    DATABASE_NAME = f"{BaseConfig.DATABASE_NAME}_test"
+    SAMPLE_MANAGER = SampleManager(f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False")

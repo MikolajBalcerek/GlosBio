@@ -1,11 +1,11 @@
 import io
 import urllib
 import json
+from io import BytesIO
 
 from flask import request, current_app, send_file
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
-from io import BytesIO
 from functools import wraps
 
 import config
@@ -18,19 +18,6 @@ CORS(app)
 
 # TODO: Would be nice to reword endpoints to follow username -> type instead of
 #  type -> username for consistency to how currently SampleManager stores them
-
-
-def requires_db_connection(f):
-    """
-    decorator function for routes where database connection can occur
-    """
-    @wraps(f)
-    def wrapped(*args, **kwargs):
-        if not app.config['SAMPLE_MANAGER'].is_db_available():
-            app.logger.error("Database is unavailable...")
-            return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
-        return f(*args, **kwargs)
-    return wrapped
 
 
 def requires_db_connection(f):
@@ -183,8 +170,8 @@ def handle_get_file(sampletype, username, samplename):
 @requires_db_connection
 def handle_plot_endpoint(sampletype, username, samplename):
     """
-    Create/update and return the requested plot
-    Available methods: POST
+    return the requested plot
+    Available methods: GET
     The request should send a JSON that contains:
     {
         type: "mfcc",
@@ -203,9 +190,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     #  alongside with handle_get_file could be done - already tasked
 
     # get the request's JSON
-    sent_json: dict = request.get_json(force=True, cache=True, silent=True)
-    # if sent_json is None:
-    #     sent_json = request.form
+    sent_json: dict = request.data
 
     try:
         sent_json_dict = json.loads(sent_json, encoding='utf8')
@@ -243,17 +228,16 @@ def handle_plot_endpoint(sampletype, username, samplename):
     if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
-    file_bytes = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_json_dict['type'],
-                                                                  set_type=sampletype,
-                                                                  username=username,
-                                                                  sample_name=samplename,
-                                                                  file_extension=sent_json_dict['file_extension'])
-
+    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_json_dict['type'],
+                                                                            set_type=sampletype,
+                                                                            username=username,
+                                                                            sample_name=samplename,
+                                                                            file_extension=sent_json_dict['file_extension'])
 
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
     return send_file(io.BytesIO(file_bytes),
-                     mimetype=f"image/{sent_json_dict['file_extension']}"),\
+                     mimetype=mimetype),\
                      status.HTTP_200_OK
 
 

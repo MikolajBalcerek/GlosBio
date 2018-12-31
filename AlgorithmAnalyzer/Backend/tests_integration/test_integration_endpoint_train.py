@@ -115,45 +115,22 @@ class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
             self.assertEqual(r.data, b'["Missing \'username\' field in request body"]',
                              "wrong string")
 
-    # def test_post_file_special_characters_username(self):
-    #     """ test for endpoint send with invalid username """
-    #     special_char_username = "(();})()=+"
+    def test_post_file_special_characters_username(self):
+        """ test for endpoint send with invalid username """
+        special_char_username = "(();})()=+"
 
-    #     with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
-    #         r = self.client.post('/audio/train',
-    #                              data={'username': special_char_username,
-    #                                    'file': f})
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = self.client.post('/audio/train',
+                                 data={'username': special_char_username,
+                                       'file': f})
             
-    #         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
-    #                          "wrong status code for no username file upload")
-    #         self.assertEqual(r.data, b'["Provided username contains special characters"]',
-    #                          "wrong string")
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                             "wrong status code for no username file upload")
+            self.assertEqual(r.data, b'["Provided username contains special characters"]',
+                             "wrong string")
 
 
 class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
-
-    # def setUpClass(self):
-    #     ''' setup before tests_integration for this class '''
-    #     app.config['TESTING'] = True
-    #     self.app = app.test_client()
-
-    #     self.db_url = f"{config.DATABASE_URL}:{config.DATABASE_PORT}"
-    #     self.db_name = f"{config.DATABASE_NAME}_test"
-    #     self.sm = SampleManager(self.db_url, self.db_name, show_logs=False)
-
-    #     with open('./tests_integration/trzynascie.webm', 'rb') as f:
-    #         self.app.post('/audio/train',
-    #                       data={"username": TEST_USERNAMES[0], "file": f})
-    #         f.close()
-    #     with open(test_audio_path_trzynascie, 'rb') as f:
-    #         self.app.post('/audio/test',
-    #                       data={"username": TEST_USERNAMES[1], "file": f})
-
-    # @classmethod
-    # def tearDownClass(self):
-    #     ''' cleanup after every test '''
-    #     client = MongoClient(self.db_url)
-    #     client.drop_database(self.db_name)
 
     @classmethod
     def setUpClass(cls):
@@ -324,20 +301,24 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertTrue(len(r.data) > 0,
                         "Generated MFCC plot PNG file from memory is less than 0")
 
-    # def test_GET_mfcc_plot_train_no_json_no_file_extension_specified(self):
-    #     """ tests for MFCC plot being requested
-    #     without json passed (just correct data in request)
-    #     without having specified a file extension
-    #     for an existing user
-    #     in train category """
-    #     request_path = f"/plot/train/{TEST_USERNAMES[0]}/1.wav"
-    #     r = self.client.post(request_path, data={"type": "mfcc"})
+    def test_GET_mfcc_plot_train_no_json_no_file_extension_specified(self):
+        """ tests for MFCC plot being requested
+        without json passed (just correct data in request)
+        without having specified a file extension
+        for an existing user
+        in train category """
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+        r = self.client.get(request_path, data={"type": "mfcc"})
 
-    #     self.assertEqual(r.content_type, 'image/png',
-    #                      "Wrong content_type was returned"
-    #                      f"for mfcc plot, should be image/png, is {r.content_type}")
-    #     self.assertTrue(len(r.data) > 0,
-    #                     "Generated MFCC plot PNG file from memory is less than 0")
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path} wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.content_type, 'image/png',
+                         "Wrong content_type was returned"
+                         f" for mfcc plot, should be image/png, is {r.content_type}")
+        self.assertTrue(len(r.data) > 0,
+                        "Generated MFCC plot PNG file from memory is less than 0")
+
 
     # TODO: tests for pdf
     # TODO: tests for test endpoint

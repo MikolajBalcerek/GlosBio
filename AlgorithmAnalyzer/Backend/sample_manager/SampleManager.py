@@ -1,4 +1,3 @@
-import gridfs
 import datetime
 import io
 import os
@@ -6,10 +5,9 @@ import re
 import unicodedata
 import json
 from io import BytesIO
-from typing import *
+from typing import Tuple, Optional
 
-
-from werkzeug.datastructures import FileStorage
+import gridfs
 from werkzeug.utils import secure_filename
 from mimetypes import guess_type
 from pymongo import MongoClient, errors
@@ -47,7 +45,7 @@ class SampleManager:
     ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
     ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
     ALLOWED_SAMPLE_CONTENT_TYPE = ['audio/wav', 'audio/x-wav']
-    
+
     def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
         """
         :param db_url: str - url to MongoDB database, it can contain port eg: 'localhost:27017'
@@ -65,7 +63,8 @@ class SampleManager:
                 print(f" * #INFO: testing db connection: '{db_url}'...")
             self.db_client.server_info()
         except errors.ServerSelectionTimeoutError as e:
-            raise DatabaseException(f"Could not connect to MongoDB at '{db_url}'")
+            raise DatabaseException(
+                f"Could not connect to MongoDB at '{db_url}'")
 
         self.show_logs = show_logs
 
@@ -123,7 +122,8 @@ class SampleManager:
         """
         try:
             if(bool(self.db_collection.find_one({"name": username}))):
-                raise UsernameException(f"Can't create new user '{username}', it already axists in samplebase")
+                raise UsernameException(
+                    f"Can't create new user '{username}', it already exists in samplebase")
             new_sample = self._get_sample_class_document_template(username)
             id = self.db_collection.insert_one(new_sample).inserted_id
         except errors.PyMongoError as e:
@@ -137,7 +137,8 @@ class SampleManager:
         :param set_type: str - one of available sample classes from config
         """
         id = self._get_user_mongo_id(username)
-        doc = self.db_collection.find_one({'_id': id}, {f"samples.{set_type}.filename": 1, '_id': 0})
+        doc = self.db_collection.find_one(
+            {'_id': id}, {f"samples.{set_type}.filename": 1, '_id': 0})
         if not doc:
             return []
         sample_names = []
@@ -145,7 +146,7 @@ class SampleManager:
             sample_names.append(sample['filename'])
         return sample_names
 
-    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str, recognize=True) -> str:
+    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str, recognize=True) -> Optional[str]:
         """
         saves new sample in samplebase, creates new user if
         it wasn't created yet
@@ -153,7 +154,10 @@ class SampleManager:
         :param set_type: str - one of available sample classes from config
         :param file_bytes: bytes - audio file as bytes
         :param content_type: str - type of provided file, eg: 'audio/wav', 'audio/webm'
-        :returns recognized_speech: str - recognized speech from provided audio sample
+        :param recognize: bool - indicates if speech from sample have to be recognized
+                                 saved into samplebase and returned
+        :returns recognized_speech: Optional[str] - recognized speech from provided audio sample
+                                                    if recognized param is set to True
         """
         if not self.user_exists(username):
             self.create_user(username)
@@ -162,19 +166,23 @@ class SampleManager:
             wav_bytesIO = BytesIO(file_bytes)
         else:
             webm_bytesIO = BytesIO(file_bytes)
-            wav_bytesIO = convert_webm.convert_webm_to_format(webm_bytesIO,  "wav")
+            wav_bytesIO = convert_webm.convert_webm_to_format(
+                webm_bytesIO,  "wav")
 
-        recognized_speech = ""
+        recognized_speech = None
         if recognize:
-            recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(BytesIO(wav_bytesIO.read()))
-            wav_bytesIO.seek(0)
+            recognized_speech = speech_to_text_wrapper.recognize_speech_from_bytesIO(
+                BytesIO(wav_bytesIO.getvalue()))
 
         try:
             filename = self._get_next_filename(username, set_type)
             user_id = self._get_user_mongo_id(username)
-            file_id = self._save_file_to_db(filename, file_bytes=wav_bytesIO.read(), content_type=content_type)
-            new_file_doc = self._get_sample_file_document_template(filename, file_id, rec_speech=recognized_speech)
-            self.db_collection.update_one({'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
+            file_id = self._save_file_to_db(
+                filename, file_bytes=wav_bytesIO.read(), content_type=content_type)
+            new_file_doc = self._get_sample_file_document_template(
+                filename, file_id, rec_speech=recognized_speech)
+            self.db_collection.update_one(
+                {'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
         except errors.PyMongoError as e:
             raise DatabaseException(e)
 
@@ -182,7 +190,7 @@ class SampleManager:
 
     def get_plot_for_sample(self, plot_type: str, set_type: str,
                             username: str, sample_name: str,
-                            file_extension: str="png", **parameters) -> BytesIO:
+                            file_extension: str="png", **parameters) -> Tuple[Optional[BytesIO], str]:
         """
         Master method that creates a plot of given plot_type (e.g. "mfcc")
         for a given set_type (train, test), username and specific sample
@@ -196,7 +204,7 @@ class SampleManager:
         :param parameters: extra plot type specific parameters, pass as keyworded
         e.g. alfa=10, beta=20
         :return file_name, file_bytes: str mimetype of file,
-        BytesIO containinng the requested plot
+        BytesIO containing the requested plot
         """
         audio_file_obj = self.get_samplefile(username, set_type, sample_name)
         if audio_file_obj is None:
@@ -204,13 +212,15 @@ class SampleManager:
 
         audio_bytes = audio_file_obj.read()
         if plot_type == "mfcc":
-            file_io = mfcc_plot.plot_save_mfcc_color_boxes(audio_bytes, sample_name, file_extension)
+            file_io = mfcc_plot.plot_save_mfcc_color_boxes(
+                audio_bytes, sample_name, file_extension)
             file_io.seek(0)
             file_bytes = file_io.read()
         else:
             raise ValueError("plot_type should be of type str, of value one of"
                              f"{self.ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
-        return file_bytes
+        content_type, _ = guess_type(f"file.{file_extension}")
+        return file_bytes, content_type
 
     def get_samplefile(self, username: str, set_type: str, samplename: str) -> GridOut:
         """
@@ -230,7 +240,7 @@ class SampleManager:
             {'$unwind': f"$samples.{set_type}"},
             {'$match': {f"samples.{set_type}.filename": samplename}},
             {'$project': {"id": f"$samples.{set_type}.id"}}
-            ]
+        ]
         try:
             temp_doc = list(self.db_collection.aggregate(aggregation_pipeline))
             if not temp_doc:
@@ -254,7 +264,7 @@ class SampleManager:
         :return: True/False
         """
         return True if file_type in self.ALLOWED_SAMPLE_CONTENT_TYPE else False
-    
+
     # def _create_plot_mfcc_for_sample(self, audio_bytes,
     #                                  file_extension: str = "png") -> bytes:
     #     """
@@ -290,7 +300,7 @@ class SampleManager:
         """
         # TODO: This will have to be remade once a new SampleManager rolls out
         # TODO: NOT UNIT TESTED AWAITING FOR CHANGE
-        expected_plot_path =  f"{self._get_sample_file_name_from_path(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
+        expected_plot_path = f"{self._get_sample_file_name_from_path(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
         with open(expected_plot_path, mode='rb') as plot_file:
             return expected_plot_path, io.BytesIO(plot_file.read()).getvalue()
 
@@ -315,7 +325,8 @@ class SampleManager:
         for diac, normal in d.items():
             temp = temp.replace(diac, normal)
         temp = temp.replace(" ", "_")
-        temp = unicodedata.normalize('NFKD', temp).encode('ascii', 'ignore').decode('ascii')
+        temp = unicodedata.normalize('NFKD', temp).encode(
+            'ascii', 'ignore').decode('ascii')
         if not re.match('^\w+$', temp):
             raise UsernameException(
                 'Incorrect username "{}" !'.format(temp)
@@ -346,7 +357,8 @@ class SampleManager:
         and have username
         """
         try:
-            doc = self.db_collection.find_one({"nameNormalized": self._get_normalized_username(username)})
+            doc = self.db_collection.find_one(
+                {"nameNormalized": self._get_normalized_username(username)})
         except errors.PyMongoError as e:
             raise DatabaseException(e)
         return doc['_id'] if doc else None
@@ -360,10 +372,11 @@ class SampleManager:
 
         storage = self.db_file_storage
         try:
-            id = storage.put(file_bytes, filename=filename, content_type=content_type)
+            id = storage.put(file_bytes, filename=filename,
+                             content_type=content_type)
         except errors.PyMongoError as e:
             raise DatabaseException(e)
-        
+
         return id
 
     def _get_file_from_db(self, id: ObjectId):
@@ -392,7 +405,8 @@ class SampleManager:
         last_file = max(self.get_user_sample_list(username, set_type))
         regex = re.match('(.+)\.(.+$)', last_file)
         if not regex or not regex.group(1).isdigit():
-            raise ValueError(f"Invalid filename retrived from database: {last_file}, should be: '<number>.wav'")
+            raise ValueError(
+                f"Invalid filename retrived from database: {last_file}, should be: '<number>.wav'")
         next_number = int(regex.group(1)) + 1
         return f"{next_number}.wav"
 
