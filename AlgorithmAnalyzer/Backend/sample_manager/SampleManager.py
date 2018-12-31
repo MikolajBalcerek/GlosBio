@@ -214,8 +214,7 @@ class SampleManager:
         if plot_type == "mfcc":
             file_io = mfcc_plot.plot_save_mfcc_color_boxes(
                 audio_bytes, sample_name, file_extension)
-            file_io.seek(0)
-            file_bytes = file_io.read()
+            file_bytes = file_io.getvalue()
         else:
             raise ValueError("plot_type should be of type str, of value one of"
                              f"{self.ALLOWED_PLOT_TYPES_FROM_SAMPLES}")

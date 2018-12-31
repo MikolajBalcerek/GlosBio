@@ -2,12 +2,12 @@ import unittest
 import abc
 import glob
 import hashlib
+from io import BytesIO
 
 from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
 from bson.objectid import ObjectId
 from gridfs import GridOut
-from io import BytesIO
 
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from main import app
@@ -28,10 +28,9 @@ class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
 
     @classmethod
     def setUpClass(self):
-        """ setup before tests_integration form this class """
-        temp_app = app
-        temp_app.config.from_object('config.TestingConfig')
-        self.config = temp_app.config
+        """ setup before tests_integration from this class """
+        app.config.from_object('config.TestingConfig')
+        self.config = app.config
         self.sm = self.config['SAMPLE_MANAGER']
         self.db_name = self.config['DATABASE_NAME']
 

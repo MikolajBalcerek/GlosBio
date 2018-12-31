@@ -26,13 +26,12 @@ def requires_db_connection(f):
     """
     @wraps(f)
     def wrapped(*args, **kwargs):
-        if not app.config['SAMPLE_MANAGER'].is_db_available():
-            app.logger.error("Database is unavailable...")
-            return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
-        return f(*args, **kwargs)
-        
+        try:
+            return f(*args, **kwargs)
+        except DatabaseException as e:
+            app.logger.error("Database is unavailable...", e)
+        return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
     return wrapped
-
 
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
