@@ -1,9 +1,7 @@
 import datetime
 import io
-import os
 import re
 import unicodedata
-import json
 from io import BytesIO
 from typing import Tuple, Optional
 
@@ -64,7 +62,7 @@ class SampleManager:
             self.db_client.server_info()
         except errors.ServerSelectionTimeoutError as e:
             raise DatabaseException(
-                  f"Could not connect to MongoDB at '{db_url}'")
+                f"Could not connect to MongoDB at '{db_url}'")
 
         self.show_logs = show_logs
 

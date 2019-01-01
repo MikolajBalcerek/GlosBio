@@ -1,17 +1,13 @@
-
 import unittest
 import abc
 import glob
 import hashlib
-from io import BytesIO
 
 from pymongo import MongoClient
-from werkzeug.datastructures import FileStorage
 from bson.objectid import ObjectId
-import gridfs
 from gridfs import GridOut
 
-from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
+from sample_manager.SampleManager import UsernameException
 from main import app
 
 

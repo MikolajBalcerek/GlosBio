@@ -8,7 +8,6 @@ from flask_api import FlaskAPI, status
 from flask_cors import CORS
 from functools import wraps
 
-import config
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from utils import convert_audio
 
@@ -34,6 +33,7 @@ def requires_db_connection(f):
                 app.logger.error("Database is unavailable...", e)
         return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
     return wrapped
+
 
 @app.route("/", methods=['GET'])
 def landing_documentation_page():
@@ -88,13 +88,14 @@ def handling_audio_endpoint(type):
 
     if 'username' not in request.data:
         return ["Missing 'username' field in request body"], status.HTTP_400_BAD_REQUEST
-  
+
     app.logger.info(f"try to add new sample to {type} set")
     username = request.data.get('username')
     file = request.files.get('file')
 
     try:
-        recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(username, type, file.read(), content_type=file.mimetype)
+        recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(
+            username, type, file.read(), content_type=file.mimetype)
     except UsernameException:
         return ['Provided username contains special characters'], status.HTTP_400_BAD_REQUEST
 
@@ -140,7 +141,7 @@ def handle_get_file(sampletype, username, samplename):
     # check for proper sample set type
     if sampletype not in app.config['ALLOWED_SAMPLE_TYPES']:
         return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {app.config['ALLOWED_SAMPLE_TYPES']}"], \
-                status.HTTP_400_BAD_REQUEST
+            status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
     if not app.config['SAMPLE_MANAGER'].user_exists(username):
@@ -154,12 +155,13 @@ def handle_get_file(sampletype, username, samplename):
     #             status.HTTP_400_BAD_REQUEST
 
     # get file from samplebase and convert in to mp3
-    file = app.config['SAMPLE_MANAGER'].get_samplefile(username, sampletype, samplename)
+    file = app.config['SAMPLE_MANAGER'].get_samplefile(
+        username, sampletype, samplename)
 
     # check if file exists in samplebase
     if not file:
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
-                status.HTTP_400_BAD_REQUEST
+            status.HTTP_400_BAD_REQUEST
 
     file_mp3 = convert_audio.convert_audio_to_format(source=file, format="mp3")
     app.logger.info(f"send file '{samplename}' from database")
@@ -208,7 +210,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # check for type
     if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
         return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
-               status.HTTP_400_BAD_REQUEST
+            status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
     if sent_json_dict.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
@@ -217,7 +219,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
         else:
             return ["Plot requested cannot be returned with that file extension,"
                     f"supported extensions {SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
-                   status.HTTP_400_BAD_REQUEST
+                status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
     # check if user exists in samplebase
@@ -228,7 +230,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # check if file exists in samplebase
     if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
-                status.HTTP_400_BAD_REQUEST
+            status.HTTP_400_BAD_REQUEST
     file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_json_dict['type'],
                                                                             set_type=sampletype,
                                                                             username=username,
@@ -239,7 +241,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     #  can be replaced with just plot_path instead of file
     return send_file(io.BytesIO(file_bytes),
                      mimetype=mimetype),\
-                     status.HTTP_200_OK
+        status.HTTP_200_OK
 
 
 if __name__ == "__main__":
