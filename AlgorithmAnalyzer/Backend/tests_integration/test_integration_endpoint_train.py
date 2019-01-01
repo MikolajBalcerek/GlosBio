@@ -378,7 +378,7 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertEqual(status.HTTP_400_BAD_REQUEST, r.status_code,
                          "Nonexisting filename for existing user should return 400 during plots")
 
-    def test_incorrect_try_POST_should_405(self):
+    def test_incorrect_try_GET_should_405(self):
         """ test for response code on GET request """
         sample_name = "1.wav"
         user_name = self.TEST_USERNAMES[0]
