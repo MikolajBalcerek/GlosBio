@@ -30,8 +30,45 @@ def _plot_mfcc_color_boxes(audio_path: str) -> plt.Figure:
     return figure
 
 
-def plot_save_mfcc_color_boxes(audio_path: str, directory_path: str,
-                               file_name: str, saved_format: str = "pdf") -> Tuple[str, BytesIO]:
+def _plot_mfcc_color_boxes_from_bytes(audio_bytes: bytes) -> plt.Figure:
+    """
+    Plots a MFCC figure from an audio file (wav) under audio_path
+
+    :param audio_path: str full path to audio file
+    :return: plt.Figure containing the MFCC colored boxes plot
+    """
+    (rate, sig) = wav.read(BytesIO(audio_bytes))
+    mfcc_features_lines = mfcc(sig, rate, nfft=1250)
+    figure, axis = plt.subplots()
+    mfcc_data = np.swapaxes(mfcc_features_lines, 0, 1)
+    axis.set_title("MFCC")
+    format_figure = axis.imshow(mfcc_data, interpolation='nearest', cmap=cm.coolwarm,
+                    origin='lower', aspect='auto')
+
+    return figure
+
+
+# def plot_save_mfcc_color_boxes(audio_path: str, directory_path: str,
+#                                file_name: str, saved_format: str = "pdf") -> Tuple[str, BytesIO]:
+#     """
+#     Creates a MFCC colored boxes plot and saves it to provided path
+#     with the given name and format (pdf or png)
+
+#     :param audio_path: str full path to audio file
+#     :param directory_path: str path to the directory without the ending slash (/)
+#     :param file_name: name of the file (without the extension)
+#     :param saved_format: str type of plot image to be saved, png or pdf,
+#     defaults to pdf (vector format)
+#     :return file_path, file_io: str file_path to the saved file,
+#     BytesIO containing the requested plot
+#     """
+#     figure = _plot_mfcc_color_boxes(audio_path)
+#     file_path, file_io = save_matplotlib_figure(figure, directory_path,
+#                                        file_name, saved_format)
+#     return file_path, file_io
+
+def plot_save_mfcc_color_boxes(file_bytes: bytes,
+                               file_name: str, saved_format: str = "pdf") -> BytesIO:
     """
     Creates a MFCC colored boxes plot and saves it to provided path
     with the given name and format (pdf or png)
@@ -44,8 +81,6 @@ def plot_save_mfcc_color_boxes(audio_path: str, directory_path: str,
     :return file_path, file_io: str file_path to the saved file,
     BytesIO containing the requested plot
     """
-    figure = _plot_mfcc_color_boxes(audio_path)
-    file_path, file_io = save_matplotlib_figure(figure, directory_path,
-                                       file_name, saved_format)
-    return file_path, file_io
-
+    figure = _plot_mfcc_color_boxes_from_bytes(file_bytes)
+    file_io = save_matplotlib_figure(figure, file_name, saved_format)
+    return file_io

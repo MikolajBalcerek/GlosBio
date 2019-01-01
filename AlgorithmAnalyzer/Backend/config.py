@@ -16,8 +16,8 @@ class BaseConfig(object):
     """
 
     # Debug from Flask's documentation:
-    # 'If you enable debug support the server will reload itself on code changes,
-    #  and it will also provide you with a helpful debugger if things go wrong.'
+    # "If you enable debug support the server will reload itself on code changes,
+    #  and it will also provide you with a helpful debugger if things go wrong."
     #  (on localhost:port)
     DEBUG = False
 
@@ -30,7 +30,7 @@ class BaseConfig(object):
     TESTING = False
 
     # directory where samples will be stored
-    SAMPLE_UPLOAD_PATH = './data'
+    # SAMPLE_UPLOAD_PATH = './data'
 
     # available classes of samples
     ALLOWED_SAMPLE_TYPES = ['train', 'test']
@@ -39,8 +39,13 @@ class BaseConfig(object):
     ALLOWED_FILES_TO_GET = {'audio': ['wav', 'webm'],
                             'json': ['json']}
 
+    # MongoDB database settings
+    DATABASE_URL = "127.0.0.1"
+    DATABASE_PORT = "27018"
+    DATABASE_NAME = "samplebase"
+
     # sample manager
-    SAMPLE_MANAGER = SampleManager(SAMPLE_UPLOAD_PATH)
+    SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
 
 
 class ProductionConfig(BaseConfig):
@@ -62,5 +67,5 @@ class TestingConfig(BaseConfig):
     This config is used during automated tests
     """
     TESTING = True
-
-
+    DATABASE_NAME = f"{BaseConfig.DATABASE_NAME}_test"
+    SAMPLE_MANAGER = SampleManager(f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False")
