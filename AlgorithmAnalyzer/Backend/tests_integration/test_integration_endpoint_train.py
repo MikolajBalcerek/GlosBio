@@ -7,9 +7,11 @@ import json
 import abc
 import copy
 
+import gridfs
 from flask_api import status
 from pymongo import MongoClient
 
+from sample_manager.SampleManager import SampleManager, DatabaseException
 import config
 
 from main import app
@@ -389,18 +391,20 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
                          f"Expected response status code 405 but got {r.status_code}")
 
 
-class NoDbTests(unittest.TestCase):
-
-    TEST_USERNAMES = ["Train Person", "Test Person"]
-    TEST_AUDIO_PATH_TRZYNASCIE = next(glob.iglob("./**/trzynascie.webm",
-                                                 recursive=True))
+class NoDbTests(BaseAbstractIntegrationTestsClass):
 
     @classmethod
     def setUpClass(cls):
-        cls.app = app
-        cls.app.config.from_object('config.TestingConfigNoDb')
-        cls.sm = cls.app.config['SAMPLE_MANAGER']
-        cls.client = cls.app.test_client()
+        super().setUpClass()
+
+        temp_sm = SampleManager(cls.sm.db_url, cls.db_name, show_logs=False)
+        temp_sm.db_url = "_____:36363"
+        temp_sm.db_client = MongoClient(temp_sm.db_url, serverSelectionTimeoutMS=1000)
+        temp_sm.db_database = temp_sm.db_client["unknown_collection"]
+        temp_sm.db_collection = temp_sm.db_database.samples
+        temp_sm.db_file_storage = gridfs.GridFS(temp_sm.db_database)
+
+        cls.app.config['SAMPLE_MANAGER'] = temp_sm
 
     def test_no_db_post_sample(self):
         with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
