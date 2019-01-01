@@ -400,7 +400,7 @@ class NoDbTests(BaseAbstractIntegrationTestsClass):
         temp_sm.db_file_storage = gridfs.GridFS(temp_sm.db_database)
 
         assert not temp_sm.is_db_available(
-        ), f"Database '{temp_sm.db_url}' should not be abailable"
+        ), f"Database '{temp_sm.db_url}' should not be available"
 
         cls.app.config['SAMPLE_MANAGER'] = temp_sm
 
