@@ -10,7 +10,7 @@ from functools import wraps
 
 import config
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
-from utils import convert_webm
+from utils import convert_audio
 
 app = FlaskAPI(__name__)
 
@@ -161,7 +161,7 @@ def handle_get_file(sampletype, username, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
                 status.HTTP_400_BAD_REQUEST
 
-    file_mp3 = convert_webm.convert_wav_to_mp3(file)
+    file_mp3 = convert_audio.convert_audio_to_format(source=file, format="mp3")
     app.logger.info(f"send file '{samplename}' from database")
     return send_file(BytesIO(file_mp3.read()), mimetype=file.content_type)
 

@@ -3,8 +3,8 @@ from io import BytesIO
 from pydub import AudioSegment
 
 
-def convert_webm_to_format(source: Union[BytesIO, str],
-                           format: str = "wav", destination_path: str = None) -> Union[BytesIO, str]:
+def convert_audio_to_format(source: Union[BytesIO, str],
+                            format: str = "wav", destination_path: str = None) -> Union[BytesIO, str]:
     """ 
    Helper function converting webm to wav so it can be handled
    by mainstream libraries
@@ -35,14 +35,14 @@ def convert_webm_to_format(source: Union[BytesIO, str],
     return export_file
 
 
-def convert_wav_to_mp3(source: BytesIO) -> BytesIO:
-    """
-    Helper function converting wav to mp3
-    :param source: BytesIO - BytesIO object pointing to audio sample
-    :returns: BytesIO
-    """
-    export_file = BytesIO()
-    AudioSegment.from_file(source).export(export_file, format="mp3")
-    export_file.seek(0)
+# def convert_wav_to_mp3(source: BytesIO) -> BytesIO:
+#     """
+#     Helper function converting wav to mp3
+#     :param source: BytesIO - BytesIO object pointing to audio sample
+#     :returns: BytesIO
+#     """
+#     export_file = BytesIO()
+#     AudioSegment.from_file(source).export(export_file, format="mp3")
+#     export_file.seek(0)
 
-    return export_file
+#     return export_file

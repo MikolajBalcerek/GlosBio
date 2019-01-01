@@ -14,7 +14,7 @@ from pymongo import MongoClient, errors
 from bson.objectid import ObjectId
 from gridfs import GridOut
 
-from utils import convert_webm
+from utils import convert_audio
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
 from plots import mfcc_plot
 
@@ -168,7 +168,7 @@ class SampleManager:
             wav_bytesIO = BytesIO(file_bytes)
         else:
             webm_bytesIO = BytesIO(file_bytes)
-            wav_bytesIO = convert_webm.convert_webm_to_format(
+            wav_bytesIO = convert_audio.convert_audio_to_format(
                 webm_bytesIO,  "wav")
 
         recognized_speech = None
