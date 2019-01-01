@@ -1,18 +1,13 @@
 import glob
-from pathlib import Path
 import unittest
-import shutil
-import os
 import json
 import abc
-import copy
 
 import gridfs
 from flask_api import status
 from pymongo import MongoClient
 
-from sample_manager.SampleManager import SampleManager, DatabaseException
-import config
+from sample_manager.SampleManager import SampleManager
 
 from main import app
 
@@ -126,7 +121,7 @@ class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
             r = self.client.post('/audio/train',
                                  data={'username': special_char_username,
                                        'file': f})
-            
+
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                              "wrong status code for no username file upload")
             self.assertEqual(r.data, b'["Provided username contains special characters"]',
@@ -141,18 +136,18 @@ class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
         super().setUpClass()
 
         with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
-            r = cls.client.post('/audio/train', data={"username": cls.TEST_USERNAMES[0], "file": f})
+            r = cls.client.post(
+                '/audio/train', data={"username": cls.TEST_USERNAMES[0], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, \
                 f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
             f.close()
 
         with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
             r = cls.client.post('/audio/test',
-                             data={"username": cls.TEST_USERNAMES[1], "file": f})
+                                data={"username": cls.TEST_USERNAMES[1], "file": f})
             assert r.status_code == status.HTTP_201_CREATED, \
                 f"Failed preparation for tests - adding sample, should return 201, returned {r.status_code}"
             f.close()
-
 
     def test_get_all_users(self):
         r = self.client.get('/users')
@@ -322,7 +317,6 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertTrue(len(r.data) > 0,
                         "Generated MFCC plot PNG file from memory is less than 0")
 
-
     # TODO: tests for pdf
     # TODO: tests for test endpoint
     def test_failing_lack_of_data_url_specified(self):
@@ -399,10 +393,14 @@ class NoDbTests(BaseAbstractIntegrationTestsClass):
 
         temp_sm = SampleManager(cls.sm.db_url, cls.db_name, show_logs=False)
         temp_sm.db_url = "_____:36363"
-        temp_sm.db_client = MongoClient(temp_sm.db_url, serverSelectionTimeoutMS=1000)
+        temp_sm.db_client = MongoClient(
+            temp_sm.db_url, serverSelectionTimeoutMS=1000)
         temp_sm.db_database = temp_sm.db_client["unknown_collection"]
         temp_sm.db_collection = temp_sm.db_database.samples
         temp_sm.db_file_storage = gridfs.GridFS(temp_sm.db_database)
+
+        assert not temp_sm.is_db_available(
+        ), f"Database '{temp_sm.db_url}' should not be abailable"
 
         cls.app.config['SAMPLE_MANAGER'] = temp_sm
 
