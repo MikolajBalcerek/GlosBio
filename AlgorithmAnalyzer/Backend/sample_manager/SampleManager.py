@@ -46,11 +46,12 @@ class SampleManager:
     ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
     ALLOWED_SAMPLE_CONTENT_TYPE = ['audio/wav', 'audio/x-wav']
 
-    def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
+    def __init__(self, db_url: str, db_name: str, show_logs: bool = True, check_connection: bool = True):
         """
         :param db_url: str - url to MongoDB database, it can contain port eg: 'localhost:27017'
         :param db_name: str - database name
         :param show_logs: bool - used to suppress log messages
+        :param check_connection: bool - should connection to db be checked?
         """
         # setup MongoDB database connection
         self.db_url = db_url
@@ -58,13 +59,14 @@ class SampleManager:
         self.db_database = self.db_client[db_name]
         self.db_collection = self.db_database.samples
         self.db_file_storage = gridfs.GridFS(self.db_database)
-        try:
-            if show_logs:
-                print(f" * #INFO: testing db connection: '{db_url}'...")
-            self.db_client.server_info()
-        except errors.ServerSelectionTimeoutError as e:
-            raise DatabaseException(
-                f"Could not connect to MongoDB at '{db_url}'")
+        if check_connection:
+            try:
+                if show_logs:
+                    print(f" * #INFO: testing db connection: '{db_url}'...")
+                self.db_client.server_info()
+            except errors.ServerSelectionTimeoutError as e:
+                raise DatabaseException(
+                    f"Could not connect to MongoDB at '{db_url}'")
 
         self.show_logs = show_logs
 

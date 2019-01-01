@@ -5,6 +5,7 @@ import shutil
 import os
 import json
 import abc
+import copy
 
 from flask_api import status
 from pymongo import MongoClient
@@ -386,3 +387,51 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
 
         self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED,
                          f"Expected response status code 405 but got {r.status_code}")
+
+
+class NoDbTests(unittest.TestCase):
+
+    TEST_USERNAMES = ["Train Person", "Test Person"]
+    TEST_AUDIO_PATH_TRZYNASCIE = next(glob.iglob("./**/trzynascie.webm",
+                                                 recursive=True))
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = app
+        cls.app.config.from_object('config.TestingConfigNoDb')
+        cls.sm = cls.app.config['SAMPLE_MANAGER']
+        cls.client = cls.app.test_client()
+
+    def test_no_db_post_sample(self):
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = self.client.post('/audio/train',
+                                 data={"username": self.TEST_USERNAMES[0],
+                                       "file": f})
+
+            # status code test
+            self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE,
+                             f"wrong status code, expected 503, got {r.status_code}")
+
+    def test_no_db_get_all_users(self):
+        r = self.client.get('/users')
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE,
+                         f"wrong status code, expected 503, got {r.status_code}")
+
+    def test_no_db_get_sample_list(self):
+        r = self.client.get(f'/audio/train/{self.TEST_USERNAMES[0]}')
+
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE,
+                         f"wrong status code, expected 503, got {r.status_code}")
+
+    def test_no_db_get_sample(self):
+        r = self.client.get(f"/audio/test/test_person/1.wav")
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE,
+                         f"wrong status code, expected 503, got {r.status_code}")
+
+    def test_no_db_get_plot(self):
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+        request_json = json.dumps({"type": "mfcc"})
+
+        r = self.client.get(request_path, json=request_json)
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE,
+                         f"wrong status code, expected 503, got {r.status_code}")

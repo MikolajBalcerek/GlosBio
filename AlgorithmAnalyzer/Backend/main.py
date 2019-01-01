@@ -29,7 +29,9 @@ def requires_db_connection(f):
         try:
             return f(*args, **kwargs)
         except DatabaseException as e:
-            app.logger.error("Database is unavailable...", e)
+            # hide logs during tests
+            if not app.config['TESTING']:
+                app.logger.error("Database is unavailable...", e)
         return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
     return wrapped
 

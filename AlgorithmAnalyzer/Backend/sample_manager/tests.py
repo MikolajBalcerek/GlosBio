@@ -1,3 +1,4 @@
+
 import unittest
 import abc
 import glob
@@ -7,6 +8,7 @@ from io import BytesIO
 from pymongo import MongoClient
 from werkzeug.datastructures import FileStorage
 from bson.objectid import ObjectId
+import gridfs
 from gridfs import GridOut
 
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
@@ -33,6 +35,7 @@ class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
         self.config = app.config
         self.sm = self.config['SAMPLE_MANAGER']
         self.db_name = self.config['DATABASE_NAME']
+        self.sm_db_down = SampleManager("___:36363", "no_db_collection", show_logs=False, check_connection=False)
 
     @classmethod
     def tearDownClass(self):
@@ -174,6 +177,8 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         # db should be available
         self.assertTrue(self.sm.is_db_available(),
                         "Database should be available but is_db_available() returned 'False'")
+        self.assertFalse(self.sm_db_down.is_db_available(),
+                         "Database should be unavailable but is_db_available() returned 'True'")
 
     def test_fnc_get_all_usernames(self):
         out = self.sm.get_all_usernames()

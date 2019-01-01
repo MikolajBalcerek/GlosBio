@@ -69,3 +69,10 @@ class TestingConfig(BaseConfig):
     TESTING = True
     DATABASE_NAME = f"{BaseConfig.DATABASE_NAME}_test"
     SAMPLE_MANAGER = SampleManager(f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False")
+
+
+class TestingConfigNoDb(TestingConfig):
+    """
+    Also for testing, but sample manager have no db connection
+    """
+    SAMPLE_MANAGER = SampleManager("___:36363", "no_db_collection", show_logs=False, check_connection=False)
