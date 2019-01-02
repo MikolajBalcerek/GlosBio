@@ -272,9 +272,9 @@ def handle_tag_entdpoint():
         if app.config['SAMPLE_MANAGER'].tag_exists(name):
             return [f"Tag '{name}' already exists in tag base"], status.HTTP_400_BAD_REQUEST
         try:
-            added_tag = app.config['SAMPLE_MANAGER'].add_tag(name, values)
+            app.config['SAMPLE_MANAGER'].add_tag(name, values)
         except ValueError:
-            return ["name or values contian special characters"], status.HTTP_400_BAD_REQUEST
+            return ["Name could not contian special characters"], status.HTTP_400_BAD_REQUEST
         return [f"Added tag '{name}'"], status.HTTP_201_CREATED
 
 

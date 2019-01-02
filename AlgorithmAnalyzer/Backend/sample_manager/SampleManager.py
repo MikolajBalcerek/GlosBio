@@ -267,6 +267,8 @@ class SampleManager:
         try:
             if self.tag_exists(tag_name):
                 raise ValueError("tag '{tag_name}' already exists in tagbase")
+            if not re.match('^\w+$', tag_name):
+                raise ValueError("name contains special characters")
             new_tag = {"name": tag_name, "values": values}
             self.db_tags.insert_one(new_tag)
         except errors.PyMongoError as e:
