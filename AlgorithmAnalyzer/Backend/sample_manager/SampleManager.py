@@ -249,16 +249,39 @@ class SampleManager:
             raise DatabaseException(e)
         return fileObj
 
-    # def add_tag_to_user(self, username: str, tag_name: str, value: str):
-    #     """
-    #     TO DO: docstring
-    #     """
-    #     try:
-    #         user_id = self._get_user_mongo_id(username)
-    #         self.db_collection.update_one(
-    #             {'_id': user_id}, {'$push': {f'tags': {tag_name: value}}})
-    #     except errors.PyMongoError as e:
-    #         raise DatabaseException(e)
+    def add_tag_to_user(self, username: str, tag_name: str, value: str):
+        """
+        TO DO: docstring
+        """
+        try:
+            # TO DO: should we check it here?
+
+            # check if tag exists
+            if not self.tag_exists(tag_name):
+                raise ValueError("Tag does not exist")
+
+            # check if value is proper value
+            tag_values = self.get_tag_values(tag_name)
+            if value not in tag_values:
+                raise ValueError(f"Wrong tag value: '{value}', expected one of: {tag_values}")
+
+            user_id = self._get_user_mongo_id(username)
+            self.db_collection.update_one(
+                {'_id': user_id}, {'$push': {f'tags': {'name': tag_name, 'value': value}}})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+    def get_user_tags(self, username: str) -> dict:
+        """
+        TO DO: docstring
+        """
+        user_id = self._get_user_mongo_id(username)
+        all_tags = self.db_collection.find_one({'_id': user_id}, {'tags': 1})
+        out = {}
+        for tag_obj in all_tags['tags']:
+            print(tag_obj)
+            out[tag_obj['name']] = tag_obj['value']
+        return out
 
     def add_tag(self, tag_name: str, values: list) -> dict:
         """
@@ -309,6 +332,15 @@ class SampleManager:
         except errors.PyMongoError as e:
             raise DatabaseException(e)
         return bool(out)
+
+    def user_has_tag(self, username: str, tag: str) -> bool:
+        """
+        TO DO: docstring
+        """
+        return tag in self.get_user_tags(username)
+
+    def get_user_summary(self, username):
+        pass
 
     # def _is_username_valid(self, username: str) -> bool:
     #     """
