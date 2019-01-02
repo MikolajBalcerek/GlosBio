@@ -340,7 +340,16 @@ class SampleManager:
         return tag in self.get_user_tags(username)
 
     def get_user_summary(self, username):
-        pass
+        """
+        TO DO: docstring
+        """
+        user_id = self._get_user_mongo_id(username)
+        user_doc = self.db_collection.find_one({'_id': user_id}, {'nameNormalized': 1, 'created': 1})
+        out = {'username': username,
+               'normalized_username': user_doc['nameNormalized'],
+               'created': user_doc['created'],
+               'tags': self.get_user_tags(username)}
+        return out
 
     # def _is_username_valid(self, username: str) -> bool:
     #     """
@@ -389,8 +398,6 @@ class SampleManager:
         :raises FileNotFoundError:
         :return: str path to the plot, and BytesIO plot's contents
         """
-        # TODO: This will have to be remade once a new SampleManager rolls out
-        # TODO: NOT UNIT TESTED AWAITING FOR CHANGE
         expected_plot_path = f"{self._get_sample_file_name_from_path(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
         with open(expected_plot_path, mode='rb') as plot_file:
             return expected_plot_path, io.BytesIO(plot_file.read()).getvalue()

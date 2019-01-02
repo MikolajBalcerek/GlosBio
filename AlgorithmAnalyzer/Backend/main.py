@@ -355,7 +355,9 @@ def handle_user_summary_endpoint(username):
     """
     # check if user exists
     if not app.config['SAMPLE_MANAGER'].user_exists(username):
-        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST    
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+
+    return app.config['SAMPLE_MANAGER'].get_user_summary(username)
 
 
 if __name__ == "__main__":
