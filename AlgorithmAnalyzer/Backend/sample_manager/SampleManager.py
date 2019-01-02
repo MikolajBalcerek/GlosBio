@@ -266,7 +266,7 @@ class SampleManager:
         """
         try:
             if self.tag_exists(tag_name):
-                raise ValueError("tag '{tag_name}' already exists in tagbase")
+                raise ValueError(f"tag '{tag_name}' already exists in tag base")
             if not re.match('^\w+$', tag_name):
                 raise ValueError("name contains special characters")
             new_tag = {"name": tag_name, "values": values}
@@ -289,6 +289,16 @@ class SampleManager:
         for tag in all_tags:
             out.append(tag['name'])
         return out
+
+    def get_tag_values(self, tag_name: str) -> list:
+        """
+        TO DO: docstring
+        """
+        try:
+            out = self.db_tags.find_one({'name': tag_name}, {'_id': 0, 'name': 0})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return out['values']
 
     def tag_exists(self, tag_name: str) -> bool:
         """ 

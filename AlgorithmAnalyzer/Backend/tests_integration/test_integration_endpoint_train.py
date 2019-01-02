@@ -8,7 +8,6 @@ from flask_api import status
 from pymongo import MongoClient
 
 from sample_manager.SampleManager import SampleManager
-
 from main import app
 
 

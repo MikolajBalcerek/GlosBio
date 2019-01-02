@@ -278,6 +278,19 @@ def handle_tag_entdpoint():
         return [f"Added tag '{name}'"], status.HTTP_201_CREATED
 
 
+@app.route("/tag/<string:name>", methods=['GET'])
+@requires_db_connection
+def handle_tag_value_entdpoint(name):
+    """
+    will list tag possible values
+    """
+    if not app.config['SAMPLE_MANAGER'].tag_exists(name):
+            return [f"Tag '{name}' does not exist in tag base"], status.HTTP_400_BAD_REQUEST
+
+
+    return app.config['SAMPLE_MANAGER'].get_tag_values(name), status.HTTP_200_OK
+
+
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
     app.run()
