@@ -244,6 +244,40 @@ def handle_plot_endpoint(sampletype, username, samplename):
         status.HTTP_200_OK
 
 
+@app.route("/tag", methods=['GET', 'POST'])
+@requires_db_connection
+def handle_tag_entdpoint():
+    """
+    GET
+    will return list with all users' tags
+    
+    POST
+    {
+        name: <tag_name>
+        values: [<value_1>, <value_2>, ...]
+    }
+    will add new tag to tagbase with its possible values
+    """
+    if request.method == "GET":
+        tag_list = app.config['SAMPLE_MANAGER'].get_all_tags()
+        return tag_list, status.HTTP_200_OK
+
+    if request.method == "POST":
+        for field in ["name", "values"]:
+            if field not in request.data:
+                return [f"Did not find '{field}' field in request body"], status.HTTP_400_BAD_REQUEST
+        # contain some special characters
+        name = request.data['name']
+        values = request.data['values']
+        if app.config['SAMPLE_MANAGER'].tag_exists(name):
+            return [f"Tag '{name}' already exists in tag base"], status.HTTP_400_BAD_REQUEST
+        try:
+            added_tag = app.config['SAMPLE_MANAGER'].add_tag(name, values)
+        except ValueError:
+            return ["name or values contian special characters"], status.HTTP_400_BAD_REQUEST
+        return [f"Added tag '{name}'"], status.HTTP_201_CREATED
+
+
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
     app.run()

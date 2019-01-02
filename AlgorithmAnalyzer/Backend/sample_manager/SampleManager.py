@@ -55,6 +55,7 @@ class SampleManager:
         self.db_client = MongoClient(db_url, serverSelectionTimeoutMS=5000)
         self.db_database = self.db_client[db_name]
         self.db_collection = self.db_database.samples
+        self.db_tags = self.db_database.tags
         self.db_file_storage = gridfs.GridFS(self.db_database)
         try:
             if show_logs:
@@ -247,6 +248,55 @@ class SampleManager:
         except errors.PyMongoError as e:
             raise DatabaseException(e)
         return fileObj
+
+    # def add_tag_to_user(self, username: str, tag_name: str, value: str):
+    #     """
+    #     TO DO: docstring
+    #     """
+    #     try:
+    #         user_id = self._get_user_mongo_id(username)
+    #         self.db_collection.update_one(
+    #             {'_id': user_id}, {'$push': {f'tags': {tag_name: value}}})
+    #     except errors.PyMongoError as e:
+    #         raise DatabaseException(e)
+
+    def add_tag(self, tag_name: str, values: list) -> dict:
+        """
+        TO DO: docstring
+        """
+        try:
+            if self.tag_exists(tag_name):
+                raise ValueError("tag '{tag_name}' already exists in tagbase")
+            new_tag = {"name": tag_name, "values": values}
+            self.db_tags.insert_one(new_tag)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        new_tag.pop('_id', None)
+        return new_tag
+
+    def get_all_tags(self) -> list:
+        """
+        TO DO: docstring
+        """
+        try:
+            all_tags = self.db_tags.find({}, {'_id': 0, 'values': 0})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+        out = []
+        for tag in all_tags:
+            out.append(tag['name'])
+        return out
+
+    def tag_exists(self, tag_name: str) -> bool:
+        """ 
+        check if tag exists in tag base
+        """
+        try:
+            out = self.db_tags.find_one({'name': tag_name})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return bool(out)
 
     # def _is_username_valid(self, username: str) -> bool:
     #     """
