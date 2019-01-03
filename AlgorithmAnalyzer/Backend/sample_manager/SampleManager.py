@@ -254,8 +254,6 @@ class SampleManager:
         TO DO: docstring
         """
         try:
-            # TO DO: should we check it here?
-
             # check if tag exists
             if not self.tag_exists(tag_name):
                 raise ValueError("Tag does not exist")
@@ -264,6 +262,7 @@ class SampleManager:
             tag_values = self.get_tag_values(tag_name)
             if value not in tag_values:
                 raise ValueError(f"Wrong tag value: '{value}', expected one of: {tag_values}")
+            # TO DO: should we check things like this here?
 
             user_id = self._get_user_mongo_id(username)
             self.db_collection.update_one(
@@ -279,7 +278,6 @@ class SampleManager:
         all_tags = self.db_collection.find_one({'_id': user_id}, {'tags': 1})
         out = {}
         for tag_obj in all_tags['tags']:
-            print(tag_obj)
             out[tag_obj['name']] = tag_obj['value']
         return out
 
@@ -349,6 +347,14 @@ class SampleManager:
                'normalized_username': user_doc['nameNormalized'],
                'created': user_doc['created'],
                'tags': self.get_user_tags(username)}
+
+        # aggregation query
+        aggregation_pipeline = [
+            {'$match': {'_id': user_id}},
+            {'$project': {"train": {'$size': "$samples.train"}, "test": {"$size": "$samples.test"}, '_id': 0}},
+        ]
+        out['samples'] = list(self.db_collection.aggregate(aggregation_pipeline))
+
         return out
 
     # def _is_username_valid(self, username: str) -> bool:
