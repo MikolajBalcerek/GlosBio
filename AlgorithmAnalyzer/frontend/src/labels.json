@@ -1,4 +1,4 @@
 {
     "apiPath": "// http://vps487563.ovh.net:5050",
-    "localPath": "http://localhost:5000" 
+    "usePath": "http://localhost:5000" 
 } 

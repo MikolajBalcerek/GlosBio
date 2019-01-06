@@ -36,7 +36,7 @@ class Tags extends Component{
     getTagList() {
         var self = this
         axios
-            .get(labels.localPath +`/tag`)
+            .get(labels.usePath +`/tag`)
             .then(function(response) {
 				self.setState({
                     tagNameList: response.data
@@ -76,7 +76,7 @@ class Tags extends Component{
         fd.append("name", this.state.tagNameList[this.state.name]);
         fd.append("value", this.state.tagValuesList[this.state.tagValue]);
         axios
-            .post(labels.localPath +`/users/${this.props.user}/tags`, fd)
+            .post(labels.usePath +`/users/${this.props.user}/tags`, fd)
             .then(function() {
                 self.props.getUserTags()
                 self.setState({
@@ -92,7 +92,7 @@ class Tags extends Component{
     getUserTagValues(){
         var self = this
         axios
-            .get(labels.localPath +`/tag/${this.state.tagNameList[this.state.name]}`)
+            .get(labels.usePath +`/tag/${this.state.tagNameList[this.state.name]}`)
             .then(function(response) {
                 console.log(response.data)
 				self.setState({
@@ -136,7 +136,7 @@ class Tags extends Component{
         fd.append("name", this.state.newTagName);
         fd.append("values", JSON.stringify(this.state.newTagValues));
         axios
-            .post(labels.localPath +`/tag`, fd)
+            .post(labels.usePath +`/tag`, fd)
             .then(function() {
                 self.getTagList()
                 self.setState({

@@ -80,7 +80,7 @@ class Przeglad extends Component {
     getAllUserSounds(user) {
         var self = this
         axios
-            .get(labels.localPath + `/audio/${this.state.type}/${user}`)
+            .get(labels.usePath + `/audio/${this.state.type}/${user}`)
             .then(function(response) {
 				let userLetSounds = []
                 response.data.samples.map(user => {
@@ -102,7 +102,7 @@ class Przeglad extends Component {
         this.getMfcc()
         var self = this
         axios({
-            url: labels.localPath +`/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            url: labels.usePath +`/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
             responseType: 'blob',
           })
@@ -126,7 +126,7 @@ class Przeglad extends Component {
             "type": "mfcc"
         })
         axios({
-            url: labels.localPath +`/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            url: labels.usePath +`/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
             data: data,
             headers: {
@@ -156,7 +156,7 @@ class Przeglad extends Component {
         console.log('ahoj')
         var self = this
         axios({
-            url: labels.localPath +`/users/${this.props.userList[this.state.user]}/tags`,
+            url: labels.usePath +`/users/${this.props.userList[this.state.user]}/tags`,
             method: 'GET'
           })
             .then(function(response) {
