@@ -16,6 +16,7 @@ import Radio from '@material-ui/core/Radio';
 import AudioSpectrum from "react-audio-spectrum"
 import { withSnackbar } from 'notistack'
 import MFCC from './MFCC'
+import Tags from './Tags'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -29,7 +30,9 @@ class Przeglad extends Component {
             sound: '',
             url: '',
             mfcc: null,
-            mfccOpen: false
+            mfccOpen: false,
+            userTags: [],
+            tagsOpen: false
         }
     }
 
@@ -43,13 +46,19 @@ class Przeglad extends Component {
             mfccOpen: !this.state.mfccOpen
         })
     }
+    
+    handleOpenTags =()=>{
+        this.setState({
+            tagsOpen: !this.state.tagsOpen
+        })
+    }
+
     handleChangeSound = event => {
         this.setState({ [event.target.name]: event.target.value });
       };
 
     handleChangeUser = event => {
-        this.setState({ [event.target.name]: event.target.value });
-        
+        this.setState({ [event.target.name]: event.target.value }, ()=>this.getUserTags());
         this.getAllUserSounds(this.props.userList[event.target.value])
       };
 
@@ -112,15 +121,15 @@ class Przeglad extends Component {
 
     getMfcc() {
         var self = this
-        var data = { 
+        var data = JSON.stringify({ 
             "type": "mfcc"
-        }
+        })
         axios({
             url: `http://localhost:5000/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
-            method: 'POST',
+            method: 'GET',
             data: data,
             headers: {
-                'Content-type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
             responseType: 'arraybuffer'
           })
@@ -142,6 +151,25 @@ class Przeglad extends Component {
 			})
     }
 
+    getUserTags() {
+        console.log('ahoj')
+        var self = this
+        axios({
+            url: `http://localhost:5000/users/${this.props.userList[this.state.user]}/tags`,
+            method: 'GET'
+          })
+            .then(function(response) {
+                console.log(response)
+                var tags = self.state.userTags
+                self.setState({
+                    userTags: response.data
+                })
+            })
+            .catch(function(error) {
+                self.handleClickVariant("Podczas wczytywania wykresu mfcc wystąpił błąd!", 'error')
+                console.log(error);
+			})
+    }
     render(){
         return(
             <Paper style={{ margin: 20,backgroundColor: 'rgba(0, 0, 0, .6)'}}>   
@@ -204,12 +232,23 @@ class Przeglad extends Component {
                         {this.state.userSounds && this.state.userSounds.map((sound, id) => <MenuItem key={id} value={id}>{sound}</MenuItem>)}
                     </Select>
                 </FormControl>
-                            <Button onClick={()=>this.getSound()} color='primary' variant="contained">Załaduj próbkę</Button>
+                    <Button 
+                        onClick={()=>this.getSound()} 
+                        color='primary' 
+                        variant="contained">
+                        Załaduj próbkę
+                    </Button>
+                    <Button 
+                        onClick={()=>this.handleOpenTags()}
+                        color='primary' 
+                        variant="contained">
+                         Tagi
+                    </Button>
                 </Grid>
                 <Grid item xs={12} style={{display: 'flex',  justifyContent:'space-around', alignItems:'center', width: '100%', marginTop: 30, minHeight: 300 }}> 
                 <Typography variant="headline" gutterBottom>
                         Analiza próbki
-                </Typography>     
+                </Typography>
                 <audio id="audio-element"
                             src={this.state.url}
                             controls
@@ -246,6 +285,14 @@ class Przeglad extends Component {
                 mfcc={this.state.mfcc} 
                 mfccOpen={this.state.mfccOpen}
                 handleOpenMfcc={()=>this.handleOpenMfcc}
+                />
+                <Tags 
+                    tags={this.state.userTags}
+                    tagsKeys={this.state.userTags !== [] ? Object.keys(this.state.userTags) : []}
+                    user={this.props.userList[this.state.user]}
+                    tagsOpen={this.state.tagsOpen}
+                    handleOpenTags={()=>this.handleOpenTags()}
+                    getUserTags={()=>this.getUserTags()}
                 />
             </Paper>
         )

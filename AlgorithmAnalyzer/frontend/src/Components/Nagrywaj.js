@@ -108,8 +108,7 @@ class Recorder extends Component {
 						self.setState({
 							blob_audio_data: [],
 							recorded: false
-						})
-						self.props.getUsers()
+						}, ()=>self.props.getUsers())
 					}
 					onlyOne &&setTimeout(() => {
 						console.log('odświerzam userów')
@@ -340,7 +339,7 @@ class Recorder extends Component {
 								color='primary' 
 								variant="contained"
 								>
-								Upuść tutaj plik, lub kliknij aby wybrać plik z komputera
+								Upuść tutaj plik/i, lub kliknij aby wybrać plik/i z komputera
 							</Button>
 						</Files>
 					</div>
@@ -359,7 +358,7 @@ class Recorder extends Component {
 						{this.state.blob_audio_data.map((sound, i)=>
 							_.find(this.state.uploaded, {id: i}) && !this.state.apiError ? 
 								<Tab icon={<img src={spinner} style={{width:30, height: 30}} />} />:
-								<Tab label={i} />
+								<Tab label={i+1} />
 						)}
 					</Tabs>
 				</AppBar>

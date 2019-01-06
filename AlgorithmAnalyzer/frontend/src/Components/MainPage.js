@@ -58,8 +58,14 @@ class MainPage extends Component {
 					handleChange3={this.handleChange3}
 					getUsers={this.getUsers}
 				/>
-				{value === 1 && <SnackbarProvider maxSnack={20}><Recorder getUsers={()=>this.getUsers()} /></SnackbarProvider>}
-				{value === 2 && <SnackbarProvider maxSnack={20}><Przeglad userList={this.state.userList} /></SnackbarProvider>}
+				{value === 1 && 
+					<SnackbarProvider maxSnack={20}>
+						<Recorder getUsers={()=>this.getUsers()} />
+					</SnackbarProvider>}
+				{value === 2 && 
+					<SnackbarProvider maxSnack={20}>
+						<Przeglad userList={this.state.userList} />
+					</SnackbarProvider>}
 				{value === 3 && <Trenuj />}
 				{value === 4 && <Testuj1 />}
 				{value === 5 && <Testuj2 />}
