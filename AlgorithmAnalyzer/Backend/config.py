@@ -40,8 +40,8 @@ class BaseConfig(object):
                             'json': ['json']}
 
     # MongoDB database settings
-    DATABASE_URL = "127.0.0.1"
-    DATABASE_PORT = "27018"
+    DATABASE_URL = "db"
+    DATABASE_PORT = "27017"
     DATABASE_NAME = "samplebase"
 
     # sample manager

@@ -246,4 +246,4 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
-    app.run()
+    app.run(host="0.0.0.0")
