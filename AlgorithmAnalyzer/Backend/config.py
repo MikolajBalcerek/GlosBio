@@ -44,6 +44,12 @@ class BaseConfig(object):
     DATABASE_PORT = "27017"
     DATABASE_NAME = "samplebase"
 
+    # api key settings
+    # should api require api key?
+    USE_API_KEY = False
+    # if above option is set to True, api key should be present here
+    API_KEY = ""
+
     # sample manager
     SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
 

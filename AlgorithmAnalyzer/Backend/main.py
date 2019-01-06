@@ -3,7 +3,7 @@ import urllib
 import json
 from io import BytesIO
 
-from flask import request, current_app, send_file
+from flask import request, current_app, send_file, abort
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 from functools import wraps
@@ -12,11 +12,24 @@ from sample_manager.SampleManager import SampleManager, UsernameException, Datab
 from utils import convert_audio
 
 app = FlaskAPI(__name__)
+app.config.from_object('config.DevelopmentConfig')
 
 CORS(app)
 
 # TODO: Would be nice to reword endpoints to follow username -> type instead of
 #  type -> username for consistency to how currently SampleManager stores them
+
+
+@app.before_request
+def before_request():
+    if app.config['USE_API_KEY']:
+        print(app.config['API_KEY'])
+        key = request.args.get("key")
+        print(key == app.config['API_KEY'])
+        if not key:
+            key = request.headers.get("Authorization")
+        if not key or key != app.config['API_KEY']:
+            abort(401)
 
 
 def requires_db_connection(f):
