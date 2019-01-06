@@ -7,6 +7,8 @@ import Testuj2 from "./Testuj2";
 import axios from 'axios';
 import MiddleBar from './MiddleBar'
 import { SnackbarProvider } from 'notistack';
+import labels from '../labels.json'
+
 class MainPage extends Component {
 	state = {
 		value: 1,
@@ -34,7 +36,7 @@ class MainPage extends Component {
 		console.log('działam')
         var self = this
         axios
-            .get('http://localhost:5000/users')
+            .get(labels.localPath+'/users')
             .then(function(response) {
 				let userLetList = []
                 response.data.users.map(user => {

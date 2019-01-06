@@ -16,6 +16,7 @@ import Paper from '@material-ui/core/Paper';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { withSnackbar } from 'notistack'
 import PropTypes from 'prop-types';
+import labels from '../labels.json'
 
 class Tags extends Component{
     state = {
@@ -35,7 +36,7 @@ class Tags extends Component{
     getTagList() {
         var self = this
         axios
-            .get(`http://localhost:5000/tag`)
+            .get(labels.localPath +`/tag`)
             .then(function(response) {
 				self.setState({
                     tagNameList: response.data
@@ -75,7 +76,7 @@ class Tags extends Component{
         fd.append("name", this.state.tagNameList[this.state.name]);
         fd.append("value", this.state.tagValuesList[this.state.tagValue]);
         axios
-            .post(`http://localhost:5000/users/${this.props.user}/tags`, fd)
+            .post(labels.localPath +`/users/${this.props.user}/tags`, fd)
             .then(function() {
                 self.props.getUserTags()
                 self.setState({
@@ -91,7 +92,7 @@ class Tags extends Component{
     getUserTagValues(){
         var self = this
         axios
-            .get(`http://localhost:5000/tag/${this.state.tagNameList[this.state.name]}`)
+            .get(labels.localPath +`/tag/${this.state.tagNameList[this.state.name]}`)
             .then(function(response) {
                 console.log(response.data)
 				self.setState({
@@ -135,7 +136,7 @@ class Tags extends Component{
         fd.append("name", this.state.newTagName);
         fd.append("values", JSON.stringify(this.state.newTagValues));
         axios
-            .post(`http://localhost:5000/tag`, fd)
+            .post(labels.localPath +`/tag`, fd)
             .then(function() {
                 self.getTagList()
                 self.setState({

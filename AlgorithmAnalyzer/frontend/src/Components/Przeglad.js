@@ -17,6 +17,7 @@ import AudioSpectrum from "react-audio-spectrum"
 import { withSnackbar } from 'notistack'
 import MFCC from './MFCC'
 import Tags from './Tags'
+import labels from '../labels.json'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -79,7 +80,7 @@ class Przeglad extends Component {
     getAllUserSounds(user) {
         var self = this
         axios
-            .get(`http://localhost:5000/audio/${this.state.type}/${user}`)
+            .get(labels.localPath + `/audio/${this.state.type}/${user}`)
             .then(function(response) {
 				let userLetSounds = []
                 response.data.samples.map(user => {
@@ -101,7 +102,7 @@ class Przeglad extends Component {
         this.getMfcc()
         var self = this
         axios({
-            url: `http://localhost:5000/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            url: labels.localPath +`/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
             responseType: 'blob',
           })
@@ -125,7 +126,7 @@ class Przeglad extends Component {
             "type": "mfcc"
         })
         axios({
-            url: `http://localhost:5000/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            url: labels.localPath +`/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
             data: data,
             headers: {
@@ -155,7 +156,7 @@ class Przeglad extends Component {
         console.log('ahoj')
         var self = this
         axios({
-            url: `http://localhost:5000/users/${this.props.userList[this.state.user]}/tags`,
+            url: labels.localPath +`/users/${this.props.userList[this.state.user]}/tags`,
             method: 'GET'
           })
             .then(function(response) {
