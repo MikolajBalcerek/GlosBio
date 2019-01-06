@@ -78,7 +78,7 @@ RUN apk --update-cache \
 	tini \
 	ffmpeg
 
-RUN pip3 install --upgrade pip pipenv pipenv_to_requirements
+RUN pip3 install --upgrade pip pipenv pipenv_to_requirements gunicorn json-logging-py
 
 WORKDIR /opt/app
 COPY Pipfile Pipfile
@@ -87,4 +87,5 @@ RUN pipenv run pipenv_to_requirements
 RUN pip3 install --no-cache -r requirements.txt
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["python3", "main.py"]
+# CMD ["python3", "main.py"]
+CMD ["/bin/sh", "entrypoint.sh"]
