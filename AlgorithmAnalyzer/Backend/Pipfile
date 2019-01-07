@@ -13,6 +13,7 @@ SpeechRecognition = "*"
 pydub = "*"
 python-speech-features = "*"
 matplotlib = "*"
+"h5py" = "*"
 
 [dev-packages]
 
