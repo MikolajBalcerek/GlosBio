@@ -15,11 +15,11 @@ services:
           nocopy: true
     ports:
       - "127.0.0.1:27018:27017"
-  app:
+  api:
     image: glosbio-api:latest
     build:
       context: ./Backend
-      dockerfile: app.dockerfile
+      dockerfile: api.dockerfile
     volumes:
       - type: bind
         source: ./Backend
@@ -27,7 +27,17 @@ services:
     ports:
       - "127.0.0.1:5000:5000"
     depends_on:
-        - db
+      - db
+    restart: on-failure
+  webapp:
+    image: glosbio-front:latest
+    build:
+      context: ./frontend
+      dockerfile: front.dockerfile
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
     restart: on-failure
 
 volumes:
