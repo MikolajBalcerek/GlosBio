@@ -8,6 +8,7 @@ from flask_api import FlaskAPI, status
 from flask_cors import CORS
 from functools import wraps
 
+from algorithms.algorithm_manager import AlgorithmManager, ALG_DICT
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from utils import convert_audio
 
@@ -71,6 +72,66 @@ def handle_users_endpoint():
     return {'users': app.config['SAMPLE_MANAGER'].get_all_usernames()}, status.HTTP_200_OK
 
 
+@app.route('/algorithms', methods=['GET'])
+def get_algorithms_names():
+    return {'algorithms': AlgorithmManager.get_algorithms()}, status.HTTP_200_OK
+
+
+@app.route('/algorithm/parameters/<string:name>', methods=['GET'])
+def get_algorithm_parameters(name):
+    if name not in ALG_DICT.keys():
+        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+
+    return {'parameters': AlgorithmManager.get_parameters(name)}, status.HTTP_200_OK
+
+
+@app.route('/algorithm/train/<string:name>', methods=['POST'])
+def train_algorithm(name):
+    if 'parameters' not in request.data:
+        return 'Missing "params" in request data', status.HTTP_400_BAD_REQUEST
+
+    if name not in ALG_DICT.keys():
+        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+
+    params = request.data['parameters']
+    params_legend = AlgorithmManager.get_parameters(name)
+
+    if set(params.keys()) != set(params_legend.keys()):
+        return 'Bad algorithm parameters.', status.HTTP_400_BAD_REQUEST
+
+    params_types = AlgorithmManager.get_parameter_types(name)
+
+    for param in params:
+        try:
+            params_types[param](params[param])
+        except (ValueError, TypeError):
+            return f'Bad value type of parameter "{param}"', status.HTTP_400_BAD_REQUEST
+
+    if any(params_types[key](params[key]) not in params_legend[key]['values'] for key in params):
+        return 'At least one parameter has bad value.', status.HTTP_400_BAD_REQUEST
+
+    samples, labels = app.config['SAMPLE_MANAGER'].get_all_train_samples('wav')
+    # TODO(mikra): take care of sample_type, both here and on the front
+
+    AlgorithmManager(name).train_models(samples, labels, params)
+    return "Rozpoczęto trenowanie.", status.HTTP_200_OK
+
+
+@app.route('/algorithm/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
+def test_algorithm(user_name, algorithm_name):
+    if 'file' not in request.files:
+        return 'No file part', status.HTTP_400_BAD_REQUEST
+
+    if not app.config['SAMPLE_MANAGER'].user_exists(user_name):
+        return "Such user doesn't exist", status.HTTP_400_BAD_REQUEST
+
+    file = request.files.get('file')
+    file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
+    prediction = AlgorithmManager(algorithm_name).predict(user_name, file)
+
+    return {"prediction": prediction}, status.HTTP_200_OK
+
+
 @app.route("/audio/<string:type>", methods=['POST'])
 @requires_db_connection
 def handling_audio_endpoint(type):
@@ -92,10 +153,14 @@ def handling_audio_endpoint(type):
     app.logger.info(f"try to add new sample to {type} set")
     username = request.data.get('username')
     file = request.files.get('file')
+    fake = False
+
+    if 'fake' in request.data:
+        fake = request.data['fake']
 
     try:
         recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(
-            username, type, file.read(), content_type=file.mimetype)
+            username, type, file.read(), fake=fake, content_type=file.mimetype)
     except UsernameException:
         return ['Provided username contains special characters'], status.HTTP_400_BAD_REQUEST
 
