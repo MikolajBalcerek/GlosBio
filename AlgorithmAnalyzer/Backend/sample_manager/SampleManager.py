@@ -3,7 +3,7 @@ import io
 import re
 import unicodedata
 from io import BytesIO
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, List
 
 import gridfs
 from werkzeug.utils import secure_filename
@@ -144,7 +144,10 @@ class SampleManager:
             sample_names.append(sample['filename'])
         return sample_names
 
-    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str, recognize=True) -> Optional[str]:
+    def save_new_sample(
+            self, username: str, set_type: str, file_bytes: bytes,
+            content_type: str, fake: bool, recognize=True,
+            ) -> Optional[str]:
         """
         saves new sample in samplebase, creates new user if
         it wasn't created yet
@@ -178,7 +181,7 @@ class SampleManager:
             file_id = self._save_file_to_db(
                 filename, file_bytes=wav_bytesIO.read(), content_type=content_type)
             new_file_doc = self._get_sample_file_document_template(
-                filename, file_id, rec_speech=recognized_speech)
+                filename, file_id, fake=fake, rec_speech=recognized_speech)
             self.db_collection.update_one(
                 {'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
         except errors.PyMongoError as e:
@@ -342,11 +345,13 @@ class SampleManager:
                 "tags": []
                 }
 
-    def _get_sample_file_document_template(self, filename: str, id: ObjectId, rec_speech: str = "") -> dict:
+    def _get_sample_file_document_template(
+            self, filename: str, id: ObjectId, fake: bool, rec_speech: str = ""
+            ) -> dict:
         """
         get single file document template
         """
-        return {"filename": filename, "id": id, "recognizedSpeech": rec_speech}
+        return {"filename": filename, "id": id, "fake": fake, "recognizedSpeech": rec_speech}
 
     def _get_user_mongo_id(self, username: str) -> ObjectId:
         """
@@ -425,6 +430,59 @@ class SampleManager:
     #             return False, file_extension
     #         else:
     #             return True, file_extension
+
+    def get_all_train_samples(self, sample_type: str) -> Tuple[Dict[str, list], Dict[str, List[int]]]:
+        """
+        returns all training samples, of specified `sample_type`, and labels from the database in the form:
+            {'username': [sample_list]}, {'username', [label_list]}
+        where each sample is a binary file of speciefied type,
+        and labels are 0/1 depending on sample being fake or not
+        """
+        # TODO(mikra): make less queries
+        samples = {}
+        labels = {}
+        usernames = self.get_all_usernames()
+        for username in usernames:
+            uid = self._get_user_mongo_id(username)
+            doc = self.db_collection.find_one({'_id': uid})
+            if not doc:
+                continue
+            train_samples = doc['samples']['train'] if 'train' in doc['samples'] else []
+            samples[username] = [
+                self._get_file_from_db(sample_dict['id']) for sample_dict in train_samples
+            ]
+            labels[username] = [
+                1 - ('fake' in sample and bool(sample['fake'])) for sample in train_samples
+                # TODO(all): should we leave this "'fake' in sample" for compatybility?
+            ]
+        return samples, labels
+
+    def get_all_samples(self, sample_type: str) -> Tuple[Dict[str, list], Dict[str, List[int]]]:
+        """
+        returns all samples, of specified `sample_type`, and labels from the database in the form:
+            {'username': [sample_list]}, {'username', [label_list]}
+        where each sample is a binary file of speciefied type
+        """
+        # TODO(mikra): make less queries, make use of this function in multilabel
+        samples = {}
+        labels = {}
+        usernames = self.get_all_usernames()
+        for username in usernames:
+            uid = self._get_user_mongo_id(username)
+            doc = self.db_collection.find_one({'_id': uid})
+            if not doc:
+                continue
+            train_samples = doc['samples']['train'] if 'train' in doc['samples'] else []
+            test_samples = doc['samples']['test'] if 'test' in doc['samples'] else []
+            samples[username] = [
+                self._get_file_from_db(sample_dict['id']) for sample_dict in train_samples
+            ]
+            samples[username].extend([
+                self._get_file_from_db(sample_dict['id']) for sample_dict in test_samples
+            ])
+            labels[username] = [1] * len(train_samples) + [0] * len(test_samples)
+
+        return samples, labels
 
 
 class UsernameException(Exception):

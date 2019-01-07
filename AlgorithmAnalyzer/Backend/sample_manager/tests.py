@@ -12,7 +12,7 @@ from main import app
 
 
 class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
-    """ 
+    """
     abstract class which is base for all SampleManager test classes
     it provides basic setup and cleanup before and after tests
     """
@@ -71,7 +71,7 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
     def test_fnc_save_new_sample(self):
         username = "Test Test"
         with open(self.TEST_AUDIO_WEBM_PATH, 'rb') as f:
-            self.sm.save_new_sample(username, "train", f.read(), "audio/webm")
+            self.sm.save_new_sample(username, "train", f.read(), "audio/webm", fake=False)
 
         # new user should be created
         db_out = self.db_collection.find_one({'name': username})
@@ -89,7 +89,7 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
         with open(self.TEST_AUDIO_WAV_PATH, 'rb') as f:
             self.sm.save_new_sample(
-                username, "train", f.read(), "audio/wav", recognize=False)
+                username, "train", f.read(), "audio/wav", fake=False, recognize=False)
 
         # should not create second user with same name
         find_count = self.db_collection.count_documents({'name': username})
@@ -151,20 +151,20 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         username_2 = "Test Username 2"
 
         self.sm.save_new_sample(
-            username_1, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_1, "train", test_file_bytes_wav, "audio/wav", fake=False, recognize=False)
         self.sm.save_new_sample(
-            username_1, "train", test_file_bytes_webm, "audio/webm", recognize=False)
+            username_1, "train", test_file_bytes_webm, "audio/webm", fake=False, recognize=False)
         self.sm.save_new_sample(
-            username_1, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_1, "train", test_file_bytes_wav, "audio/wav", fake=True, recognize=False)
         self.sm.save_new_sample(
-            username_1, "test", test_file_bytes_webm, "audio/webm", recognize=False)
+            username_1, "test", test_file_bytes_webm, "audio/webm", fake=True, recognize=False)
         self.sm.save_new_sample(
-            username_1, "test", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_1, "test", test_file_bytes_wav, "audio/wav", fake=False, recognize=False)
 
         self.sm.save_new_sample(
-            username_2, "train", test_file_bytes_webm, "audio/webm", recognize=False)
+            username_2, "train", test_file_bytes_webm, "audio/webm", fake=True, recognize=False)
         self.sm.save_new_sample(
-            username_2, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_2, "train", test_file_bytes_wav, "audio/wav", fake=False, recognize=False)
 
         self.test_usernames = [username_1, username_2]
 
@@ -341,8 +341,8 @@ class TestSampleManager(BaseAbstractSampleManagerTestsClass):
 
     def test_fnc_get_sample_file_document_template(self):
         out = self.sm._get_sample_file_document_template(
-            '1.wav', ObjectId('555fc7956cda204928c9dbab'))
-        expected_fields = set(['id', 'filename', 'recognizedSpeech'])
+            '1.wav', ObjectId('555fc7956cda204928c9dbab'), fake=False)
+        expected_fields = set(['id', 'filename', 'recognizedSpeech', 'fake'])
 
         self.assertEqual(set(out.keys()), expected_fields,
                          f"Expected fields: {expected_fields}, but got {out.keys()}")
