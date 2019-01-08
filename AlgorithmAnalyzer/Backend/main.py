@@ -209,7 +209,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # check for type
     if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+        return [f"Plot of non-existing type was requested, supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
             status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
