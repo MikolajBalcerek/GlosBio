@@ -36,7 +36,7 @@ class Tags extends Component{
     getTagList() {
         var self = this
         axios
-            .get(labels.usePath +`/tag`)
+            .get(labels.usePath +`/tag`, {}, { 'Authorization': labels.apiKey })
             .then(function(response) {
 				self.setState({
                     tagNameList: response.data
@@ -76,7 +76,7 @@ class Tags extends Component{
         fd.append("name", this.state.tagNameList[this.state.name]);
         fd.append("value", this.state.tagValuesList[this.state.tagValue]);
         axios
-            .post(labels.usePath +`/users/${this.props.user}/tags`, fd)
+            .post(labels.usePath +`/users/${this.props.user}/tags`, fd, { 'Authorization': labels.apiKey })
             .then(function() {
                 self.props.getUserTags()
                 self.setState({
@@ -92,7 +92,7 @@ class Tags extends Component{
     getUserTagValues(){
         var self = this
         axios
-            .get(labels.usePath +`/tag/${this.state.tagNameList[this.state.name]}`)
+            .get(labels.usePath +`/tag/${this.state.tagNameList[this.state.name]}`, {}, { 'Authorization': labels.apiKey })
             .then(function(response) {
                 console.log(response.data)
 				self.setState({
@@ -136,7 +136,7 @@ class Tags extends Component{
         fd.append("name", this.state.newTagName);
         fd.append("values", JSON.stringify(this.state.newTagValues));
         axios
-            .post(labels.usePath +`/tag`, fd)
+            .post(labels.usePath +`/tag`, fd, { 'Authorization': labels.apiKey })
             .then(function() {
                 self.getTagList()
                 self.setState({

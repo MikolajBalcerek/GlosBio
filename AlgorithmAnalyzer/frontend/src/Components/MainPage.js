@@ -36,7 +36,7 @@ class MainPage extends Component {
 		console.log('działam')
         var self = this
         axios
-            .get(labels.usePath+'/users')
+            .get(labels.usePath+'/users',{} ,{ 'Authorization': labels.apiKey })
             .then(function(response) {
 				let userLetList = []
                 response.data.users.map(user => {

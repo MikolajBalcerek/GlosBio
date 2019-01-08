@@ -80,7 +80,7 @@ class Przeglad extends Component {
     getAllUserSounds(user) {
         var self = this
         axios
-            .get(labels.usePath + `/audio/${this.state.type}/${user}`)
+            .get(labels.usePath + `/audio/${this.state.type}/${user}`, {}, { 'Authorization': labels.apiKey })
             .then(function(response) {
 				let userLetSounds = []
                 response.data.samples.map(user => {
@@ -105,6 +105,8 @@ class Przeglad extends Component {
             url: labels.usePath +`/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
             responseType: 'blob',
+            headers: { 
+                'Authorization': labels.apiKey}
           })
             .then(function(response) {
                 console.log(response)
@@ -130,7 +132,8 @@ class Przeglad extends Component {
             method: 'GET',
             data: data,
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': labels.apiKey
             },
             responseType: 'arraybuffer'
           })
@@ -157,7 +160,8 @@ class Przeglad extends Component {
         var self = this
         axios({
             url: labels.usePath +`/users/${this.props.userList[this.state.user]}/tags`,
-            method: 'GET'
+            method: 'GET',
+            headers: { 'Authorization': labels.apiKey}
           })
             .then(function(response) {
                 console.log(response)
