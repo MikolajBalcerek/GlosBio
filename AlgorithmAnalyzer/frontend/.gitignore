@@ -1,3 +1,4 @@
+
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -8,7 +9,7 @@
 
 # production
 /build
-
+src/labels.json
 # misc
 .DS_Store
 .env.local

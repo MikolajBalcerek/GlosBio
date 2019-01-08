@@ -68,4 +68,14 @@ pipenv run.py
 #### Aplikacja webowa
 * wchodzimy w folder `frontend`
 * odpalamy `npm install && npm run start`
-* okno z aplikacją wyskoczy samo w domyślnej przeglądarce
+* okno z apką wyskoczy samo w domyślnej przeglądarce
+
+
+
+
+### Aplikacja mobilna (Android od wersji 4.4)
+* wchodzimy do folderu `mobile`
+* odpalamy `npm install`
+* jeśli nie posiadamy telefonu z Androidem możemu uruchomić aplikację na [emulatorze](https://facebook.github.io/react-native/docs/getting-started)
+* jeśli chcemy zainstalować aplikację na telefonie musimy połączyć się z komputerem przez USB i telefon musi być w trybie developerskim
+* uruchamiamy aplikację przez `react-native run-android --variant=release` (należy pamętać, że to nie zadziała jeśli mamy już tą aplikację zainstalowaną na telefonie)
