@@ -15,9 +15,10 @@ RUN apk update && \
 					   linux-headers \
 					   python
 
-COPY . .
+ADD package.json package.json
 
-RUN npm install && npm install -g serve && npm run build
+RUN npm install && npm install -g serve
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["serve", "-l", "tcp://0.0.0.0:3000", "-s", "build"]
+# CMD ["serve", "-l", "tcp://0.0.0.0:3000", "-s", "build"]  npm run build
+CMD ["/bin/sh", "entrypoint.sh"]

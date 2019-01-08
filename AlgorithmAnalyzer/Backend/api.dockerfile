@@ -1,4 +1,4 @@
-FROM alpine:3.7
+FROM python:3.7-alpine
 LABEL maintainer="Stanisław Gołębiewski <stagol@st.amu.edu.pl>"
 
 RUN apk --update-cache \
@@ -9,19 +9,20 @@ RUN apk --update-cache \
     make \
     gfortran \
     openblas-dev \
-    python3 \
-    python3-dev \
+    # python3 \
+    # python3-dev \
 	freetype-dev \
 	tini \
 	ffmpeg
 
-RUN pip3 install --upgrade pip pipenv pipenv_to_requirements gunicorn json-logging-py
-
 WORKDIR /opt/app
+
 COPY Pipfile Pipfile
 
-RUN pipenv run pipenv_to_requirements
-RUN pip3 install --no-cache -r requirements.txt
+# RUN pip3 install --upgrade pip pipenv pipenv_to_requirements gunicorn && \
+RUN pip3 install --upgrade pipenv_to_requirements gunicorn && \
+    pipenv run pipenv_to_requirements && \
+	pip3 install --no-cache -r requirements.txt
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/bin/sh", "entrypoint.sh"]
