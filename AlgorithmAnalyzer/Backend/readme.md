@@ -1,5 +1,6 @@
-# Algorithm Analyzer backend
+# Algorithm Analyzer Backend REST API
 
+![Backend's documentation in browser](https://i.imgur.com/WeSk8Dl.jpg)
 
 ### Installing
 You have to install [ffmpeg](http://ffmpeg.org) on your system.  
@@ -24,16 +25,19 @@ You can browse the API in browser at http://127.0.0.1:5000/
 
 After the slash enter the endpoint's name
 
-### Tests only
+### Tests
+#### Running tests
 From ./Backend run:
 ```
 pipenv run python -m unittest
 ```
 
-### Info
+#### Test coverage
+For checking test coverage using coverage.py library:
+```
+pipenv run coverage run -m unittest
+```
+For results either type: ```pipenv run coverage report``` (in console)
+or  ```pipenv run coverage html``` to create html directory with logs.
 
-#### JSON
-A JSON file is stored for each of the recordings.
-```
-{"name": "Unnormalised Name", "recognized_speech": "Some text"}
-```
+![Tests coverage in HTML form](https://i.imgur.com/mMnOGv1.jpg)
