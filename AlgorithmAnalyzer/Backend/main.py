@@ -1,14 +1,15 @@
 import io
 import urllib
-import os
 import json
+from io import BytesIO
 
-from flask import request, current_app, send_from_directory, send_file
+from flask import request, current_app, send_file
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
+from functools import wraps
 
-from config import *
-from sample_manager.SampleManager import SampleManager, UsernameException
+from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
+from utils import convert_audio
 
 app = FlaskAPI(__name__)
 
@@ -16,6 +17,22 @@ CORS(app)
 
 # TODO: Would be nice to reword endpoints to follow username -> type instead of
 #  type -> username for consistency to how currently SampleManager stores them
+
+
+def requires_db_connection(f):
+    """
+    decorator function for routes where database connection can occur
+    """
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except DatabaseException as e:
+            # hide logs during tests
+            if not app.config['TESTING']:
+                app.logger.error("Database is unavailable...", e)
+        return ["Database is unavailable, try again later"], status.HTTP_503_SERVICE_UNAVAILABLE
+    return wrapped
 
 
 @app.route("/", methods=['GET'])
@@ -46,6 +63,7 @@ def landing_documentation_page():
 
 
 @app.route("/users", methods=['GET'])
+@requires_db_connection
 def handle_users_endpoint():
     """
     serve list of registered users
@@ -54,6 +72,7 @@ def handle_users_endpoint():
 
 
 @app.route("/audio/<string:type>", methods=['POST'])
+@requires_db_connection
 def handling_audio_endpoint(type):
     """
     This handles generic operations that have to do with audio
@@ -61,32 +80,35 @@ def handling_audio_endpoint(type):
 
     POST to send a new audio file
     """
-
     if type not in ['train', 'test']:
         return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
 
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            return ['No file part'], status.HTTP_400_BAD_REQUEST
-        if 'username' not in request.data:
-            return ['No username'], status.HTTP_400_BAD_REQUEST
-        app.logger.info(f"add new sample to {type} set")
-        username = request.data.get('username')
-        file = request.files.get('file')
+    if 'file' not in request.files:
+        return ['No file part'], status.HTTP_400_BAD_REQUEST
 
-        try:
-            path, recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(username, file, type)
-        except UsernameException:
-            return ['Bad username'], status.HTTP_400_BAD_REQUEST
+    if 'username' not in request.data:
+        return ["Missing 'username' field in request body"], status.HTTP_400_BAD_REQUEST
 
-        return {"username": username,
-                "text": f"Uploaded file for {username}, "
-                        f"recognized: {recognized_speech}",
-                "recognized_speech": str(recognized_speech)
-                }, status.HTTP_201_CREATED
+    app.logger.info(f"try to add new sample to {type} set")
+    username = request.data.get('username')
+    file = request.files.get('file')
+
+    try:
+        recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(
+            username, type, file.read(), content_type=file.mimetype)
+    except UsernameException:
+        return ['Provided username contains special characters'], status.HTTP_400_BAD_REQUEST
+
+    app.logger.info(f"new sample added successfully")
+    return {"username": username,
+            "text": f"Uploaded file for {username}, "
+                    f"recognized: '{recognized_speech}'",
+            "recognized_speech": recognized_speech
+            }, status.HTTP_201_CREATED
 
 
 @app.route("/audio/<string:type>/<string:username>", methods=['GET'])
+@requires_db_connection
 def handle_list_samples_for_user(type, username):
     """
     it handles request for listing samples from train or test set
@@ -100,60 +122,59 @@ def handle_list_samples_for_user(type, username):
 
     if app.config['SAMPLE_MANAGER'].user_exists(username):
         app.logger.info(f'{type} {username}')
-        return {'samples': app.config['SAMPLE_MANAGER'].get_samples(username, type)}, status.HTTP_200_OK
+        return {'samples': app.config['SAMPLE_MANAGER'].get_user_sample_list(username, type)}, status.HTTP_200_OK
     else:
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-@app.route("/<any('audio', 'json'):filetype>/<string:sampletype>/<string:username>/<string:filename>", methods=['GET'])
-def handle_get_file(filetype, sampletype, username, filename):
-    """
-    serve audio sample or json file
 
-    :param filetype: 'audio', 'json'
+@app.route("/audio/<string:sampletype>/<string:username>/<string:samplename>", methods=['GET'])
+@requires_db_connection
+def handle_get_file(sampletype, username, samplename):
+    """
+    serve audio sample audio file
+
     :param sampletype: sample set type 'train' or 'test'
     :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
     :param samplename: full name of requested sample eg. '1.wav', '150.wav'
     """
 
-    # TODO: Verbose endpoint, you end up typing the filename twice,
-    #  JSON/test/mikolaj/1.json..
-
     # check for proper sample set type
     if sampletype not in app.config['ALLOWED_SAMPLE_TYPES']:
         return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {app.config['ALLOWED_SAMPLE_TYPES']}"], \
-                status.HTTP_400_BAD_REQUEST
+            status.HTTP_400_BAD_REQUEST
 
     # check if user exists in samplebase
     if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
     # check if requested file have allowed extension
-    allowed_extensions = app.config['ALLOWED_FILES_TO_GET'][filetype]
-    proper_extension, extension = app.config['SAMPLE_MANAGER'].file_has_proper_extension(filename, allowed_extensions)
-    if not proper_extension:
-        return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
-                status.HTTP_400_BAD_REQUEST
+    # allowed_extensions = config.ALLOWED_FILES_TO_GET[filetype]
+    # proper_extension, extension = sample_manager.file_has_proper_extension(filename, allowed_extensions)
+    # if not proper_extension:
+    #     return [f"Accepted extensions for filetype '{filetype}': {allowed_extensions}, but got '{extension}' instead"],\
+    #             status.HTTP_400_BAD_REQUEST
+
+    # get file from samplebase and convert in to mp3
+    file = app.config['SAMPLE_MANAGER'].get_samplefile(
+        username, sampletype, samplename)
 
     # check if file exists in samplebase
-    if not app.config['SAMPLE_MANAGER'].file_exists(username, sampletype, filename):
-        return [f"There is no such sample '{filename}' in users '{username}' {sampletype} samplebase"],\
-                status.HTTP_400_BAD_REQUEST
+    if not file:
+        return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
+            status.HTTP_400_BAD_REQUEST
 
-    # serve file
-    user_dir = app.config['SAMPLE_MANAGER'].get_user_dirpath(username)
-    if sampletype == 'test':
-        user_dir = os.path.join(user_dir, sampletype)
-
-    app.logger.info(f"send file '{filename}' from '{user_dir}'")
-    return send_from_directory(user_dir, filename, as_attachment=True), status.HTTP_200_OK
+    file_mp3 = convert_audio.convert_audio_to_format(source=file, format="mp3")
+    app.logger.info(f"send file '{samplename}' from database")
+    return send_file(BytesIO(file_mp3.read()), mimetype=file.content_type)
 
 
 @app.route("/plot/<string:sampletype>/<string:username>/<string:samplename>",
-           methods=['POST'])
+           methods=['GET'])
+@requires_db_connection
 def handle_plot_endpoint(sampletype, username, samplename):
     """
-    Create/update and return the requested plot
-    Available methods: POST
+    return the requested plot
+    Available methods: GET
     The request should send a JSON that contains:
     {
         type: "mfcc",
@@ -172,9 +193,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     #  alongside with handle_get_file could be done - already tasked
 
     # get the request's JSON
-    sent_json: dict = request.get_json(force=True, cache=True, silent=True)
-    if sent_json is None:
-        sent_json = request.form
+    sent_json: dict = request.data
 
     try:
         sent_json_dict = json.loads(sent_json, encoding='utf8')
@@ -191,7 +210,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # check for type
     if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
         return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
-               status.HTTP_400_BAD_REQUEST
+            status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
     if sent_json_dict.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
@@ -200,7 +219,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
         else:
             return ["Plot requested cannot be returned with that file extension,"
                     f"supported extensions {SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
-                   status.HTTP_400_BAD_REQUEST
+                status.HTTP_400_BAD_REQUEST
 
     # TODO: duplication from other endpoints
     # check if user exists in samplebase
@@ -209,23 +228,20 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # TODO: duplication from other endpoints
     # check if file exists in samplebase
-    if not app.config['SAMPLE_MANAGER'].file_exists(username, sampletype, samplename):
+    if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
-                status.HTTP_400_BAD_REQUEST
-
-    plot_path, file_bytes = app.config['SAMPLE_MANAGER'].create_plot_for_sample(plot_type=sent_json_dict['type'],
-                                                               set_type=sampletype,
-                                                               username=username,
-                                                               sample_name=samplename,
-                                                               file_extension=sent_json_dict['file_extension'])
-
+            status.HTTP_400_BAD_REQUEST
+    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_json_dict['type'],
+                                                                            set_type=sampletype,
+                                                                            username=username,
+                                                                            sample_name=samplename,
+                                                                            file_extension=sent_json_dict['file_extension'])
 
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
-
     return send_file(io.BytesIO(file_bytes),
-                               mimetype=f"image/{sent_json_dict['file_extension']}"),\
-           status.HTTP_200_OK
+                     mimetype=mimetype),\
+        status.HTTP_200_OK
 
 
 if __name__ == "__main__":

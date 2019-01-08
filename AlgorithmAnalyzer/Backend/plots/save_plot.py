@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 # This file holds helper functions that save plots from different packages
 
 
-def save_matplotlib_figure(data: plt.Figure, directory_path: str,
-                           file_name: str, saved_format: str = "png") -> Tuple[str, BytesIO]:
+def save_matplotlib_figure(data: plt.Figure, file_name: str, saved_format: str = "png") -> BytesIO:
     """
     This function saves a matplotlib Figure object to a file
 
@@ -21,16 +20,15 @@ def save_matplotlib_figure(data: plt.Figure, directory_path: str,
     BytesIO containing the requested plot
     """
     if saved_format == "png" or saved_format == "pdf":
-        # TODO: purge path way after new SampleManager
-        file_path = f'{directory_path}/{file_name}.{saved_format}'
-        data.savefig(file_path,
-                     transparent=True, bbox_inches='tight')
+        # file_path = f'{directory_path}/{file_name}.{saved_format}'
+        # data.savefig(file_path,
+        #              transparent=True, bbox_inches='tight')
 
         # saving in two ways for future SampleManager
         file_io = BytesIO()
         data.savefig(file_io, transparent=True, bbox_inches='tight',
                      format=saved_format)
 
-        return file_path, file_io
+        return file_io
     else:
         raise ValueError("Expected png or pdf as saved_format")
