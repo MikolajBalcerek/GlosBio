@@ -194,6 +194,8 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # get the request's JSON
     sent_json: dict = request.data
+    if not sent_json:
+        sent_json = dict(request.args)
 
     try:
         sent_json_dict = json.loads(sent_json, encoding='utf8')
