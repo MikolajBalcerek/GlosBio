@@ -1,8 +1,6 @@
 FROM node:11.6-alpine
 LABEL maintainer="Stanisław Gołębiewski <stagol@st.amu.edu.pl>"
 
-WORKDIR /opt/app
-
 RUN apk update && \
 	apk upgrade && \
     apk add --no-cache tini \
@@ -15,9 +13,15 @@ RUN apk update && \
 					   linux-headers \
 					   python
 
+WORKDIR /opt
+
 ADD package.json package.json
 
 RUN npm install && npm install -g serve
+
+ENV PATH /data/node_modules/.bin:$PATH
+
+WORKDIR /opt/app
 
 ENTRYPOINT ["/sbin/tini", "--"]
 # CMD ["serve", "-l", "tcp://0.0.0.0:3000", "-s", "build"]  npm run build
