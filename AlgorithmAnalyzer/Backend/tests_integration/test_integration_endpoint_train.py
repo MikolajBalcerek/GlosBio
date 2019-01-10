@@ -383,6 +383,21 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED,
                          f"Expected response status code 405 but got {r.status_code}")
 
+    def test_params_via_query_params(self):
+        """ test if passing params via query params works properly """
+        sample_name = "1.wav"
+        user_name = self.TEST_USERNAMES[0]
+        type = 'train'
+        request_path = f"/plot/{type}/{user_name}/{sample_name}"
+        params = {"type": "mfcc", "file_extension": "pdf"}
+        r = self.client.get(request_path, query_string=params)
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path} wrong status code, expected 200, got {r.status_code}")
+        self.assertEqual(r.content_type, 'application/pdf',
+                         "Wrong content_type was returned"
+                         f"for pdf mfcc plot, should be application/pdf, is {r.content_type}")
+
 
 class NoDbTests(BaseAbstractIntegrationTestsClass):
 

@@ -194,6 +194,8 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # get the request's JSON
     sent_json: dict = request.data
+    if not sent_json:
+        sent_json = dict(request.args)
 
     try:
         sent_json_dict = json.loads(sent_json, encoding='utf8')
@@ -205,7 +207,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
 
     # return a 400 if an invalid one/none was passed
     if sent_json_dict is None or not sent_json_dict:
-        return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
+        return ["Expected field 'type' specified in body or params"], status.HTTP_400_BAD_REQUEST
 
     # check for type
     if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
