@@ -195,13 +195,13 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # get the request's JSON
     sent_json: dict = request.data
     if not sent_json:
-        print(request.args)
-        sent_json = dict(request.args)
-        print(sent_json)  
+        type = request.args.get("type")
+        file_extension = request.args.get("file_extension")
+        sent_json = {"type": type, "file_extension": file_extension}
+        print(sent_json)
 
     try:
         sent_json_dict = json.loads(sent_json, encoding='utf8')
-        print(sent_json_dict)
     except TypeError:
         # sent_json was already a type of dict
         sent_json_dict = sent_json
@@ -213,7 +213,6 @@ def handle_plot_endpoint(sampletype, username, samplename):
         return ["Expected field 'type' specified in body or params"], status.HTTP_400_BAD_REQUEST
 
     # check for type
-    print(sent_json_dict.get('type'))
     if not sent_json_dict.get('type'):
         return [f"Missing 'type' field in request body or query params"],\
             status.HTTP_400_BAD_REQUEST
