@@ -7,7 +7,7 @@ import Testuj2 from "./Testuj2";
 import axios from 'axios';
 import MiddleBar from './MiddleBar'
 import { SnackbarProvider } from 'notistack';
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 
 class MainPage extends Component {
 	state = {
@@ -36,7 +36,7 @@ class MainPage extends Component {
 		console.log('działam')
         var self = this
         axios
-            .get(labels.usePath+'/users',{} ,{ 'Authorization': labels.apiKey })
+            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
             .then(function(response) {
 				let userLetList = []
                 response.data.users.map(user => {
