@@ -210,8 +210,11 @@ def handle_plot_endpoint(sampletype, username, samplename):
         return ["Expected field 'type' specified in body or params"], status.HTTP_400_BAD_REQUEST
 
     # check for type
+    if not sent_json_dict.get('type'):
+        return [f"Missing 'type' field in request body or query params"],\
+            status.HTTP_400_BAD_REQUEST
     if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+        return [f"Plot of non-existing type ('{sent_json_dict.get('type')}') was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
             status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
@@ -344,6 +347,7 @@ def handle_user_tags_endpoint(username):
             username, tag_name, tag_value)
 
         return [f"Added tag '{tag_name}' to user '{username}'"], status.HTTP_201_CREATED
+
 
 @app.route("/users/<string:username>", methods=['GET'])
 @requires_db_connection
