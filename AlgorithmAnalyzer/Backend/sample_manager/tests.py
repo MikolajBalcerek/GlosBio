@@ -131,6 +131,18 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertIn(file_obj.content_type, ["audio/x-wav", "audio/wav"],
                       f"Expected 'audio/x-wav' content type but got '{file_obj.content_type}'")
 
+    def test_fnc_add_tag(self):
+        # add valid tag
+        # add invalid tag (invalid tag name)
+        # add invalid tag (invalid values)
+        pass
+
+    def test_fnc_add_tag_to_user(self):
+        # add valid tag (consider it tested)
+        # add tag to user in valid way
+        # add tag to user in invalid way (wriong name and value)
+        pass
+
 
 class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
     """ tests for functions realted to loading from database """
@@ -304,6 +316,32 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         out = self.sm._get_next_filename("Mr Nobody", "train")
         self.assertEqual(out, '1.wav',
                          f"Next proper name is 1.wav', got '{out}' instead")
+
+    def test_fnc_get_user_tags(self):
+        # get and check
+        # empty empty for no user
+        pass
+
+    def test_fnc_get_all_tags(self):
+        # get and check
+        pass
+
+    def test_fnc_get_tag_values(self):
+        # get and check
+        pass
+
+    def test_fnc_tag_exists(self):
+        # test both options
+        pass
+
+    def test_fnc_user_has_tag(self):
+        # test for both options
+        pass
+
+    def test_fnc_get_user_summary(self):
+        # get and test
+        # empty for no user
+        pass
 
 
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
