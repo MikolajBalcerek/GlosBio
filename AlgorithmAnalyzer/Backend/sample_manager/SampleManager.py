@@ -55,6 +55,7 @@ class SampleManager:
         self.db_client = MongoClient(db_url, serverSelectionTimeoutMS=5000)
         self.db_database = self.db_client[db_name]
         self.db_collection = self.db_database.samples
+        self.db_tags = self.db_database.tags
         self.db_file_storage = gridfs.GridFS(self.db_database)
         try:
             if show_logs:
@@ -248,6 +249,114 @@ class SampleManager:
             raise DatabaseException(e)
         return fileObj
 
+    def add_tag_to_user(self, username: str, tag_name: str, value: str):
+        """
+        TO DO: docstring
+        """
+        try:
+            # check if tag exists
+            if not self.tag_exists(tag_name):
+                raise ValueError("Tag does not exist")
+
+            # check if value is proper value
+            tag_values = self.get_tag_values(tag_name)
+            if value not in tag_values:
+                raise ValueError(f"Wrong tag value: '{value}', expected one of: {tag_values}")
+            # TO DO: should we check things like this here?
+
+            user_id = self._get_user_mongo_id(username)
+            self.db_collection.update_one(
+                {'_id': user_id}, {'$push': {f'tags': {'name': tag_name, 'value': value}}})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+    def get_user_tags(self, username: str) -> dict:
+        """
+        TO DO: docstring
+        """
+        user_id = self._get_user_mongo_id(username)
+        all_tags = self.db_collection.find_one({'_id': user_id}, {'tags': 1})
+        out = {}
+        for tag_obj in all_tags['tags']:
+            out[tag_obj['name']] = tag_obj['value']
+        return out
+
+    def add_tag(self, tag_name: str, values: list) -> dict:
+        """
+        TO DO: docstring
+        """
+        try:
+            if self.tag_exists(tag_name):
+                raise ValueError(f"tag '{tag_name}' already exists in tag base")
+            if not re.match('^\w+$', tag_name):
+                raise ValueError("name contains special characters")
+            new_tag = {"name": tag_name, "values": values}
+            self.db_tags.insert_one(new_tag)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        new_tag.pop('_id', None)
+        return new_tag
+
+    def get_all_tags(self) -> list:
+        """
+        TO DO: docstring
+        """
+        try:
+            all_tags = self.db_tags.find({}, {'_id': 0, 'values': 0})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+        out = []
+        for tag in all_tags:
+            out.append(tag['name'])
+        return out
+
+    def get_tag_values(self, tag_name: str) -> list:
+        """
+        TO DO: docstring
+        """
+        try:
+            out = self.db_tags.find_one({'name': tag_name}, {'_id': 0, 'name': 0})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return out['values']
+
+    def tag_exists(self, tag_name: str) -> bool:
+        """ 
+        check if tag exists in tag base
+        """
+        try:
+            out = self.db_tags.find_one({'name': tag_name})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return bool(out)
+
+    def user_has_tag(self, username: str, tag: str) -> bool:
+        """
+        TO DO: docstring
+        """
+        return tag in self.get_user_tags(username)
+
+    def get_user_summary(self, username):
+        """
+        TO DO: docstring
+        """
+        user_id = self._get_user_mongo_id(username)
+        user_doc = self.db_collection.find_one({'_id': user_id}, {'nameNormalized': 1, 'created': 1})
+        out = {'username': username,
+               'normalized_username': user_doc['nameNormalized'],
+               'created': user_doc['created'],
+               'tags': self.get_user_tags(username)}
+
+        # aggregation query
+        aggregation_pipeline = [
+            {'$match': {'_id': user_id}},
+            {'$project': {"train": {'$size': "$samples.train"}, "test": {"$size": "$samples.test"}, '_id': 0}},
+        ]
+        out['samples'] = list(self.db_collection.aggregate(aggregation_pipeline))
+
+        return out
+
     # def _is_username_valid(self, username: str) -> bool:
     #     """
     #     check if given username is valid
@@ -295,8 +404,6 @@ class SampleManager:
         :raises FileNotFoundError:
         :return: str path to the plot, and BytesIO plot's contents
         """
-        # TODO: This will have to be remade once a new SampleManager rolls out
-        # TODO: NOT UNIT TESTED AWAITING FOR CHANGE
         expected_plot_path = f"{self._get_sample_file_name_from_path(audio_path)}_{plot_type.lower()}.{file_extension.lower()}"
         with open(expected_plot_path, mode='rb') as plot_file:
             return expected_plot_path, io.BytesIO(plot_file.read()).getvalue()
