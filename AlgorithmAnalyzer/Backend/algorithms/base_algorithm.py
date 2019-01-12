@@ -59,13 +59,6 @@ class Algorithm:
         pass
 
     @abstractmethod
-    def load(self, path):
-        """
-        This method should load the model from given path.
-        """
-        pass
-
-    @abstractmethod
     def train(self, samples, labels):
         """
         This method should train the model on samples and labels from the database,

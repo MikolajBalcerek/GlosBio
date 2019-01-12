@@ -17,8 +17,5 @@ class EasyExample(Algorithm):
     def save(self, *args, **kwargs):
         pass
 
-    def load(self, *args, **kwargs):
-        pass
-
     def predict(self, data):
         return bool(random.randint(0, 1)), {}
