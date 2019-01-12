@@ -111,18 +111,21 @@ def train_algorithm(name):
     if any(params_types[key](params[key]) not in params_legend[key]['values'] for key in params):
         return 'At least one parameter has bad value.', status.HTTP_400_BAD_REQUEST
 
+    alg_manager = AlgorithmManager(name)
+
     samples, labels = app.config['SAMPLE_MANAGER'].get_all_samples(
         purpose='train',
-        multilabel=False,
+        multilabel=alg_manager.multilabel,
         sample_type='wav'
     )
 
-    AlgorithmManager(name).train_models(samples, labels, params)
+    AlgorithmManager(name).train(samples, labels, params)
     return "Rozpoczęto trenowanie.", status.HTTP_200_OK
 
 
 @app.route('/algorithm/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
-def test_algorithm(user_name, algorithm_name):
+def predict_algorithm(user_name, algorithm_name):
+    # TODO: should be @requires_db_connection here?
     if 'file' not in request.files:
         return 'No file part', status.HTTP_400_BAD_REQUEST
 
@@ -131,9 +134,19 @@ def test_algorithm(user_name, algorithm_name):
 
     file = request.files.get('file')
     file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
-    prediction = AlgorithmManager(algorithm_name).predict(user_name, file)
-
-    return {"prediction": prediction}, status.HTTP_200_OK
+    alg_manager = AlgorithmManager(algorithm_name)
+    prediction, meta = alg_manager.predict(user_name, file)
+    print(prediction)
+    if alg_manager.multilabel:
+        try:
+            meta['Predicted user'] = \
+                app.config["SAMPLE_MANAGER"].sample_numbers_to_usernames([prediction])[0]
+        except IndexError:
+            prediction = False
+            meta['Predicted user'] = 'Algorithm has predicted a nonexisting user.'
+        else:
+            prediction = meta['Predicted user'] == user_name
+    return {"prediction": prediction, 'meta': meta}, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])

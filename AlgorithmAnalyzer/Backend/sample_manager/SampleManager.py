@@ -476,9 +476,14 @@ class SampleManager:
             samples, labels = [], []
         else:
             samples, labels = {}, {}
-        user_docs = self.db_collection.find({}).sort('id', 1)
-        # ^this effectively sorts all docs by timestamp created,
-        # so each user will have the same number each time
+
+        try:
+            user_docs = self.db_collection.find({}).sort('id', 1)
+            # ^this effectively sorts all docs by timestamp created,
+            # so each user will have the same number each time
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
         for num, user_doc in enumerate(user_docs):
             if not user_doc or 'samples' not in user_doc:
                 continue
@@ -492,6 +497,13 @@ class SampleManager:
                 samples[username] = [self._get_file_from_db(sample['id']) for sample in user_samples]
                 labels[username] = user_labels
         return samples, labels
+
+    def sample_numbers_to_usernames(self, numbers):
+        try:
+            usernames = self.db_collection.find({}, ['name']).sort('id', 1)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return [usernames[num]['name'] for num in numbers]
 
 
 class UsernameException(Exception):
