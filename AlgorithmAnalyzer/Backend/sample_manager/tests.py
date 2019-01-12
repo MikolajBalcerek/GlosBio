@@ -317,6 +317,67 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertEqual(out, '11.wav',
                          f"Next proper name is 11.wav', got '{out}' instead")
 
+    def test_fnc_label_sample_dicts(self):
+        user_num = 3
+        dicts = [{'id': k} for k in range(5)]
+        dicts.extend([{'id': k, 'fake': 'true'} for k in range(5, 10)])
+        dicts.extend([{'id': k, 'fake': 'fake'} for k in range(10, 15)])
+        res_dicts, labels = self.sm._label_sample_dicts(user_num, dicts, multilabel=True)
+        self.assertEqual(len(res_dicts), len(labels),
+                         'The number of sample dicts should be the same as labels.'
+                         )
+        self.assertEqual(res_dicts, dicts[:5] + dicts[10:],
+                         'The number of resulting samples should be the same as number of nonfake samples.'
+                         )
+        self.assertEqual(labels, [user_num] * 10,
+                         'If multilabel is true each nonfake sample should be labeled with user_num'
+                         )
+        res_dicts, labels = self.sm._label_sample_dicts(user_num, dicts, multilabel=False)
+        self.assertEqual(len(res_dicts), len(labels),
+                         'The number of sample dicts should be the same as labels.'
+                         )
+        self.assertEqual(res_dicts, dicts,
+                         'If multilabel is false, sample_dicts should not be changed.'
+                         )
+        self.assertEqual(labels, [1] * 5 + [0] * 5 + [1] * 5,
+                         'If multilabel is false, each label should be 0/1 depending on "fake" key.'
+                         )
+
+    def test_fnc_get_all_samples(self):
+        kwargs = {'purpose': 'train', 'multilabel': True, 'sample_type': 'wav'}
+        samples, labels = self.sm.get_all_samples(**kwargs)
+        self.assertEqual((type(samples), type(labels)), (list, list),
+                         'get_all_samples should return a pair of lists if multilabel is tru.e'
+                         )
+        self.assertEqual(len(samples), len(labels),
+                         'The number of samples and labels should be the same.'
+                         )
+        self.assertEqual(len(self.test_usernames) - 1, max(labels),
+                         'The nubmer of usernames and label values should be the same.'
+                         )
+
+        for sample in samples:
+            self.assertEqual(type(sample), GridOut, 'Each sample should have GridOut type.')
+        kwargs.update({'multilabel': False})
+        samples, labels = self.sm.get_all_samples(**kwargs)
+        self.assertEqual((type(samples), type(labels)), (dict, dict),
+                         'get_all_samples should return a pair of dicts if multilabel is false.'
+                         )
+        self.assertEqual(list(samples.keys()), list(labels.keys()),
+                         'The keys of samples should be the same as the keys of labels.'
+                         )
+        self.assertEqual(list(samples.keys()), self.test_usernames,
+                         'There should be a key for each username having a sample.'
+                         )
+        for name in self.test_usernames:
+            self.assertEqual(len(samples[name]), len(labels[name]),
+                             'The number of labels should be the same as the number of samples for each user'
+                             )
+            for label in labels[name]:
+                self.assertIn(label, (0, 1),
+                              'Each label can be either 0 or 1.'
+                              )
+
 
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
     """ tests for functions which do not operate on database """

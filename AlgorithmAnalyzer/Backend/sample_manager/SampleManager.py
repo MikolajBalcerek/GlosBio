@@ -451,12 +451,12 @@ class SampleManager:
         if multilabel:
             sample_dicts = [
                 sample_dict for sample_dict in sample_dicts
-                if not ('fake' in sample_dict and bool(sample_dict['fake']))
+                if not ('fake' in sample_dict and sample_dict['fake'] == 'true')
             ]
             labels = [user_num] * len(sample_dicts)
         else:
             labels = [
-                1 - ('fake' in sample_dict and bool(sample_dict['fake'])) for sample_dict in sample_dicts
+                1 - ('fake' in sample_dict and sample_dict['fake'] == 'true') for sample_dict in sample_dicts
             ]
         return sample_dicts, labels
 
