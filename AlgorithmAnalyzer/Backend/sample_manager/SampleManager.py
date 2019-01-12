@@ -412,7 +412,7 @@ class SampleManager:
                 raise ValueError(
                     f"Invalid filename retrived from database: {filename}, should be: '<number>.wav'")
 
-            all_filenames_numbers.append(int(regex.group(1)))  
+            all_filenames_numbers.append(int(regex.group(1)))
         last_file = max(all_filenames_numbers)
         next_number = last_file + 1
         return f"{next_number}.wav"
@@ -436,57 +436,61 @@ class SampleManager:
     #         else:
     #             return True, file_extension
 
-    def get_all_train_samples(self, sample_type: str) -> Tuple[Dict[str, list], Dict[str, List[int]]]:
+    def _label_sample_dicts(self, user_num, sample_dicts, multilabel: bool) -> Tuple[List[dict], List[int]]:
         """
-        returns all training samples, of specified `sample_type`, and labels from the database in the form:
-            {'username': [sample_list]}, {'username', [label_list]}
-        where each sample is a binary file of speciefied type,
-        and labels are 0/1 depending on sample being fake or not
+        Creates labels for samples and filters samples. If `multilabel` is false,
+        labels each sample 0 / 1 depending on 'fake' key associated with sample.
+        If `multilabel` is true, returns only real samples (there is no 'fake' key or is false)
+        and labels each with `user_num`.
+        :param user_num: The user number
+        :param sample_dicts: all dicts associated with user's samples
+        :param multilabel: if false, labels will be 0/1 depending on sample being fake,
+        else `user_num` will be used to labelthe samples
+        :returns: list of filterd sample dicts and their labels
         """
-        # TODO(mikra): make less queries
-        samples = {}
-        labels = {}
-        usernames = self.get_all_usernames()
-        for username in usernames:
-            uid = self._get_user_mongo_id(username)
-            doc = self.db_collection.find_one({'_id': uid})
-            if not doc:
-                continue
-            train_samples = doc['samples']['train'] if 'train' in doc['samples'] else []
-            samples[username] = [
-                self._get_file_from_db(sample_dict['id']) for sample_dict in train_samples
+        if multilabel:
+            sample_dicts = [
+                sample_dict for sample_dict in sample_dicts
+                if not ('fake' in sample_dict and bool(sample_dict['fake']))
             ]
-            labels[username] = [
-                1 - ('fake' in sample and bool(sample['fake'])) for sample in train_samples
-                # TODO(all): should we leave this "'fake' in sample" for compatybility?
+            labels = [user_num] * len(sample_dicts)
+        else:
+            labels = [
+                1 - ('fake' in sample_dict and bool(sample_dict['fake'])) for sample_dict in sample_dicts
             ]
-        return samples, labels
+        return sample_dicts, labels
 
-    def get_all_samples(self, sample_type: str) -> Tuple[Dict[str, list], Dict[str, List[int]]]:
+    def get_all_samples(self, purpose: str, multilabel: bool, sample_type: str) -> tuple:
         """
-        returns all samples, of specified `sample_type`, and labels from the database in the form:
-            {'username': [sample_list]}, {'username', [label_list]}
-        where each sample is a binary file of speciefied type
+        Get all samples from the database.
+        :param purpose: either "train" for training samples or "test" for testing
+        :param multilabel: true for multilabel algorithms, false for yes/no models
+        :returns: If multilabel is false, returns two dicts:
+            {'username': [samplelist]}, {'username': [0/1 label list (real/fake)]}.
+        If multilabel is true, returns two lists
+            [sample_list], [label_list],
+        each label is the user's number (int) and won't change after the user is created.
         """
-        # TODO(mikra): make less queries, make use of this function in multilabel
-        samples = {}
-        labels = {}
-        usernames = self.get_all_usernames()
-        for username in usernames:
-            uid = self._get_user_mongo_id(username)
-            doc = self.db_collection.find_one({'_id': uid})
-            if not doc:
+        # TODO(mikra): return a generator object instead of list (memory efficiency)
+        if multilabel:
+            samples, labels = [], []
+        else:
+            samples, labels = {}, {}
+        user_docs = self.db_collection.find({}).sort('id', 1)
+        # ^this effectively sorts all docs by timestamp created,
+        # so each user will have the same number each time
+        for num, user_doc in enumerate(user_docs):
+            if not user_doc or 'samples' not in user_doc:
                 continue
-            train_samples = doc['samples']['train'] if 'train' in doc['samples'] else []
-            test_samples = doc['samples']['test'] if 'test' in doc['samples'] else []
-            samples[username] = [
-                self._get_file_from_db(sample_dict['id']) for sample_dict in train_samples
-            ]
-            samples[username].extend([
-                self._get_file_from_db(sample_dict['id']) for sample_dict in test_samples
-            ])
-            labels[username] = [1] * len(train_samples) + [0] * len(test_samples)
-
+            username = user_doc['name']
+            user_samples = user_doc['samples'][purpose] if purpose in user_doc['samples'] else []
+            user_samples, user_labels = self._label_sample_dicts(num, user_samples, multilabel)
+            if multilabel:
+                samples.extend([self._get_file_from_db(sample['id']) for sample in user_samples])
+                labels.extend(user_labels)
+            else:
+                samples[username] = [self._get_file_from_db(sample['id']) for sample in user_samples]
+                labels[username] = user_labels
         return samples, labels
 
 

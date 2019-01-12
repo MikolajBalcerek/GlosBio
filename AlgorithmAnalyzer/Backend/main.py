@@ -86,6 +86,7 @@ def get_algorithm_parameters(name):
 
 
 @app.route('/algorithm/train/<string:name>', methods=['POST'])
+@requires_db_connection
 def train_algorithm(name):
     if 'parameters' not in request.data:
         return 'Missing "params" in request data', status.HTTP_400_BAD_REQUEST
@@ -110,8 +111,11 @@ def train_algorithm(name):
     if any(params_types[key](params[key]) not in params_legend[key]['values'] for key in params):
         return 'At least one parameter has bad value.', status.HTTP_400_BAD_REQUEST
 
-    samples, labels = app.config['SAMPLE_MANAGER'].get_all_train_samples('wav')
-    # TODO(mikra): take care of sample_type, both here and on the front
+    samples, labels = app.config['SAMPLE_MANAGER'].get_all_samples(
+        purpose='train',
+        multilabel=False,
+        sample_type='wav'
+    )
 
     AlgorithmManager(name).train_models(samples, labels, params)
     return "Rozpoczęto trenowanie.", status.HTTP_200_OK
