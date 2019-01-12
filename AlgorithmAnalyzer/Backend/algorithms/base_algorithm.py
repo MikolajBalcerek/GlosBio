@@ -13,6 +13,8 @@ class Algorithm:
 
     __metaclass__ = ABCMeta
 
+    multilabel = False
+
     @abstractmethod
     def __init__(self, parameters=None, path=None):
         """
