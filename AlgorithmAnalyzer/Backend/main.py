@@ -80,6 +80,18 @@ def get_algorithms_names():
     return {'algorithms': AlgorithmManager.get_algorithms()}, status.HTTP_200_OK
 
 
+@app.route('/algorithms/description/<string:name>', methods=['GET'])
+def get_algorithm_description(name):
+    """
+    Returns the description of the algorithm with name <string:name>.
+    """
+    if name not in ALG_DICT.keys():
+        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+
+    description = AlgorithmManager(name).get_description()
+    return description if description else "", status.HTTP_200_OK
+
+
 @app.route('/algorithm/parameters/<string:name>', methods=['GET'])
 def get_algorithm_parameters(name):
     """

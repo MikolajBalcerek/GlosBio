@@ -4,6 +4,9 @@ from algorithms.base_algorithm import Algorithm
 
 
 class EasyExample(Algorithm):
+    """
+    Coin tossing based predictions.
+    """
     def __init__(self, *args, **kwargs):
         pass
 

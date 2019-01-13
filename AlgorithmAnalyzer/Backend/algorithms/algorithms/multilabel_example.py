@@ -4,6 +4,10 @@ from algorithms.base_algorithm import Algorithm
 
 
 class MultilabelExample(Algorithm):
+    """
+    As a prediction returns a random user,
+    who is identified by a number between 0 and num_classes.
+    """
     multilabel = True
 
     def __init__(self, parameters=None, path=None):

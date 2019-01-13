@@ -15,6 +15,7 @@ class Train extends Component {
         super(props);
         this.state = {
             algorithm: "", // the name of currently selected algorithm
+            description: "",
             parameters: {}, // the parameter name.{descriptions,values}
             parameter_values: {}, //values of parameters sent to server, name.{value} object
             status: "", // the status of train tesponse, if the training started or an error occured
@@ -28,10 +29,12 @@ class Train extends Component {
             this.setState({
                 parameters: {},
                 parameter_values: {},
-                status: ""
+                status: "",
+                description: ""
             })
         } else {
-            this.getAlgorithmParameters(event.target.value)
+            this.getAlgorithmDecription(event.target.value);
+            this.getAlgorithmParameters(event.target.value);
         }
       };
 
@@ -44,6 +47,20 @@ class Train extends Component {
         })
         console.log(params);
       };
+
+    getAlgorithmDecription = algorithm => {
+        var self = this;
+        axios
+            .get(`http://localhost:5000/algorithms/description/${algorithm}`)
+            .then(function(response) {
+                let description = response.data;
+                console.log(description);
+                self.setState({description: description});
+            })
+            .catch(function(error) {
+                console.log(error);
+            })
+    };
 
     getAlgorithmParameters = algorithm => {
         var self = this;
@@ -142,6 +159,12 @@ class Train extends Component {
                     </Grid>
                     <Grid item xs={12} style={{display: 'flex', flexDirection: 'column', justifyContent:'space-around', alignItems:'center', width: '100%', marginTop: 30, minHeight: 200 }}>
                         {this.state.status && <Typography variant="headline" gutterBottom> {this.state.status} </Typography>}
+                        {this.state.algorithm !== "" && this.state.description !== "" && this.state.description &&
+                            <div>
+                            <Typography variant="title" style={{colot: "#fff"}} gutterBottom> Opis algorytmu </Typography>
+                            <Typography variant="subheading" style={{colot: "#fff"}} gutterBottom> {this.state.description} </Typography>
+                            </div>
+                        }
                         {this.state.algorithm !== "" && Object.keys(this.state.parameters).length !== 0 && (
                             <div>
                             <Typography variant="title" style={{color: "#fff"}} gutterBottom>

@@ -79,6 +79,9 @@ class AlgorithmManager:
         params = ALG_DICT[algorithm].get_parameters()
         return {key: params[key]['type'] for key in params}
 
+    def get_description(self):
+        return self.algorithm.__doc__
+
     def _update_parameters(self, parameters: dict):
         """
         Updates parameters received from api to a form, that is usable here.

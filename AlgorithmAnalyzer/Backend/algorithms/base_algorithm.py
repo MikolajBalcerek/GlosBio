@@ -13,6 +13,10 @@ class Algorithm(metaclass=ABCMeta):
         each user. The labels wil be 0/1 depending on samples being marked as fake or not.
         If multilabel=True, there will be only one multilabeled model trained on all samples, and the
         labels will be between 0 and the number of current users.
+
+    Docstring:
+        the docstring of an algorithm that derives from this class will be displayed
+        to the user as a description of the algorithm.
     """
 
     multilabel = False
