@@ -7,6 +7,8 @@ import RecordTester from "./RecordTester";
 import Testuj2 from "./Testuj2";
 import axios from 'axios';
 import MiddleBar from './MiddleBar'
+import { SnackbarProvider } from 'notistack';
+import labels from '../labels.json'
 
 class MainPage extends Component {
 	state = {
@@ -42,8 +44,9 @@ class MainPage extends Component {
 	getUsers = () => {
 		console.log('działam')
         var self = this
+        console.log(labels.usePath + '/users')
         axios
-            .get('http://localhost:5000/users')
+            .get(labels.usePath+'/users',{} ,{ 'Authorization': labels.apiKey })
             .then(function(response) {
 				let userLetList = []
                 response.data.users.map(user => {
@@ -58,7 +61,7 @@ class MainPage extends Component {
     getAlgorithms = () => {
     	var self = this;
         axios
-            .get('http://localhost:5000/algorithms')
+            .get(labels.usePath + '/algorithms')
             .then(function(response) {
 				let algorithmsList = []
                 response.data.algorithms.map(alg => {
@@ -88,10 +91,17 @@ class MainPage extends Component {
 					getUsers={this.getUsers}
 					getAlgorithms={this.getAlgorithms}
 				/>
-				{value === 1 && <Recorder getUsers={()=>this.getUsers()} />}
-				{value === 2 && <Przeglad userlist={this.state.userList} />}
+				{value === 1 &&
+					<SnackbarProvider maxSnack={20}>
+						<Recorder getUsers={()=>this.getUsers()} />
+					</SnackbarProvider>}
+				{value === 2 &&
+					<SnackbarProvider maxSnack={20}>
+						<Przeglad userList={this.state.userList} />
+					</SnackbarProvider>}
 				{value === 3 && <Train algorithmList={this.state.algorithmList} />}
 				{value === 4 && <RecordTester userList={this.state.userList} algorithmList={this.state.algorithmList}/>}
+				{value === 5 && <Testuj2 />}
 			</div>
 		);
 	}

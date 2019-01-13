@@ -16,6 +16,7 @@ import MySnackbarContent from './MySnackbarContent'
 import FormControl from '@material-ui/core/FormControl';
 import micro from '../img/micro.png'
 import AudioSpectrum from "react-audio-spectrum"
+import labels from '../labels.json'
 
 class RecordTester extends Component {
     constructor(props) {
@@ -91,7 +92,7 @@ class RecordTester extends Component {
             fd.append("file", this.state.blob_audio_data ? this.state.blob_audio_data.blob : this.state.blob_audio_data2);
             let self = this;
             axios
-                .post(`http://127.0.0.1:5000/algorithms/test/${this.state.username}/${this.state.algorithm}`,
+                .post(labels.usePath + `/algorithms/test/${this.state.username}/${this.state.algorithm}`,
                     fd,
                     {
                     headers: { "Content-Type": "multipart/form-data" },

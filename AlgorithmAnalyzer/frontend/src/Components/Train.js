@@ -9,6 +9,7 @@ import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import PropTypes from 'prop-types';
 import axios from 'axios';
+import labels from '../labels.json'
 
 class Train extends Component {
     constructor(props) {
@@ -51,7 +52,7 @@ class Train extends Component {
     getAlgorithmDecription = algorithm => {
         var self = this;
         axios
-            .get(`http://localhost:5000/algorithms/description/${algorithm}`)
+            .get(labels.usePath + `/algorithms/description/${algorithm}`)
             .then(function(response) {
                 let description = response.data;
                 console.log(description);
@@ -65,7 +66,7 @@ class Train extends Component {
     getAlgorithmParameters = algorithm => {
         var self = this;
         axios
-            .get(`http://localhost:5000/algorithms/parameters/${algorithm}`)
+            .get(labels.usePath + `/algorithms/parameters/${algorithm}`)
             .then(function(response) {
                 let params = response.data.parameters;
                 let param_vals = {}
@@ -84,7 +85,7 @@ class Train extends Component {
         this.setState({status: ""});
         if(this.state.algorithm === "") return;
         this.setState({status: "Trenowanie..."})
-        axios.post(`http://localhost:5000/algorithms/train/${this.state.algorithm}`, {
+        axios.post(labels.usePath + `/algorithms/train/${this.state.algorithm}`, {
             parameters: this.state.parameter_values
         }).then(res => {
             this.setState({

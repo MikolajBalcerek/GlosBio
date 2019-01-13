@@ -2,8 +2,7 @@ import React, { Component } from "react";
 import { ReactMic } from "react-mic";
 import axios from "axios";
 import FormData from "form-data";
-
-
+import PropTypes from 'prop-types';
 import TextField from "@material-ui/core/TextField";
 import Paper from "@material-ui/core/Paper";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
@@ -11,16 +10,20 @@ import Button from "@material-ui/core/Button";
 import FiberManualRecord from "@material-ui/icons/FiberManualRecord";
 import Stop from "@material-ui/icons/Stop";
 import Files from 'react-files'
-import MySnackbarContent from './MySnackbarContent'
 import Typography from '@material-ui/core/Typography';
 import FormLabel from '@material-ui/core/FormLabel';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Radio from '@material-ui/core/Radio';
-import Checkbox from '@material-ui/core/Checkbox';
 import FormControl from '@material-ui/core/FormControl';
 import micro from '../img/micro.png'
+import spinner from '../img/spinner.gif'
 import AudioSpectrum from "react-audio-spectrum"
+import Tabs from '@material-ui/core/Tabs'
+import Tab from '@material-ui/core/Tab'
+import AppBar from '@material-ui/core/AppBar'
+import _ from 'lodash'
+import { withSnackbar } from 'notistack'
 
 class Recorder extends Component {
     constructor(props) {
@@ -29,19 +32,13 @@ class Recorder extends Component {
             isRecording: false,
             recorded: false,
             username: null,
-            blob_audio_data: null,
-            blob_audio_data2: null,
-            openErrorNoAudio: false,
-            openSuccess: false,
-            openErrorNoUser: false,
-            openErrorSave: false,
-            openErrorFileType: false,
-            openErrorFileSize: false,
-            openSuccessFile: false,
+            blob_audio_data: [],
             recognizedText: '',
-            type: 'test',
+            type: 'train',
             fileErr: false,
-            fake: false
+            value: 0,
+            uploaded: [],
+            apiError: false
         };
         this.onPressButtonRecord = this.onPressButtonRecord.bind(this);
         this.onPressButtonStop = this.onPressButtonStop.bind(this);
@@ -49,11 +46,17 @@ class Recorder extends Component {
         this.onStop = this.onStop.bind(this);
     }
 
+    handleClickVariant(text, variant){
+        // variant could be success, error, warning or info
+        this.props.enqueueSnackbar(text, { variant });
+      }
+
     onPressButtonRecord() {
         console.log("record", this.state);
         this.setState({
             isRecording: true,
             recorded: false,
+            value: this.state.blob_audio_data.length
         });
     }
     onPressButtonStop() {
@@ -62,68 +65,80 @@ class Recorder extends Component {
             isRecording: false,
         });
     }
-    handleChangeFake = event => {
-        this.setState({fake: !this.state.fake});
+
+      saveAll(){
+        if(this.state.blob_audio_data.length > 0){
+            this.onPressButtonUpload(0, false, 0)
+        } else
+        this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
     }
 
-    SnackbarHandleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-          }
-        this.setState({ openErrorNoAudio: false, openSuccess: false, openErrorNoUser: false, openErrorSave: false });
-      };
-
-    onPressButtonUpload() {
+    onPressButtonUpload(value, onlyOne, counter) {
         if (this.state.recorded && this.state.username) {
-            console.log("upload", this.state);
             let fd = new FormData();
             fd.append("username", this.state.username);
-            fd.append("file", this.state.blob_audio_data ? this.state.blob_audio_data.blob : this.state.blob_audio_data2);
-            fd.append("fake", this.state.fake);
+            fd.append("file", this.state.blob_audio_data[value].blob ? this.state.blob_audio_data[value].blob : this.state.blob_audio_data[value] )
+            let uploadedlist = this.state.uploaded
+            uploadedlist.push({id: value})
+            this.setState({
+                uploaded: uploadedlist
+            })
+            let newlist = this.state.blob_audio_data.slice()
+            newlist.splice(value, 1)
+            let isRecorded = newlist.length > 0 ? true : false
             let self = this;
-            axios
+             return axios
                 .post(`http://127.0.0.1:5000/audio/${this.state.type}`, fd, {
                     headers: { "Content-Type": "multipart/form-data" },
                 })
                 .then(function(response) {
-                    console.log(response);
+                    self.handleClickVariant(`Plik ${value} zapisano poprawnie! ${response.data.text} `, 'success')
                     self.setState({
-                        openSuccess: true,
                         isRecording: false,
-                        recorded: false,
-                        blob_audio_data: null,
-                        blob_audio_data2: null,
-                        recognizedText: response.data.text
+                        recorded: isRecorded,
+                        blob_audio_data: newlist,
+                        recognizedText: response.data.text,
+                        uploaded: [],
+                        value: 0,
+                        apiError: false
                     });
+                    !onlyOne && (value < self.state.blob_audio_data.length) && self.onPressButtonUpload(value, false, counter+1)
+                    if(counter === self.state.blob_audio_data.length)
+                    {
+                        self.setState({
+                            blob_audio_data: [],
+                            recorded: false
+                        }, ()=>self.props.getUsers())
+                    }
+                    onlyOne &&setTimeout(() => {
+                        console.log('odświerzam userów')
+                        self.props.getUsers()
+                    }, 2000)
                 })
                 .catch(function(error) {
                     self.setState({
-                        openErrorSave: true
+                        apiError: true
                     })
+                    self.handleClickVariant(`Podczas zapisu pliku ${value} wystąpił błąd!`, 'error')
                     console.log(error);
-                });
+                })
         } else {
             if (!this.state.recorded) {
-                this.setState({
-                    openErrorNoAudio: !this.state.openErrorNoAudio
-                })
+                return this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
             }
             if (!this.state.username) {
-                this.setState({
-                    openErrorNoUser: !this.state.openErrorNoUser
-                })
+                return this.handleClickVariant("Nie można zapisać pliku, podaj imię i nazwisko!", 'error')
             }
         }
-        setTimeout(() => {
-            console.log('odświerzam userów')
-            this.props.getUsers()
-        }, 2000);
+
     }
     onInputChange(e) {
         this.setState({ username: e.target.value });
     }
     onStop(recordedBlob) {
-        this.setState({ blob_audio_data: recordedBlob, recorded: true });
+        let blobList = this.state.blob_audio_data
+        blobList.push(recordedBlob)
+        this.setState({ blob_audio_data: blobList, recorded: true });
         console.log("Recorded Blob:", recordedBlob);
     }
     onData(recordedBlob) {
@@ -134,25 +149,24 @@ class Recorder extends Component {
       };
 
     onFilesChange(file) {
-        file.splice()
-        console.log('lol', file)
         this.setState({
             fileErr: false
         })
         this.onFilesError.bind(this)
         if(!this.state.fileErr){
+            let blobList = this.state.blob_audio_data
+            let copy = file.slice()
+            copy.map(el=>blobList.push(el))
+            while(file.length !== 0){
+                file.pop()
+            }
+            console.log('lol', blobList.length-1)
             this.setState({
-                blob_audio_data: null,
-                blob_audio_data2: file[file.length-1],
+                blob_audio_data: blobList,
                 recorded: true,
-                openUploadSuccess: true
+                value: blobList.length-1
             })
-            setTimeout(() => {
-                this.setState({
-                    openUploadSuccess: false
-                })
-            }, 2000);
-            console.log(this.state.blob_audio_data2)
+            this.handleClickVariant('Plik wczytano poprawnie!', 'success')
         } else{
             console.log('błąd')
         }
@@ -161,27 +175,22 @@ class Recorder extends Component {
     onFilesError(error, file) {
         if(error.code === 1) {
                 this.setState({
-                    fileErr: true,
-                    openErrorFileType: true
+                    fileErr: true
                 })
-            setTimeout(() => {
-                this.setState({
-                    openErrorFileType: false
-                })
-            }, 2000);
+                this.handleClickVariant("Niepoprawny format pliku!", 'error')
         } else if(error.code === 2) {
             this.setState({
-                fileErr: true,
-                openErrorFileSize: true
+                fileErr: true
             })
-        setTimeout(() => {
-            this.setState({
-                openErrorFileSize: false
-            })
-        }, 2000);
+            this.handleClickVariant("Plik jest zbyt duży!", 'error')
     }
         console.log('error code ' + error.code + ': ' + error.message)
     }
+
+    handleChange = (event, value) => {
+        this.setState({ value });
+      }
+
     render() {
         return (
             <Paper
@@ -245,27 +254,25 @@ class Recorder extends Component {
                                 <FormControlLabel value="train" control={<Radio />} label="Trenowanie" />
                                 <FormControlLabel value="test" control={<Radio />} label="Test" />
                             </RadioGroup>
-                    </FormControl>
-                    <FormControlLabel
-                      control={
-                            <Checkbox
-                              checked={this.state.fake}
-                              onChange={this.handleChangeFake}
-                              value="fake"
-                            />
-                          }
-                          label="Fake"
-                          style={{paddingBottom: 10}}
-                    />
-                    <Button
-                        variant="contained"
-                        color="default"
-                        style={{ display: "block", display: 'flex' }}
-                        onClick={this.onPressButtonUpload}
-                    >
-                        Save
-                        <CloudUploadIcon style={{paddingLeft: 5}}/>
-                    </Button>
+                        </FormControl>
+                        <Button
+                            variant="contained"
+                            color="default"
+                            style={{ display: "block", display: 'flex' }}
+                            onClick={()=>this.onPressButtonUpload(this.state.value, true, 0)}
+                        >
+                            Save
+                            <CloudUploadIcon style={{paddingLeft: 5}}/>
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="default"
+                            style={{ display: "block", display: 'flex', marginTop: 20 }}
+                            onClick={()=>this.saveAll()}
+                        >
+                            Save all
+                            <CloudUploadIcon style={{paddingLeft: 5}}/>
+                        </Button>
                 <Typography
                     variant="subheading"
                     gutterBottom
@@ -288,7 +295,13 @@ class Recorder extends Component {
                     justifyContent: 'center'
                 }}
             >
-                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-around', width: '100%', paddingTop: 20,paddingBottom: 20}}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-around',
+                    width: '100%',
+                    paddingTop: 20,
+                    paddingBottom: 20}}>
                 <img
                     src={micro}
                     style={{width: 60, margin: 0}}
@@ -316,7 +329,7 @@ class Recorder extends Component {
                             onError={this.onFilesError.bind(this)}
                             accepts={['.wav']}
                             multiple
-                            maxFiles={1}
+                            maxFiles={200}
                             maxFileSize={10000000}
                             minFileSize={0}
                             clickable
@@ -326,72 +339,89 @@ class Recorder extends Component {
                                 color='primary'
                                 variant="contained"
                                 >
-                                Upuść tutaj plik, lub kliknij aby wybrać plik z komputera
+                                Upuść tutaj plik/i, lub kliknij aby wybrać plik/i z komputera
                             </Button>
                         </Files>
                     </div>
             {this.state.recorded ? (
-                <Paper style={{ padding: 5, width: '100%', backgroundColor: 'transparent'}}>
-                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                        <audio id="audio-element"
-                            src={this.state.blob_audio_data ? this.state.blob_audio_data.blobURL : window.URL.createObjectURL(this.state.blob_audio_data2)}
-                            controls
-                            >
-                        </audio>
-                        <AudioSpectrum
-                            id="audio-canvas"
-                            height={200}
-                            width={300}
-                            audioId={'audio-element'}
-                            capColor={'red'}
-                            capHeight={2}
-                            meterWidth={2}
-                            meterCount={512}
-                            meterColor={[
-                                {stop: 0, color: '#f00'},
-                                {stop: 0.5, color: '#0CD7FD'},
-                                {stop: 1, color: 'red'}
-                            ]}
-                            gap={4}
-                        />
-                        </div>
-                </Paper>
-            ) : (
-                <div style={{
-                    border: '10px solid black',
-                    backgroundColor: 'black',
-                    borderRadius: 10,
-                    marginTop: 43,
-                    marginBottom: 43
-                    }}>
-                <ReactMic
-                    record={this.state.isRecording}
-                    className="sound-wave"
-                    onStop={this.onStop}
-                    onData={this.onData}
-                    strokeColor="yellow"
-                    style={{border: '4px solid black', borderRadius: 15}}
-                    backgroundColor='black'
-                    mimeType="audio/webm; codecs=opus"
-                />
+                <div style={{width: '100%'}}>
+                <AppBar position="static" color="default">
+                    <Tabs
+                        value={this.state.value}
+                        onChange={this.handleChange}
+                        indicatorColor="primary"
+                        textColor="primary"
+                        scrollable
+                        scrollButtons="auto"
+                        style={{backgroundColor: 'black'}}
+                        >
+                        {this.state.blob_audio_data.map((sound, i)=>
+                            _.find(this.state.uploaded, {id: i}) && !this.state.apiError ?
+                                <Tab icon={<img src={spinner} style={{width:30, height: 30}} />} />:
+                                <Tab label={i+1} />
+                        )}
+                    </Tabs>
+                </AppBar>
+                {this.state.blob_audio_data.map((sound, i)=>
+                    this.state.value === i &&
+                            <Paper style={{ padding: 5, width: '100%', backgroundColor: 'transparent'}}>
+                                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                    <audio id="audio-element"
+                                        src={sound.blobURL ? sound.blobURL : window.URL.createObjectURL(sound)}
+                                        controls
+                                        >
+                                    </audio>
+                                    <AudioSpectrum
+                                        id="audio-canvas"
+                                        height={200}
+                                        width={300}
+                                        audioId={'audio-element'}
+                                        capColor={'red'}
+                                        capHeight={2}
+                                        meterWidth={2}
+                                        meterCount={512}
+                                        meterColor={[
+                                            {stop: 0, color: '#f00'},
+                                            {stop: 0.5, color: '#0CD7FD'},
+                                            {stop: 1, color: 'red'}
+                                        ]}
+                                        gap={4}
+                                    />
+                                    </div>
+                            </Paper>
+                )}
                 </div>
+            ) : (
+                    <div style={{
+                        border: '10px solid black',
+                        backgroundColor: 'black',
+                        borderRadius: 10,
+                        marginTop: 43,
+                        marginBottom: 43
+                        }}>
+                    <ReactMic
+                        record={this.state.isRecording}
+                        className="sound-wave"
+                        onStop={this.onStop}
+                        onData={this.onData}
+                        strokeColor="yellow"
+                        style={{border: '4px solid black', borderRadius: 15}}
+                        backgroundColor='black'
+                        mimeType="audio/webm; codecs=opus"
+                    />
+                    </div>
             )}
             </div>
+
             </div>
-                <MySnackbarContent
-                    recognizedText={this.state.recognizedText}
-                    openErrorNoAudio={this.state.openErrorNoAudio}
-                    openSuccess={this.state.openSuccess}
-                    openErrorNoUser={this.state.openErrorNoUser}
-                    openErrorSave={this.state.openErrorSave}
-                    SnackbarHandleClose={()=>this.SnackbarHandleClose}
-                    openErrorFileType={this.state.openErrorFileType}
-                    openErrorFileSize={this.state.openErrorFileSize}
-                    openUploadSuccess={this.state.openUploadSuccess}
-                />
             </Paper>
         );
     }
 }
 
-export default Recorder;
+Recorder.propTypes = {
+    enqueueSnackbar: PropTypes.func.isRequired,
+    getUsers: PropTypes.func
+  };
+
+export default withSnackbar(Recorder);

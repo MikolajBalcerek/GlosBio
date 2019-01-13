@@ -15,6 +15,7 @@ python-speech-features = "*"
 matplotlib = "*"
 "h5py" = "*"
 tensorflow = "*"
+coverage = "*"
 
 [dev-packages]
 
