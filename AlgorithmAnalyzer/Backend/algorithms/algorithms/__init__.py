@@ -5,7 +5,7 @@ from .multilabel_example import MultilabelExample
 ALG_DICT = {
     'Simple Neural Net': SimpleNN,
     'Random': EasyExample,
-    'multilabel Ranodom': MultilabelExample
+    'Multilabel Ranodom': MultilabelExample
 }
 
 __all__ = ['ALG_DICT']

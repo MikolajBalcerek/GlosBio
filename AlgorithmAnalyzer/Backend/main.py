@@ -74,11 +74,23 @@ def handle_users_endpoint():
 
 @app.route('/algorithms', methods=['GET'])
 def get_algorithms_names():
+    """
+    Returns the list of names of all algorithms available.
+    """
     return {'algorithms': AlgorithmManager.get_algorithms()}, status.HTTP_200_OK
 
 
 @app.route('/algorithm/parameters/<string:name>', methods=['GET'])
 def get_algorithm_parameters(name):
+    """
+    Return all parameters of a given algorithm in the form:
+        {'parameter_name': {
+            'description': 'A description.',
+            'values': [list of possible values]
+            }
+        }
+    <string:name> is the name of the algorithm.
+    """
     if name not in ALG_DICT.keys():
         return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
 
@@ -88,6 +100,13 @@ def get_algorithm_parameters(name):
 @app.route('/algorithm/train/<string:name>', methods=['POST'])
 @requires_db_connection
 def train_algorithm(name):
+    """
+    Starts to train the algorithm with name <string:name>.
+    Request's data should containt the parameters in the form
+        {'parameter_name': 'value'}
+    Where the paremeter names and values should agree with the
+    output of GET /algorithm/parameters/<string:name>.
+    """
     if 'parameters' not in request.data:
         return 'Missing "params" in request data', status.HTTP_400_BAD_REQUEST
 
@@ -125,6 +144,16 @@ def train_algorithm(name):
 
 @app.route('/algorithm/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
 def predict_algorithm(user_name, algorithm_name):
+    """
+    Uses the algorithm with name <string:algorithm_name> to predict,
+    if the wav sent in request.files contains the voice of the user
+    with name <string:user_name>. Returns a json of the form
+        {
+            "prediction": "the result of prediction - true / false",
+            "meta": {"key": "value" additional data returned by the algorithm}
+        }
+    where the additional data may contain things like probabilities etc.
+    """
     # TODO: should be @requires_db_connection here?
     if 'file' not in request.files:
         return 'No file part', status.HTTP_400_BAD_REQUEST
@@ -140,7 +169,7 @@ def predict_algorithm(user_name, algorithm_name):
     if alg_manager.multilabel:
         try:
             meta['Predicted user'] = \
-                app.config["SAMPLE_MANAGER"].sample_numbers_to_usernames([prediction])[0]
+                app.config["SAMPLE_MANAGER"].user_numbers_to_usernames([prediction])[0]
         except IndexError:
             prediction = False
             meta['Predicted user'] = 'Algorithm has predicted a nonexisting user.'

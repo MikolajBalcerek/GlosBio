@@ -471,7 +471,7 @@ class SampleManager:
             [sample_list], [label_list],
         each label is the user's number (int) and won't change after the user is created.
         """
-        # TODO(mikra): return a generator object instead of list (memory efficiency)
+        # TODO(mikra): return a generator object instead of a list (memory efficiency)
         if multilabel:
             samples, labels = [], []
         else:
@@ -498,7 +498,12 @@ class SampleManager:
                 labels[username] = user_labels
         return samples, labels
 
-    def sample_numbers_to_usernames(self, numbers):
+    def user_numbers_to_usernames(self, numbers):
+        """
+        Returns list of usernames of users with numbers given.
+        The ordering is based on creation timestamp (Mongo ID).
+        :param numbers: list of numbers to convert.
+        """
         try:
             usernames = self.db_collection.find({}, ['name']).sort('id', 1)
         except errors.PyMongoError as e:

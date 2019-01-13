@@ -37,6 +37,9 @@ class AlgorithmManager:
 
     @property
     def multilabel(self):
+        """
+        Returns True / False depending on the algorithm being multilabel.
+        """
         return self.algorithm.multilabel
 
     @classmethod
@@ -77,6 +80,9 @@ class AlgorithmManager:
         return {key: params[key]['type'] for key in params}
 
     def _update_parameters(self, parameters: dict):
+        """
+        Updates parameters received from api to a form, that is usable here.
+        """
         param_dict = self.algorithm.get_parameters()
         for name in param_dict:
             parameters[name] = param_dict[name]['type'](parameters[name])
@@ -87,7 +93,6 @@ class AlgorithmManager:
         Trains a model for each user for a given algorithm,
         and then saves the model to `saved_models` directory
         """
-        # TODO(mikra): add SocketIO and/or Redis communication
         usernames = list(labels.keys())
         parameters = self._update_parameters(parameters)
         for username in usernames:
@@ -110,7 +115,7 @@ class AlgorithmManager:
     def _load_model(self, user: str):
         """
         Load user's model from saved_models/algorithm_name/user_name,
-        using model's load function.
+        using model's __init__ method with path kwarg.
         :param user: the name of the user for wich the model should be loaded
         """
         # TODO(mikra): take care of models load returning errors!!!
@@ -119,25 +124,36 @@ class AlgorithmManager:
         self.models[user] = self.algorithm(path=base_path)
 
     def _train_multilabel_model(self, samples: list, labels: list, parameters: dict):
+        """
+        Trains one multilabeled model for all users.
+        """
         parameters = self._update_parameters(parameters)
         self.model = self.algorithm(parameters=parameters)
         self.model.train(samples, labels)
         self._save_multilabel_model()
 
     def _save_multilabel_model(self):
+        """
+        Saves multilabeled model to ./saved_algorithms/agorithm_name/algorithm_name,
+        using algorithm's save method.
+        """
         Path(f'./algorithms/saved_models/{self.algorithm_name}').mkdir(parents=True, exist_ok=True)
         self.model.save(f'./algorithms/saved_models/{self.algorithm_name}/{self.algorithm_name}')
 
     def _load_multilabel_model(self):
+        """
+        Loads multilabeled model from ./saved_algorithms/agorithm_name/algorithm_name,
+        using algorithm's __init__ method with "path" kwarg.
+        """
         path = f'./algorithms/saved_models/{self.algorithm_name}/{self.algorithm_name}'
         self.model = self.algorithm(path=path)
 
     def predict(self, user: str, file) -> Tuple[bool, Dict[str, float]]:
         """
-            Returns model's predictions if a sample `file`
+            :returns: Returns model's predictions if a sample `file`
             contains `user`'s voice. Returns
             True/False if yes/no and an addictional dictionary,
-            with information about predictiona (probabilities).
+            with information about predictions (eg. probabilities).
             :param user: name of the user who is predicted
             :param file: wav-file-like object, containing the sample
         """
@@ -149,10 +165,25 @@ class AlgorithmManager:
             return self.models[user].predict(file)
 
     def train(self, samples, labels, parameters):
+        """
+        Trains the model(s) depending on algorithm being multilabel,
+        then saves it (them).
+        :param samples: either a dictionary of the form
+                    { 'username': [samples] }
+        or a list of the form
+                    [all user samples],
+        where each sample is file like.
+        :param labels: either a dictionary of the form
+                    {'username': [0/1 labels of samples]}
+        or a list [0/1/.../number_of_users labels] depending
+        on the algorithm being multilabel.
+        :param parameters: Algorithm parameters of the form
+                    {'parameter_name': 'value'},
+        where both names and values should agree with get_parameters.
+        """
+        # TODO(mikra): add SocketIO and/or Redis communication
+        # TODO(mikra): after ^ make it a background task
         if self.algorithm.multilabel:
             self._train_multilabel_model(samples, labels, parameters)
         else:
             self._train_models(samples, labels, parameters)
-
-    def validate_models(self):
-        pass
