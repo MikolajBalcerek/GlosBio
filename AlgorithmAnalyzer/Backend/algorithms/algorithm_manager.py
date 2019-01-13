@@ -7,22 +7,6 @@ from typing import List, Tuple, Dict
 from algorithms.algorithms import ALG_DICT
 
 
-def background_task(pool_executor):
-    """
-    Creates a decorator, that makes a function
-    executed in the background using pool_executor.
-    :param pool_executor:
-        An executor for running task in the background.
-    """
-    def decorator(task):
-        @wraps(task)
-        def in_background(*args, **kwargs):
-            fut = pool_executor.submit(task, *args, **kwargs)
-            return fut
-        return in_background
-    return decorator
-
-
 class AlgorithmManager:
     """
     This class servs as an api between the application and algorithms.
