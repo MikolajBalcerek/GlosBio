@@ -24,6 +24,7 @@ import Tab from '@material-ui/core/Tab'
 import AppBar from '@material-ui/core/AppBar'
 import _ from 'lodash'
 import { withSnackbar } from 'notistack'
+import labels from '../labels.json'
 
 class Recorder extends Component {
 	constructor(props) {
@@ -88,8 +89,11 @@ class Recorder extends Component {
 			let isRecorded = newlist.length > 0 ? true : false
 			let self = this;
 			 return axios
-				.post(`http://127.0.0.1:5000/audio/${this.state.type}`, fd, {
-					headers: { "Content-Type": "multipart/form-data" },
+				.post(labels.usePath + `/audio/${this.state.type}`, fd, {
+					headers: { 
+						"Content-Type": "multipart/form-data",
+						'Authorization': labels.apiKey
+					},
 				})
 				.then(function(response) {
 					self.handleClickVariant(`Plik ${value} zapisano poprawnie! ${response.data.text} `, 'success')

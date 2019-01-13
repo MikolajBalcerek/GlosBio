@@ -20,14 +20,27 @@ import { Buffer } from 'buffer'
 import Permissions from 'react-native-permissions'
 import Sound from 'react-native-sound'
 import AudioRecord from 'react-native-audio-record'
-
+import {create} from 'apisauce'
+import api_config from './api_config.json'
+import Toast, {DURATION} from 'react-native-easy-toast'
+import RNFetchBlob from 'rn-fetch-blob'
+import RNFS from 'react-native-fs'
 
 export default class App extends Component {
   state={
     audioFile: '',
     recording: false,
     loaded: false,
-    paused: true
+    paused: true,
+    type: 'test',
+    username: '',
+    audio: '',
+    sound: ''
+  }
+  pressCheckbox(type){
+    this.setState({
+      type: type
+    })
   }
   async componentDidMount() {
     await this.checkPermission();
@@ -43,7 +56,9 @@ export default class App extends Component {
 
     AudioRecord.on('data', data => {
       const chunk = Buffer.from(data, 'base64');
-      // do something with audio chunk
+      this.setState({
+        audio: data
+      })
     });
   }
 
@@ -101,7 +116,7 @@ export default class App extends Component {
 
     this.setState({ paused: false });
     Sound.setCategory('Playback');
-
+    console.log('lul', this.sound)
     this.sound.play(success => {
       if (success) {
         console.log('successfully finished playing');
@@ -117,6 +132,89 @@ export default class App extends Component {
     this.sound.pause();
     this.setState({ paused: true });
   };
+
+
+  addSound(){
+    console.log(RNFetchBlob.wrap(RNFS.DocumentDirectoryPath +'test.wav'))
+    let fd = new FormData()
+    fd.append("username", this.state.username);
+    fd.append("file", this.state.audio )
+    RNFetchBlob.fetch('POST', api_config.usePath+`/audio/${this.state.type}`, {
+    Authorization : api_config.apiKey,
+    'Content-Type' : 'multipart/form-data',
+  }, [
+    // append field data from file path
+    {
+      username : this.state.username,
+      // Change BASE64 encoded data to a file path with prefix `RNFetchBlob-file://`.
+      // Or simply wrap the file path with RNFetchBlob.wrap().
+      data: RNFetchBlob.wrap(RNFetchBlob.fs.asset(RNFS.DocumentDirectoryPath +'/test.wav'))
+    }/*,
+    {
+      name : 'ringtone',
+      filename : 'ring.mp3',
+      // use custom MIME type
+      type : 'application/mp3',
+      // upload a file from asset is also possible in version >= 0.6.2
+      data : RNFetchBlob.wrap(RNFetchBlob.fs.asset('default-ringtone.mp3'))
+    }
+    // elements without property `filename` will be sent as plain text
+    { name : 'name', data : 'user'},
+    { name : 'info', data : JSON.stringify({
+      mail : 'example@example.com',
+      tel : '12345678'
+    })},*/
+  ]).then((resp) => {
+    console.log('zajebiście', resp)
+  }).catch((err) => {
+    console.log('chujowo', err)
+  })
+  }
+  /*addSound(){
+    var self = this
+    var lol = 'xd'
+    RNFS.readDir(RNFS.DocumentDirectoryPath) // On Android, use "RNFS.DocumentDirectoryPath" (MainBundlePath is not defined)
+      .then((result) => {
+        console.log('GOT RESULT', result[0]);
+        // stat the first file
+        let fd = new FormData();
+			fd.append("username", this.state.username);
+      fd.append("file", result[0] )
+            console.log('fd', fd)
+            const api = create({
+                baseURL: api_config.usePath,
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                  "Authorization": api_config.apiKey
+              }
+            })
+            api
+                  .post(`/audio/${this.state.type}`, fd)
+                  .then((response) => {
+                      console.log('zajebiście', response)
+                    }) 
+                  .catch((error)=>{
+                    console.log('chujowo', error)
+                  })
+        return Promise.all([RNFS.stat(result[0].path), result[0].path]);
+      })
+      .then((statResult) => {
+        if (statResult[0].isFile()) {
+          // if we have a file, read it
+          return RNFS.readFile(statResult[1], 'utf8');
+        }
+
+        return 'no file';
+      })
+      .then((contents) => {
+        // log the file contents
+        console.log(contents);
+      })
+      .catch((err) => {
+        console.log(err.message, err.code);
+      });
+  }*/
+
   render() {
     const { recording, paused, audioFile } = this.state;
     return (
@@ -132,18 +230,30 @@ export default class App extends Component {
           <Card style={styles.mainCard}>
             <Card style={styles.inputCard}>
               <Item style={styles.inputItem}>
-                <Input placeholder="Username" style={{color: 'white'}} />
+                <Input 
+                  placeholder="Username" 
+                  style={{color: 'white'}} 
+                  onChangeText={(username) => this.setState({username})}
+                  />
               </Item> 
             </Card>
             <Text style={{color: 'white', margin: 20}}>Wybierz typ nagrania:</Text>
             <ListItem style={{width: '100%', alignItems: 'center'}}>
-              <CheckBox checked={true} color='red'/>
-              <Text style={{color: 'white', marginLeft: 10, marginRight: 10 }}>Trenowanie</Text>
-              <CheckBox checked={false} color='red'/>
-              <Text style={{color: 'white', marginLeft: 10, marginRight: 10}}>Test</Text>
+              <CheckBox 
+                checked={this.state.type === 'train'} 
+                color='red'
+                onPress={()=>this.pressCheckbox('train')}
+              />
+                <Text style={{color: 'white', marginLeft: 10, marginRight: 10 }}>Trenowanie</Text>
+              <CheckBox 
+                checked={this.state.type === 'test'} 
+                color='red'
+                onPress={()=>this.pressCheckbox('test')}
+              />
+                <Text style={{color: 'white', marginLeft: 10, marginRight: 10}}>Test</Text>
             </ListItem>
             <View style={{marginTop: 10}}>
-              <Button light style={{margin: 5}} iconRight  >
+              <Button light style={{margin: 5}} iconRight onPress={()=>this.addSound()} >
                 <Text style={{padding: 5, marginLeft: 10}}>Save</Text><Icon name='cloud-upload' />
               </Button>
             </View>
@@ -181,6 +291,16 @@ export default class App extends Component {
             </Button>
           </View>
           </Card>
+          <Toast
+                    ref="toasterr"
+                    style={{backgroundColor:'red'}}
+                    position='top'
+                    positionValue={200}
+                    fadeInDuration={750}
+                    fadeOutDuration={1000}
+                    opacity={0.8}
+                    textStyle={{color:'black'}}
+                />
       </ImageBackground>
     );
   }

@@ -9,6 +9,7 @@
     "form-data": "^2.3.2",
     "material-ui-image": "^3.0.3",
     "mui-audio-player": "^1.0.1",
+    "mui-datatables": "^2.0.0-beta-50",
     "node-sass": "^4.9.4",
     "notistack": "^0.4.1",
     "prop-types": "^15.6.2",
@@ -25,7 +26,8 @@
     "react-player": "^1.6.6",
     "react-scripts": "2.0.3",
     "react-select": "^2.1.2",
-    "react-select-material-ui": "^1.1.2"
+    "react-select-material-ui": "^1.1.2",
+    "typeface-roboto": "0.0.54"
   },
   "scripts": {
     "start": "react-scripts start",

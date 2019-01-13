@@ -30,21 +30,7 @@ class Tags extends Component{
     }
 
     componentDidMount(){
-        this.getTagList()
-    }
-
-    getTagList() {
-        var self = this
-        axios
-            .get(labels.usePath +`/tag`, {}, { 'Authorization': labels.apiKey })
-            .then(function(response) {
-				self.setState({
-                    tagNameList: response.data
-                })
-            })
-            .catch(function(error) {
-                console.log(error);
-			})
+        this.props.getTagList()
     }
 
     handleClickVariant(text, variant){
@@ -73,7 +59,7 @@ class Tags extends Component{
     addTagToUser(){
         var self = this
         let fd = new FormData();
-        fd.append("name", this.state.tagNameList[this.state.name]);
+        fd.append("name", this.props.tagNameList[this.state.name]);
         fd.append("value", this.state.tagValuesList[this.state.tagValue]);
         axios
             .post(labels.usePath +`/users/${this.props.user}/tags`, fd, { 'Authorization': labels.apiKey })
@@ -92,7 +78,7 @@ class Tags extends Component{
     getUserTagValues(){
         var self = this
         axios
-            .get(labels.usePath +`/tag/${this.state.tagNameList[this.state.name]}`, {}, { 'Authorization': labels.apiKey })
+            .get(labels.usePath +`/tag/${this.props.tagNameList[this.state.name]}`, {}, { 'Authorization': labels.apiKey })
             .then(function(response) {
                 console.log(response.data)
 				self.setState({
@@ -138,7 +124,7 @@ class Tags extends Component{
         axios
             .post(labels.usePath +`/tag`, fd, { 'Authorization': labels.apiKey })
             .then(function() {
-                self.getTagList()
+                self.props.getTagList()
                 self.setState({
                     newTagValues: [''],
                     newTagName: ''
@@ -190,7 +176,7 @@ class Tags extends Component{
                                         <MenuItem value="">
                                             <em>None</em>
                                         </MenuItem>
-                                        {this.state.tagNameList && this.state.tagNameList.map(
+                                        {this.props.tagNameList && this.props.tagNameList.map(
                                             (name, id) => 
                                             this.props.tagsKeys.indexOf(name) === -1 && <MenuItem key={id} value={id}>{name}</MenuItem>
                                             )

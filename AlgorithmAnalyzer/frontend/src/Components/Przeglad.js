@@ -156,7 +156,6 @@ class Przeglad extends Component {
     }
 
     getUserTags() {
-        console.log('ahoj')
         var self = this
         axios({
             url: labels.usePath +`/users/${this.props.userList[this.state.user]}/tags`,
@@ -298,6 +297,8 @@ class Przeglad extends Component {
                     tagsOpen={this.state.tagsOpen}
                     handleOpenTags={()=>this.handleOpenTags()}
                     getUserTags={()=>this.getUserTags()}
+                    getTagList={()=>this.props.getTagList()}
+                    tagNameList={this.props.tagNameList}
                 />
             </Paper>
         )

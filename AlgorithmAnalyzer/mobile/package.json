@@ -7,13 +7,18 @@
     "test": "jest"
   },
   "dependencies": {
+    "apisauce": "^1.0.2",
     "buffer": "^5.2.1",
     "native-base": "^2.8.1",
     "react": "16.6.1",
     "react-native": "0.57.7",
     "react-native-audio-record": "^0.1.2",
+    "react-native-background-upload": "^5.0.0",
+    "react-native-easy-toast": "^1.1.0",
+    "react-native-fs": "^2.13.3",
     "react-native-permissions": "^1.1.1",
-    "react-native-sound": "^0.10.9"
+    "react-native-sound": "^0.10.9",
+    "rn-fetch-blob": "^0.10.15"
   },
   "devDependencies": {
     "babel-jest": "23.6.0",
