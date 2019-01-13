@@ -9,7 +9,7 @@ from pymongo import MongoClient
 
 from sample_manager.SampleManager import SampleManager
 
-from main import app
+from main import app, ALG_DICT
 
 
 class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
@@ -437,3 +437,229 @@ class NoDbTests(BaseAbstractIntegrationTestsClass):
         r = self.client.get(request_path, json=request_json)
         self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE,
                          f"wrong status code, expected 503, got {r.status_code}")
+
+
+class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
+    @classmethod
+    def setUpClass(cls):
+        """ setup before tests_integration for this class """
+        super().setUpClass()
+        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = cls.client.post('/audio/train',
+                                data={"username": cls.TEST_USERNAMES[0],
+                                      "file": f})
+            assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
+                                                             " for file upload during class setup"
+            f.close()
+        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            r = cls.client.post('/audio/test',
+                                data={"username": cls.TEST_USERNAMES[1],
+                                      "file": f})
+            assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
+                                                             " for file upload during class setup"
+            f.close()
+
+    def setUp(self):
+        self.alg_list = list(ALG_DICT.keys())
+
+    def test_get_algorithms_names(self):
+        self.assertEqual(
+            self.client.get('/algorithms').json, {
+                'algorithms': self.alg_list,
+            })
+
+    def test_get_algorithm_description(self):
+        for name in self.alg_list:
+            self.assertEqual(
+                self.client.get(f'/algorithms/description/{name}').data,
+                ALG_DICT[name].__doc__.encode() if ALG_DICT[name].__doc__ else b"",
+                "Bad description returned."
+            )
+
+    def test_get_algorithm_description_wrong_name(self):
+        name = "______thereisnosuchalgname______"
+        self.assertEqual(
+                self.client.get(f'/algorithms/description/{name}').status_code,
+                status.HTTP_400_BAD_REQUEST,
+                "Wrong name should yield bad request."
+            )
+        self.assertEqual(
+                self.client.get(f'/algorithms/description/{name}').data,
+                b"Bad algorithm name.",
+                "Wrong error message."
+            )
+
+    def test_get_algorithm_parameters(self):
+        for name in self.alg_list:
+            params = ALG_DICT[name].get_parameters()
+            for param in params:
+                params[param].pop('type', None)
+            self.assertEqual(
+                self.client.get(f'/algorithms/parameters/{name}').json, {
+                    'parameters': params
+                },
+                "Returned and expected parameters didn't match."
+            )
+
+    def test_get_algorithm_parameters_wrong_name(self):
+        name = "______thereisnosuchalgname______"
+        self.assertEqual(
+                self.client.get(f'/algorithms/parameters/{name}').status_code,
+                status.HTTP_400_BAD_REQUEST,
+                "Wrong name should yield bad request."
+            )
+        self.assertEqual(
+                self.client.get(f'/algorithms/parameters/{name}').data,
+                b"Bad algorithm name.",
+                "Wrong error message."
+            )
+
+    def test_train_algorithm(self):
+        for name in ['Random', 'Multilabel Random']:
+            params = ALG_DICT[name].get_parameters()
+            some_params = {
+                param: params[param]['type'](params[param]['values'][0])
+                for param in params.keys()
+            }
+            data = {'parameters': some_params}
+            r = self.client.post(f'/algorithms/train/{name}',
+                                 data=json.dumps(data),
+                                 content_type='application/json'
+                                 )
+            self.assertEqual(r.status_code, status.HTTP_200_OK)
+            self.assertEqual(r.data, b'Training ended.',
+                             'Wrong message returned.'
+                             )
+
+    def test_train_algorithm_bad_name(self):
+        name = "______thereisnosuchalgname______"
+        data = {'parameters': None}
+        r = self.client.post(f'/algorithms/train/{name}',
+                             data=json.dumps(data),
+                             content_type='application/json'
+                             )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, b'Bad algorithm name.',
+                         'Wrong error message.'
+                         )
+
+    def test_train_algorithm_no_parameters(self):
+        name = "Random"
+        params = ALG_DICT[name].get_parameters()
+        some_params = {
+            param: params[param]['type'](params[param]['values'][0])
+            for param in params.keys()
+        }
+        data = {'parameters': some_params}
+        r = self.client.post(f'/algorithms/train/{name}',
+                             data=json.dumps({}),
+                             content_type='application/json'
+                             )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, b'Missing "params" in request data',
+                         'Wrong error message.'
+                         )
+
+    def test_train_algorithm_too_many_parameter_keys(self):
+        name = "Random"
+        params = ALG_DICT[name].get_parameters()
+        some_params = {
+            param: params[param]['type'](params[param]['values'][0])
+            for param in params.keys()
+        }
+        some_params['___bad_name___'] = 'some value'
+        data = {'parameters': some_params}
+        r = self.client.post(f'/algorithms/train/{name}',
+                             data=json.dumps(data),
+                             content_type='application/json'
+                             )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, b'Bad algorithm parameters.',
+                         "Shouldn't pass with too many parameters."
+                         )
+
+    def test_train_algorithm_missing_parameters(self):
+        name = "Multilabel Random"
+        params = ALG_DICT[name].get_parameters()
+        some_params = {
+            param: params[param]['type'](params[param]['values'][0])
+            for param in list(params.keys())[:-1]
+        }
+        data = {'parameters': some_params}
+        r = self.client.post(f'/algorithms/train/{name}',
+                             data=json.dumps(data),
+                             content_type='application/json'
+                             )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, b'Bad algorithm parameters.',
+                         "Shouldn't pass with too few parameters."
+                         )
+
+    def test_train_algorithm_parameters_bad_type(self):
+        name = "Multilabel Random"
+        some_params = {
+            'num_classes': 'not_int'
+        }
+        data = {'parameters': some_params}
+        r = self.client.post(f'/algorithms/train/{name}',
+                             data=json.dumps(data),
+                             content_type='application/json'
+                             )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, b'Bad value type of parameter "num_classes"',
+                         "Should't pass with bad parameter types."
+                         )
+
+    def test_train_algorithm_missing_parameters_bad_value(self):
+        name = "Multilabel Random"
+        some_params = {
+            'num_classes': 10**4
+        }
+        data = {'parameters': some_params}
+        r = self.client.post(f'/algorithms/train/{name}',
+                             data=json.dumps(data),
+                             content_type='application/json'
+                             )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, b'At least one parameter has bad value.',
+                         "Should't pass with parameter value notin accepted values."
+                         )
+
+    def test_predict_algorithm(self):
+        username = self.TEST_USERNAMES[0]
+        for name in ['Multilabel Random', 'Random']:
+            with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                data = {'file': f}
+                r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
+            self.assertEqual(r.status_code, status.HTTP_200_OK)
+            self.assertIn('prediction', r.json)
+            if name == 'Multilabel Random':
+                self.assertIn('Predicted user', r.json['meta'])
+            else:
+                self.assertNotIn('Predicted user', r.json['meta'])
+
+    def test_predict_algorithm_missing_file(self):
+        username = self.TEST_USERNAMES[0]
+        for name in ['Multilabel Random', 'Random']:
+            data = {}
+            r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(r.data, b"No file part")
+
+    def test_predict_algorithm_bad_username(self):
+        username = "______thereisnosuchalgname______"
+        for name in ['Multilabel Random', 'Random']:
+            with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                data = {'file': f}
+                r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(r.data, b"Such user doesn't exist")
+
+    def test_predict_algorithm_bad_algorithm_ame(self):
+        username = self.TEST_USERNAMES[0]
+        name = "______thereisnosuchalgname______"
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            data = {'file': f}
+            r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, b'Bad algorithm name.')
