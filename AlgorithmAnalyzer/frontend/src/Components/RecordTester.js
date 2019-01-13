@@ -91,7 +91,7 @@ class RecordTester extends Component {
             fd.append("file", this.state.blob_audio_data ? this.state.blob_audio_data.blob : this.state.blob_audio_data2);
             let self = this;
             axios
-                .post(`http://127.0.0.1:5000/algorithm/test/${this.state.username}/${this.state.algorithm}`,
+                .post(`http://127.0.0.1:5000/algorithms/test/${this.state.username}/${this.state.algorithm}`,
                     fd,
                     {
                     headers: { "Content-Type": "multipart/form-data" },

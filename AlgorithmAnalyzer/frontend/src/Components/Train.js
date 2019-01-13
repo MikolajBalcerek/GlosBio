@@ -24,15 +24,15 @@ class Train extends Component {
     }
 
     handleChangeAlgorithm = event => {
-        this.setState({ [event.target.name]: event.target.value });
-        if(event.target.value === ""){
-            this.setState({
-                parameters: {},
-                parameter_values: {},
-                status: "",
-                description: ""
-            })
-        } else {
+        this.setState({
+            [event.target.name]: event.target.value,
+            parameters: {},
+            parameter_values: {},
+            status: "",
+            description: ""
+        });
+        if(event.target.value !== ""){
+            this.setState({status: ""});
             this.getAlgorithmDecription(event.target.value);
             this.getAlgorithmParameters(event.target.value);
         }
@@ -65,7 +65,7 @@ class Train extends Component {
     getAlgorithmParameters = algorithm => {
         var self = this;
         axios
-            .get(`http://localhost:5000/algorithm/parameters/${algorithm}`)
+            .get(`http://localhost:5000/algorithms/parameters/${algorithm}`)
             .then(function(response) {
                 let params = response.data.parameters;
                 let param_vals = {}
@@ -83,10 +83,10 @@ class Train extends Component {
     trainButtonClick = () => {
         this.setState({status: ""});
         if(this.state.algorithm === "") return;
-        axios.post(`http://localhost:5000/algorithm/train/${this.state.algorithm}`, {
+        this.setState({status: "Trenowanie..."})
+        axios.post(`http://localhost:5000/algorithms/train/${this.state.algorithm}`, {
             parameters: this.state.parameter_values
         }).then(res => {
-            console.log("Rozpoczęto trenowanie");
             this.setState({
                 status: res.data
             })

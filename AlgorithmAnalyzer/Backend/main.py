@@ -92,7 +92,7 @@ def get_algorithm_description(name):
     return description if description else "", status.HTTP_200_OK
 
 
-@app.route('/algorithm/parameters/<string:name>', methods=['GET'])
+@app.route('/algorithms/parameters/<string:name>', methods=['GET'])
 def get_algorithm_parameters(name):
     """
     Return all parameters of a given algorithm in the form:
@@ -109,7 +109,7 @@ def get_algorithm_parameters(name):
     return {'parameters': AlgorithmManager.get_parameters(name)}, status.HTTP_200_OK
 
 
-@app.route('/algorithm/train/<string:name>', methods=['POST'])
+@app.route('/algorithms/train/<string:name>', methods=['POST'])
 @requires_db_connection
 def train_algorithm(name):
     """
@@ -151,10 +151,10 @@ def train_algorithm(name):
     )
 
     AlgorithmManager(name).train(samples, labels, params)
-    return "Rozpoczęto trenowanie.", status.HTTP_200_OK
+    return "Training ended.", status.HTTP_200_OK
 
 
-@app.route('/algorithm/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
+@app.route('/algorithms/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
 def predict_algorithm(user_name, algorithm_name):
     """
     Uses the algorithm with name <string:algorithm_name> to predict,
@@ -170,6 +170,9 @@ def predict_algorithm(user_name, algorithm_name):
     if 'file' not in request.files:
         return 'No file part', status.HTTP_400_BAD_REQUEST
 
+    if algorithm_name not in AlgorithmManager.get_algorithms():
+        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+
     if not app.config['SAMPLE_MANAGER'].user_exists(user_name):
         return "Such user doesn't exist", status.HTTP_400_BAD_REQUEST
 
@@ -177,7 +180,7 @@ def predict_algorithm(user_name, algorithm_name):
     file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
     alg_manager = AlgorithmManager(algorithm_name)
     prediction, meta = alg_manager.predict(user_name, file)
-    print(prediction)
+
     if alg_manager.multilabel:
         try:
             meta['Predicted user'] = \
