@@ -15,7 +15,7 @@ RUN apk update && \
 
 WORKDIR /opt
 
-ADD package.json package.json
+COPY package.json package.json
 
 RUN npm install && npm install -g serve
 
@@ -24,5 +24,4 @@ ENV PATH /data/node_modules/.bin:$PATH
 WORKDIR /opt/app
 
 ENTRYPOINT ["/sbin/tini", "--"]
-# CMD ["serve", "-l", "tcp://0.0.0.0:3000", "-s", "build"]  npm run build
 CMD ["/bin/sh", "entrypoint.sh"]
