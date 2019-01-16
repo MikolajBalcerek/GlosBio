@@ -95,11 +95,13 @@ class SampleManager:
         check if user already exists in samplebas
         :param username: str - eg. 'Hugo Kołątaj'
         """
-        norm_name = self._get_normalized_username(username)
         try:
+            norm_name = self._get_normalized_username(username)
             out = self.db_collection.find_one({"nameNormalized": norm_name})
         except errors.PyMongoError as e:
             raise DatabaseException(e)
+        except UsernameException:
+            return False
         return True if out else False
 
     def sample_exists(self, username: str, set_type: str, samplename: str) -> bool:
@@ -307,6 +309,8 @@ class SampleManager:
                 raise ValueError(f"tag '{tag_name}' already exists in tag base")
             if not re.match('^[\w\s\d-]+$', tag_name):
                 raise ValueError("name contains special character(s)")
+            if not values:
+                raise ValueError(f"need at least one value for new tag")
             # for val in values:
             #     if not re.match('^[\w\s\d-]+$', val):
             #         raise ValueError(f"value {val} contains special character(s)")
@@ -325,13 +329,12 @@ class SampleManager:
         """
         try:
             all_tags = self.db_tags.find({}, {'_id': 0, 'values': 0})
+            out = []
+            for tag in all_tags:
+                out.append(tag['name'])
+            return out
         except errors.PyMongoError as e:
             raise DatabaseException(e)
-
-        out = []
-        for tag in all_tags:
-            out.append(tag['name'])
-        return out
 
     def get_tag_values(self, tag_name: str) -> list:
         """

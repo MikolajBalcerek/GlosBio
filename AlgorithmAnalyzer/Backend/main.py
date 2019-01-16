@@ -273,8 +273,8 @@ def handle_tag_entdpoint():
             return [f"Tag '{name}' already exists in tag base"], status.HTTP_400_BAD_REQUEST
         try:
             app.config['SAMPLE_MANAGER'].add_tag(name, values)
-        except ValueError:
-            return ["Name could not contian special characters"], status.HTTP_400_BAD_REQUEST
+        except ValueError as e:
+            return [f"Cound not add tag, couse: '{str(e)}'"], status.HTTP_400_BAD_REQUEST
         return [f"Added tag '{name}'"], status.HTTP_201_CREATED
 
 
@@ -313,7 +313,6 @@ def handle_user_tags_endpoint(username):
     # check if user exists
     if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
-
     if request.method == 'GET':
         tags = app.config['SAMPLE_MANAGER'].get_user_tags(username)
         return tags, status.HTTP_200_OK
