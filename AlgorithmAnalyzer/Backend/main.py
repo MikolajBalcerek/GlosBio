@@ -346,7 +346,12 @@ def handle_user_tags_endpoint(username):
 @requires_db_connection
 def handle_user_summary_endpoint(username):
     """
-    will return user samplebase summary
+    will return user samplebase summary:
+      - name
+      - normalized name
+      - date of creation
+      - tags
+      - count of samples from test and train sets
     """
     # check if user exists
     if not app.config['SAMPLE_MANAGER'].user_exists(username):

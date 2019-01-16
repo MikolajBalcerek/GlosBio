@@ -141,9 +141,6 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         out = self.sm.add_tag(name_1, values_1)
         self.sm.add_tag(name_2, values_2)
 
-        self.assertTrue(isinstance(out, dict),
-                        "returned value should has type of 'dict', but got '{type(out)}' instead")
-
         db_out_1 = self.db_tags.find_one({"name": name_1})
         db_out_2 = self.db_tags.find_one({"name": name_2})
         self.assertTrue(db_out_1, f"Could not find added tag {name_1} in tagbase")

@@ -319,8 +319,8 @@ class SampleManager:
             self.db_tags.insert_one(new_tag)
         except errors.PyMongoError as e:
             raise DatabaseException(e)
-        new_tag.pop('_id', None)
-        return new_tag
+        # new_tag.pop('_id', None)
+        # return new_tag
 
     def get_all_tags(self) -> list:
         """
