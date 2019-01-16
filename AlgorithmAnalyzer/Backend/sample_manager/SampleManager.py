@@ -547,12 +547,17 @@ class SampleManager:
         all_files = self.get_user_sample_list(username, set_type)
         if not all_files:
             return '1.wav'
-        last_file = max(self.get_user_sample_list(username, set_type))
-        regex = re.match('(.+)\.(.+$)', last_file)
-        if not regex or not regex.group(1).isdigit():
-            raise ValueError(
-                f"Invalid filename retrived from database: {last_file}, should be: '<number>.wav'")
-        next_number = int(regex.group(1)) + 1
+        all_filenames = self.get_user_sample_list(username, set_type)
+        all_filenames_numbers = []
+        for filename in all_filenames:
+            regex = re.match('(.+)\.(.+$)', filename)
+            if not regex or not regex.group(1).isdigit():
+                raise ValueError(
+                    f"Invalid filename retrived from database: {filename}, should be: '<number>.wav'")
+
+            all_filenames_numbers.append(int(regex.group(1)))  
+        last_file = max(all_filenames_numbers)
+        next_number = last_file + 1
         return f"{next_number}.wav"
 
     # def file_has_proper_extension(self, filename: str, allowed_extensions: list) -> typing.Tuple[bool, str]:

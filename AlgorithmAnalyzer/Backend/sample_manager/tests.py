@@ -223,8 +223,13 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
         self.sm.save_new_sample(
             username_2, "train", test_file_bytes_webm, "audio/webm", recognize=False)
+
         self.sm.save_new_sample(
             username_2, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+
+        for i in range(10):
+            self.sm.save_new_sample(
+                username_2, "test", test_file_bytes_wav, "audio/wav", recognize=False)
 
         self.test_usernames = [username_1, username_2]
 
@@ -290,6 +295,9 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
         self.assertEqual(len(out_test), 2,
                          f"Expected 2 samplenames in train set but got {len(out_test)}")
+
+        out_test = self.sm.get_user_sample_list(self.test_usernames[1], "test")
+        self.assertEqual(len(out_test), 10, f"Expected 10 samplenames in train set but got {len(out_train)}")
 
         out = self.sm.get_user_sample_list("Mr Nobody", "test")
         self.assertEqual(out, [],
@@ -370,13 +378,17 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertEqual(out, '4.wav',
                          f"Next proper name is '4.wav', got '{out}' instead")
 
-        out = self.sm._get_next_filename(self.test_usernames[1], "test")
-        self.assertEqual(out, '1.wav',
+        out = self.sm._get_next_filename(self.test_usernames[1], "train")
+        self.assertEqual(out, '3.wav',
                          f"Next proper name is 1.wav', got '{out}' instead")
 
         out = self.sm._get_next_filename("Mr Nobody", "train")
         self.assertEqual(out, '1.wav',
                          f"Next proper name is 1.wav', got '{out}' instead")
+
+        out = self.sm._get_next_filename(self.test_usernames[1], "test")
+        self.assertEqual(out, '11.wav',
+                         f"Next proper name is 11.wav', got '{out}' instead")
 
     def test_fnc_get_user_tags(self):
         # get and check

@@ -25,11 +25,13 @@ def convert_audio_to_format(source: Union[BytesIO, str],
     else:
         raise TypeError("destination_path given is of wrong type, should be None or str,"
                         f"is {type(destination_path)}")
-
-    sound = AudioSegment.from_file(
-        source,
-        codec="opus"
-    ).export(export_file, format=format)
+    if format == "mp3":
+        AudioSegment.from_file(source).export(export_file, format="mp3")
+    else:
+        sound = AudioSegment.from_file(
+            source,
+            codec="opus"
+        ).export(export_file, format=format)
     export_file.seek(0)
 
     return export_file
