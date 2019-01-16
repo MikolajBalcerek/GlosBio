@@ -282,11 +282,15 @@ class SampleManager:
 
     def get_user_tags(self, username: str) -> dict:
         """
-        TO DO: docstring
+        retrives users' tag list from database
+        :param username: str - eg. 'Hugo Kołątaj'
+        :return tag list: dict
         """
         user_id = self._get_user_mongo_id(username)
         all_tags = self.db_collection.find_one({'_id': user_id}, {'tags': 1})
         out = {}
+        if not all_tags:
+            return out
         for tag_obj in all_tags['tags']:
             out[tag_obj['name']] = tag_obj['value']
         return out
@@ -303,9 +307,9 @@ class SampleManager:
                 raise ValueError(f"tag '{tag_name}' already exists in tag base")
             if not re.match('^[\w\s\d-]+$', tag_name):
                 raise ValueError("name contains special character(s)")
-            for val in values:
-                if not re.match('^[\w\s\d-]+$', val):
-                    raise ValueError(f"value {val} contains special character(s)")
+            # for val in values:
+            #     if not re.match('^[\w\s\d-]+$', val):
+            #         raise ValueError(f"value {val} contains special character(s)")
 
             new_tag = {"name": tag_name, "values": values}
             self.db_tags.insert_one(new_tag)
@@ -316,7 +320,8 @@ class SampleManager:
 
     def get_all_tags(self) -> list:
         """
-        TO DO: docstring
+        get all tag names existing in database
+        :return list of tags names: list
         """
         try:
             all_tags = self.db_tags.find({}, {'_id': 0, 'values': 0})
@@ -330,9 +335,13 @@ class SampleManager:
 
     def get_tag_values(self, tag_name: str) -> list:
         """
-        TO DO: docstring
+        get tags' possible values
+        :params tag_name: str eg. 'gender'
+        :return list of values: list
         """
         try:
+            if not self.tag_exists(tag_name):
+                raise ValueError(f"Tag '{tag_name}' does not exist")
             out = self.db_tags.find_one({'name': tag_name}, {'_id': 0, 'name': 0})
         except errors.PyMongoError as e:
             raise DatabaseException(e)
@@ -341,6 +350,8 @@ class SampleManager:
     def tag_exists(self, tag_name: str) -> bool:
         """ 
         check if tag exists in tag base
+        :params tag_name: str eg. 'gender'
+        :return does tag exist: bool
         """
         try:
             out = self.db_tags.find_one({'name': tag_name})
@@ -348,16 +359,26 @@ class SampleManager:
             raise DatabaseException(e)
         return bool(out)
 
-    def user_has_tag(self, username: str, tag: str) -> bool:
+    def user_has_tag(self, username: str, tag_name: str) -> bool:
         """
-        TO DO: docstring
+        check if user has specified tag
+        :params username: str - eg. 'Hugo Kołątaj'
+        :params tag_name: str - eg. 'gender'
+        :return user has tag: bool
         """
-        return tag in self.get_user_tags(username)
+        if not self.user_exists(username):
+            raise ValueError(f"User '{username}' does not exist")
+        return tag_name in self.get_user_tags(username)
 
-    def get_user_summary(self, username):
+    def get_user_summary(self, username) -> dict:
         """
-        TO DO: docstring
+        get user overall information: name, normalized name, creation date,
+        tags, samples count
+        :params username: str - eg. 'Hugo Kołątaj'
+        :return summary: dict
         """
+        if not self.user_exists(username):
+            return {}
         user_id = self._get_user_mongo_id(username)
         user_doc = self.db_collection.find_one({'_id': user_id}, {'nameNormalized': 1, 'created': 1})
         out = {'username': username,

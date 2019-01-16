@@ -157,8 +157,8 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertRaises(ValueError, self.sm.add_tag, *args)
 
         # add invalid tag (invalid values)
-        args = ["valid name", ["$1**", "$2**"]]
-        self.assertRaises(ValueError, self.sm.add_tag, *args)
+        # args = ["valid name", ["$1**", "$2**"]]
+        # self.assertRaises(ValueError, self.sm.add_tag, *args)
 
     def test_fnc_add_tag_to_user(self):
         # add valid tag (consider it tested)
@@ -212,6 +212,7 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         username_1 = "Test Username 1"
         username_2 = "Test Username 2"
 
+        # populate samples
         self.sm.save_new_sample(
             username_1, "train", test_file_bytes_wav, "audio/wav", recognize=False)
         self.sm.save_new_sample(
@@ -229,6 +230,19 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
             username_2, "train", test_file_bytes_wav, "audio/wav", recognize=False)
 
         self.test_usernames = [username_1, username_2]
+
+        # populate tags
+        self.test_tags = {
+            "age": ["< 20", "20 - 40", "40 - 60", "> 60"],
+            "gender": ["male", "female"]}
+        for tag_name in self.test_tags:
+            self.sm.add_tag(tag_name, self.test_tags[tag_name])
+
+        # add tags to users
+        self.sm.add_tag_to_user(self.test_usernames[0], "age", "< 20")
+        # self.sm.add_tag_to_user(self.test_usernames[1], "age", "20 - 40 ")
+        self.sm.add_tag_to_user(self.test_usernames[0], "gender", "male")
+        # self.sm.add_tag_to_user(self.test_usernames[1], "gender", "female ")
 
     def test_fnc_is_db_available(self):
         # db should be available
@@ -302,7 +316,7 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
     def test_fnc_get_user_mongo_id(self):
         out = self.sm._get_user_mongo_id(self.test_usernames[0])
         self.assertTrue(isinstance(out, ObjectId),
-                        f"Expected ObjectId returned but got '{type(out)}'")
+                        f"Expected 'ObjectId' returned but got '{type(out)}'")
 
         # user which does not exist shoud not have id
         out = self.sm._get_user_mongo_id("Mr Nobody")
@@ -369,29 +383,75 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
     def test_fnc_get_user_tags(self):
         # get and check
-        # empty empty for no user
-        pass
+        out = self.sm.get_user_tags(self.test_usernames[0])
+        self.assertTrue(isinstance(out, dict),
+                        f"Expected 'dict' returned but got '{type(out)}'")
+        self.assertTrue(out, f"User '{self.test_usernames[0]}' tag list should not be empty")
+
+        out = self.sm.get_user_tags(self.test_usernames[1])
+        self.assertFalse(out, f"User '{self.test_usernames[1]}' tag list should be empty")
+        
+        # should return empty for no user
+        out = self.sm.get_user_tags("Mr Nobody")
+        self.assertFalse(out, f"Should return empty dict for non-existing user")
 
     def test_fnc_get_all_tags(self):
         # get and check
-        pass
+        out = self.sm.get_all_tags()
+        self.assertTrue(isinstance(out, list),
+                        f"Expected 'list' returned but got '{type(out)}'")
+        self.assertEqual(list(self.test_tags.keys()), out,
+                         f"Expected list of all tag names, but got {out}")
 
     def test_fnc_get_tag_values(self):
         # get and check
-        pass
+        test_tag_name = list(self.test_tags.keys())[0]
+        test_tag_values = self.test_tags[test_tag_name]
+
+        out = self.sm.get_tag_values(test_tag_name)
+        self.assertTrue(isinstance(out, list),
+                        f"Expected 'list' returned but got '{type(out)}'")
+
+        self.assertEqual(out, test_tag_values, f"Got unexpected tag values")
+
+        # non-existaing tag
+        self.assertRaises(ValueError, self.sm.get_tag_values, "no-tag")
 
     def test_fnc_tag_exists(self):
         # test both options
-        pass
+        test_tag_name = list(self.test_tags.keys())[0]
+        self.assertTrue(self.sm.tag_exists(test_tag_name),
+                        "Should return True for existing tag but got False")
+        self.assertFalse(self.sm.tag_exists("no-tag"),
+                         "Should return False for non-existing tag but got True")
 
     def test_fnc_user_has_tag(self):
-        # test for both options
-        pass
+        # test both options
+        test_tag_name = list(self.test_tags.keys())[0]
+        test_username = self.test_usernames[0]
+        self.assertTrue(self.sm.user_has_tag(test_username, test_tag_name),
+                        f"Tag '{test_tag_name}' should be present in users' tags but function returned False")
+        self.assertFalse(self.sm.user_has_tag(test_username, "no-tag"),
+                        f"Tag 'no-tag' should not be present in users' tags but function returned True")
+
+        # non-existing username
+        self.assertRaises(ValueError, self.sm.user_has_tag, "Mr Nobody", test_tag_name)
 
     def test_fnc_get_user_summary(self):
-        # get and test
-        # empty for no user
-        pass
+        test_username = self.test_usernames[0]
+        expected_fields = ["username", "normalized_username", "created", "tags", "samples"]
+        
+        out = self.sm.get_user_summary(test_username)
+        fields = list(out.keys())
+        self.assertTrue(isinstance(out, dict),
+                        f"Expected 'dict' returned but got '{type(out)}'")
+
+        for field in expected_fields:
+            self.assertIn(field, fields,
+                          f"Could not find field '{field}' to be found in summary")
+
+        out = self.sm.get_user_summary("Mr Nobody")
+        self.assertFalse(out, "Expected empty dictionary for non-existing user but got '{out}'")
 
 
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
