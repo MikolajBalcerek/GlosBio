@@ -46,6 +46,7 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         super().setUpClass()
         self.db_collection = self.sm.db_collection
         self.db_fs = self.sm.db_file_storage
+        self.db_tags = self.sm.db_tags
 
     @classmethod
     def tearDown(self):
@@ -132,16 +133,65 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
                       f"Expected 'audio/x-wav' content type but got '{file_obj.content_type}'")
 
     def test_fnc_add_tag(self):
-        # add valid tag
+        # add valid tags
+        name_1 = "tag 1"
+        name_2 = "Tag 2"
+        values_1 = ["value 1", "value 2"]
+        values_2 = ["Value-1", "Value-2", "Value-3"]
+        out = self.sm.add_tag(name_1, values_1)
+        self.sm.add_tag(name_2, values_2)
+
+        self.assertTrue(isinstance(out, dict),
+                        "returned value should has type of 'dict', but got '{type(out)}' instead")
+
+        db_out_1 = self.db_tags.find_one({"name": name_1})
+        db_out_2 = self.db_tags.find_one({"name": name_2})
+        self.assertTrue(db_out_1, f"Could not find added tag {name_1} in tagbase")
+        self.assertTrue(db_out_2, f"Could not find added tag {name_2} in tagbase")
+
+        self.assertEqual(db_out_1["values"], values_1, "added tag values differ from oryginal ones")
+        self.assertEqual(db_out_2["values"], values_2, "added tag values differ from oryginal ones")
+
         # add invalid tag (invalid tag name)
+        args = ["$invalid()name$", ["val 1", "val 2"]]
+        self.assertRaises(ValueError, self.sm.add_tag, *args)
+
         # add invalid tag (invalid values)
-        pass
+        args = ["valid name", ["$1**", "$2**"]]
+        self.assertRaises(ValueError, self.sm.add_tag, *args)
 
     def test_fnc_add_tag_to_user(self):
         # add valid tag (consider it tested)
+        tag_name = "valid-tag"
+        usernames = ["test tag user 1", "test tag user 2"]
+        self.sm.add_tag(tag_name, ["val1", "val2", "val3"])
+        self.sm.create_user(usernames[0])
+        self.sm.create_user(usernames[1])
+
         # add tag to user in valid way
-        # add tag to user in invalid way (wriong name and value)
-        pass
+        self.sm.add_tag_to_user(usernames[0], tag_name, "val1")
+        db_out = self.db_collection.find_one({"name": usernames[0]})
+        tags_list = db_out["tags"]
+
+        self.assertEqual(len(tags_list), 1, f"One tag should be added but found {len(tags_list)}")
+
+        tag_obj = tags_list[0]
+        self.assertEqual(tag_obj["name"], tag_name,
+                         "Expected tag name to be '{tag_name}', but got '{tag_obj['name']}")
+
+        # add same tag in valid way
+        args = [usernames[0], tag_name, "val2"]
+        self.assertRaises(ValueError, self.sm.add_tag_to_user, *args)
+        
+        # add tag to user in invalid way (wrong username, tagname and value)
+        args = ["Mr Nobody", tag_name, "val1"]
+        self.assertRaises(ValueError, self.sm.add_tag_to_user, *args)
+
+        args = [usernames[1], "no-tag", "val1"]
+        self.assertRaises(ValueError, self.sm.add_tag_to_user, *args)
+
+        args = [usernames[1], tag_name, "val100"]
+        self.assertRaises(ValueError, self.sm.add_tag_to_user, *args)
 
 
 class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
