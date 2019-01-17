@@ -377,6 +377,122 @@ def handle_plot_endpoint(sampletype, username, samplename):
         status.HTTP_200_OK
 
 
+@app.route("/tag", methods=['GET', 'POST'])
+@requires_db_connection
+def handle_tag_entdpoint():
+    """
+    GET
+    will return list with all possible tags
+
+    POST
+    {
+        name: <tag_name>
+        values: [<value_1>, <value_2>, ...]
+    }
+    will add new tag to tagbase with its possible values
+    """
+    if request.method == "GET":
+        tag_list = app.config['SAMPLE_MANAGER'].get_all_tags()
+        return tag_list, status.HTTP_200_OK
+
+    if request.method == "POST":
+        for field in ["name", "values"]:
+            if field not in request.data:
+                return [f"Did not find '{field}' field in request body"], status.HTTP_400_BAD_REQUEST
+        # contain some special characters
+        name = request.data['name']
+        values = request.data['values']
+        if app.config['SAMPLE_MANAGER'].tag_exists(name):
+            return [f"Tag '{name}' already exists in tag base"], status.HTTP_400_BAD_REQUEST
+        try:
+            app.config['SAMPLE_MANAGER'].add_tag(name, values)
+        except ValueError as e:
+            return [f"Cound not add tag, couse: '{str(e)}'"], status.HTTP_400_BAD_REQUEST
+        return [f"Added tag '{name}'"], status.HTTP_201_CREATED
+
+
+@app.route("/tag/<string:name>", methods=['GET'])
+@requires_db_connection
+def handle_tag_value_entdpoint(name):
+    """
+    will list tag possible values
+    """
+    if not app.config['SAMPLE_MANAGER'].tag_exists(name):
+        return [f"Tag '{name}' does not exist in tag base"], status.HTTP_400_BAD_REQUEST
+
+    return app.config['SAMPLE_MANAGER'].get_tag_values(name), status.HTTP_200_OK
+
+
+@app.route("/users/<string:username>/tags", methods=['GET', 'POST'])
+@requires_db_connection
+def handle_user_tags_endpoint(username):
+    """
+    GET
+    list all users' tags
+
+    {
+        <tag_1>: <value_1>,
+        <tag_2>: <value_2>,
+        ...
+    }
+
+    POST
+    {
+        name: <tag_name>
+        value: <tag_value>
+    }
+    will add new tag to users' tag list
+    """
+    # check if user exists
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+    if request.method == 'GET':
+        tags = app.config['SAMPLE_MANAGER'].get_user_tags(username)
+        return tags, status.HTTP_200_OK
+
+    if request.method == 'POST':
+        for field in ["name", "value"]:
+            if field not in request.data:
+                return [f"Did not find '{field}' field in request body"], status.HTTP_400_BAD_REQUEST
+        tag_name = request.data['name']
+        tag_value = request.data['value']
+
+        # check if tag exists
+        if not app.config['SAMPLE_MANAGER'].tag_exists(tag_name):
+            return [f"Tag '{tag_name}' does not exist in tagbase"], status.HTTP_400_BAD_REQUEST
+
+        # check if tag has proper value
+        all_tag_values = app.config['SAMPLE_MANAGER'].get_tag_values(tag_name)
+        if tag_value not in all_tag_values:
+            return [f"Wrong tag value: '{tag_value}', expected one of: {all_tag_values}"], status.HTTP_400_BAD_REQUEST
+
+        # check if user does already have this tag
+        if app.config['SAMPLE_MANAGER'].user_has_tag(username, tag_name):
+            return [f"User '{username}' already has tag '{tag_name}'"], status.HTTP_400_BAD_REQUEST
+
+        app.config['SAMPLE_MANAGER'].add_tag_to_user(
+            username, tag_name, tag_value)
+
+        return [f"Added tag '{tag_name}' to user '{username}'"], status.HTTP_201_CREATED
+
+@app.route("/users/<string:username>", methods=['GET'])
+@requires_db_connection
+def handle_user_summary_endpoint(username):
+    """
+    will return user samplebase summary:
+      - name
+      - normalized name
+      - date of creation
+      - tags
+      - count of samples from test and train sets
+    """
+    # check if user exists
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+
+    return app.config['SAMPLE_MANAGER'].get_user_summary(username)
+
+
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
     app.run()

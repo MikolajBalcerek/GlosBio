@@ -8,7 +8,6 @@ from flask_api import status
 from pymongo import MongoClient
 
 from sample_manager.SampleManager import SampleManager
-
 from main import app, ALG_DICT
 
 
@@ -385,6 +384,131 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
                          f"Expected response status code 405 but got {r.status_code}")
 
 
+class TagEndpointsTests(BaseAbstractIntegrationTestsClass):
+
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
+        # create user:
+        self.test_user = "test tags user"
+        self.sm.create_user(self.test_user)
+
+        # populate tags
+        self.test_tags = {
+            "age": ["< 20", "20 - 40", "40 - 60", "> 60"],
+            "gender": ["male", "female"],
+            "class": ["1", "2", "3"]}
+        for tag_name in self.test_tags:
+            self.sm.add_tag(tag_name, self.test_tags[tag_name])
+
+        self.test_tags_names = list(self.test_tags.keys())
+
+        self.test_user_tags = {"age": "< 20", "gender": "male"}
+
+        for tag in self.test_user_tags:
+            self.sm.add_tag_to_user(self.test_user, tag, self.test_user_tags[tag])
+
+    def test_get_tags(self):
+        r = self.client.get('/tag')
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+        self.assertEqual(r.json, self.test_tags_names)
+
+    def test_post_tag(self):
+        tag_name = "test_tag"
+        wrong_tag_name = "%tag@#$"
+        values = ["v1", "v2", "v3"]
+        r = self.client.post('/tag', data={"name": tag_name, "values": values})
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED,
+                         f"wrong status code, expected 201, got {r.status_code}")
+
+        # test same tage second time
+        r = self.client.post('/tag', data={"name": tag_name, "values": values})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 201, got {r.status_code}")
+        # missing fields
+        r = self.client.post('/tag')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+        # wrong tag name
+        r = self.client.post('/tag', data={"name": wrong_tag_name, "values": values})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+        # empty values
+        r = self.client.post('/tag', data={"name": tag_name, "values": []})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_get_tag_values(self):
+        tag_name = self.test_tags_names[0]
+        r = self.client.get(f'/tag/{tag_name}')
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.json, self.test_tags[tag_name],
+                         f"Expected different tag values")
+
+        r = self.client.get(f'/tag/no-tag')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_get_user_tags(self):
+        r = self.client.get(f'/users/{self.test_user}/tags')
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.json, self.test_user_tags,
+                         f"Expected different user tags")
+
+        r = self.client.get('/users/mr_nobody/tags')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_post_user_tags(self):
+        proper_tag_name = "class"
+        tag_value = self.test_tags[proper_tag_name][0]
+        # proper values
+        data = {"name": proper_tag_name, "value": tag_value}
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED,
+                         f"wrong status code, expected 201, got {r.status_code}")
+
+        # try to add same tag twice
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+        # invalid username
+        r = self.client.post(f'/users/mr_nobody/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+        # invalid tag name
+        data["name"] = "invalid tag"
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+        # invalid tag value
+        data["name"] = proper_tag_name
+        data["value"] = "invalid value"
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_get_user_summary(self):
+        r = self.client.get(f'/users/{self.test_user}')
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+
+        self.assertTrue(r.data, "Response should not be empty")
+
+        r = self.client.get(f'/users/mr-nobody')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+
 class NoDbTests(BaseAbstractIntegrationTestsClass):
 
     @classmethod
@@ -394,7 +518,7 @@ class NoDbTests(BaseAbstractIntegrationTestsClass):
         temp_sm = SampleManager(cls.sm.db_url, cls.db_name, show_logs=False)
         temp_sm.db_url = "_____:36363"
         temp_sm.db_client = MongoClient(
-            temp_sm.db_url, serverSelectionTimeoutMS=1000)
+            temp_sm.db_url, serverSelectionTimeoutMS=500)
         temp_sm.db_database = temp_sm.db_client["unknown_collection"]
         temp_sm.db_collection = temp_sm.db_database.samples
         temp_sm.db_file_storage = gridfs.GridFS(temp_sm.db_database)
