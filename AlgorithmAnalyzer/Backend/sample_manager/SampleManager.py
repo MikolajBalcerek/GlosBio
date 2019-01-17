@@ -155,6 +155,7 @@ class SampleManager:
         :param set_type: str - one of available sample classes from config
         :param file_bytes: bytes - audio file as bytes
         :param content_type: str - type of provided file, eg: 'audio/wav', 'audio/webm'
+        :param fake: bool, True if sample belongs to the user, false if it's fake
         :param recognize: bool - indicates if speech from sample have to be recognized
                                  saved into samplebase and returned
         :returns recognized_speech: Optional[str] - recognized speech from provided audio sample
@@ -498,7 +499,7 @@ class SampleManager:
                 labels[username] = user_labels
         return samples, labels
 
-    def user_numbers_to_usernames(self, numbers):
+    def user_numbers_to_usernames(self, numbers: List[int]) -> List[str]:
         """
         Returns list of usernames of users with numbers given.
         The ordering is based on creation timestamp (Mongo ID).

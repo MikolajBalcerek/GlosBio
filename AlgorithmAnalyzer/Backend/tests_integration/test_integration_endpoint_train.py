@@ -485,7 +485,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             )
         self.assertEqual(
                 self.client.get(f'/algorithms/description/{name}').data,
-                b"Bad algorithm name.",
+                f"Bad algorithm name. Valid are {self.alg_list}.".encode(),
                 "Wrong error message."
             )
 
@@ -510,7 +510,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             )
         self.assertEqual(
                 self.client.get(f'/algorithms/parameters/{name}').data,
-                b"Bad algorithm name.",
+                f"Bad algorithm name. Valid are {self.alg_list}.".encode(),
                 "Wrong error message."
             )
 
@@ -539,7 +539,8 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                              content_type='application/json'
                              )
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Bad algorithm name.',
+        self.assertEqual(r.data,
+                         f"Bad algorithm name. Valid are {self.alg_list}.".encode(),
                          'Wrong error message.'
                          )
 
@@ -556,7 +557,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                              content_type='application/json'
                              )
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Missing "params" in request data',
+        self.assertEqual(r.data, b'Missing "params" field in request body.',
                          'Wrong error message.'
                          )
 
@@ -662,4 +663,4 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             data = {'file': f}
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Bad algorithm name.')
+        self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())

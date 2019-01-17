@@ -85,8 +85,9 @@ def get_algorithm_description(name):
     """
     Returns the description of the algorithm with name <string:name>.
     """
-    if name not in ALG_DICT.keys():
-        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+    valid_names = list(ALG_DICT.keys())
+    if name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
     description = AlgorithmManager(name).get_description()
     return description if description else "", status.HTTP_200_OK
@@ -103,8 +104,9 @@ def get_algorithm_parameters(name):
         }
     <string:name> is the name of the algorithm.
     """
-    if name not in ALG_DICT.keys():
-        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+    valid_names = list(ALG_DICT.keys())
+    if name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
     return {'parameters': AlgorithmManager.get_parameters(name)}, status.HTTP_200_OK
 
@@ -120,10 +122,11 @@ def train_algorithm(name):
     output of GET /algorithm/parameters/<string:name>.
     """
     if 'parameters' not in request.data:
-        return 'Missing "params" in request data', status.HTTP_400_BAD_REQUEST
+        return 'Missing "params" field in request body.', status.HTTP_400_BAD_REQUEST
 
-    if name not in ALG_DICT.keys():
-        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+    valid_names = list(ALG_DICT.keys())
+    if name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
     params = request.data['parameters']
     params_legend = AlgorithmManager.get_parameters(name)
@@ -155,6 +158,7 @@ def train_algorithm(name):
 
 
 @app.route('/algorithms/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
+@requires_db_connection
 def predict_algorithm(user_name, algorithm_name):
     """
     Uses the algorithm with name <string:algorithm_name> to predict,
@@ -166,12 +170,12 @@ def predict_algorithm(user_name, algorithm_name):
         }
     where the additional data may contain things like probabilities etc.
     """
-    # TODO: should be @requires_db_connection here?
     if 'file' not in request.files:
         return 'No file part', status.HTTP_400_BAD_REQUEST
 
-    if algorithm_name not in AlgorithmManager.get_algorithms():
-        return 'Bad algorithm name.', status.HTTP_400_BAD_REQUEST
+    valid_names = list(ALG_DICT.keys())
+    if algorithm_name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
     if not app.config['SAMPLE_MANAGER'].user_exists(user_name):
         return "Such user doesn't exist", status.HTTP_400_BAD_REQUEST
@@ -201,6 +205,9 @@ def handling_audio_endpoint(type):
     being sent/received from test files
 
     POST to send a new audio file
+    <string:type> should be either 'train' or 'test';
+    Requests body should contain 'username' and optionally 'fake'.
+    The last should be true/false depending on the sample being real.
     """
     if type not in ['train', 'test']:
         return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
@@ -214,8 +221,8 @@ def handling_audio_endpoint(type):
     app.logger.info(f"try to add new sample to {type} set")
     username = request.data.get('username')
     file = request.files.get('file')
-    fake = False
 
+    fake = False
     if 'fake' in request.data:
         fake = request.data['fake']
 
