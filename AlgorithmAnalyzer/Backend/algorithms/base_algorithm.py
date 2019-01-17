@@ -1,6 +1,22 @@
 from abc import ABCMeta, abstractmethod, abstractclassmethod
 
 
+class ModelLoadException(Exception):
+    """
+    This exception is meant to be throen on models'
+        __init__(path=path)
+    method, when the model cannot be loaded.
+    Custom field 'message' will be sent to the end user,
+    it should inform about the error.
+    """
+    def __init__(self, message):
+        super().__init__(self, message)
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
 class Algorithm(metaclass=ABCMeta):
     """
     This is an interface for all algorithms to be added.

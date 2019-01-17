@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 
 from algorithms.algorithms import ALG_DICT
+from algorithms.base_algorithm import ModelLoadException
 
 
 class AlgorithmManager:
@@ -150,6 +151,7 @@ class AlgorithmManager:
         else:
             self._load_model(user)
             return self.models[user].predict(file)
+
 
     def train(self, samples, labels, parameters):
         """

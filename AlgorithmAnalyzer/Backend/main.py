@@ -9,6 +9,7 @@ from flask_cors import CORS
 from functools import wraps
 
 from algorithms.algorithm_manager import AlgorithmManager, ALG_DICT
+from algorithms.base_algorithm import ModelLoadException
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from utils import convert_audio
 
@@ -183,7 +184,15 @@ def predict_algorithm(user_name, algorithm_name):
     file = request.files.get('file')
     file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
     alg_manager = AlgorithmManager(algorithm_name)
-    prediction, meta = alg_manager.predict(user_name, file)
+
+    try:
+        prediction, meta = alg_manager.predict(user_name, file)
+    except ModelLoadException as e:
+            return {
+                'prediction': None,
+                'error': "The model could not have been loaded, maybe it wasn't trained?",
+                'error_message': str(e)
+            }, 422
 
     if alg_manager.multilabel:
         try:

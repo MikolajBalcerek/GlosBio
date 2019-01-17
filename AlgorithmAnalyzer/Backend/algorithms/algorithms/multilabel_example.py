@@ -1,6 +1,6 @@
 import random
 
-from algorithms.base_algorithm import Algorithm
+from algorithms.base_algorithm import Algorithm, ModelLoadException
 
 
 class MultilabelExample(Algorithm):
@@ -33,10 +33,13 @@ class MultilabelExample(Algorithm):
             file.write(str(self.parameters['num_classes']))
 
     def _load(self, path):
-        with open(path, 'r') as f:
-            self.parameters = {
-                'num_classes': int(f.read())
-            }
+        try:
+            with open(path, 'r') as f:
+                self.parameters = {
+                    'num_classes': int(f.read())
+                }
+        except FileNotFoundError:
+            raise ModelLoadException('There is no trained model.')
 
     def predict(self, data):
         return random.randint(0, self.parameters['num_classes']), {}
