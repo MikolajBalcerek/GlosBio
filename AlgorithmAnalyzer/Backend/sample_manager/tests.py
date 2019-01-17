@@ -510,7 +510,6 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
     def test_fnc_get_user_summary(self):
         test_username = self.test_usernames[0]
         expected_fields = ["username", "normalized_username", "created", "tags", "samples"]
-
         out = self.sm.get_user_summary(test_username)
         fields = list(out.keys())
         self.assertTrue(isinstance(out, dict),

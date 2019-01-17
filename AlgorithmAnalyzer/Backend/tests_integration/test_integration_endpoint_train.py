@@ -7,8 +7,8 @@ import gridfs
 from flask_api import status
 from pymongo import MongoClient
 
-from sample_manager.SampleManager import SampleManager
 from main import app, ALG_DICT
+from sample_manager.SampleManager import SampleManager
 
 
 class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
