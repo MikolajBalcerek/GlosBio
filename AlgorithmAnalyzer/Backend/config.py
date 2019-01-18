@@ -43,13 +43,13 @@ class BaseConfig(object):
                             'json': ['json']}
 
     # MongoDB database settings
-    DATABASE_URL = "192.168.56.101"
+    DATABASE_URL = "127.0.0.1"
     DATABASE_PORT = "27018"
     DATABASE_NAME = "samplebase"
 
     # sample manager
     SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
-    ALGORITHM_MANAGER = algorithm_manager_factory(ALG_DICT)
+    ALGORITHM_MANAGER = algorithm_manager_factory(ALG_DICT, '__base_algorithm_manager')
 
 
 class ProductionConfig(BaseConfig):
@@ -75,4 +75,4 @@ class TestingConfig(BaseConfig):
     SAMPLE_MANAGER = SampleManager(
         f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False"
     )
-    ALGORITHM_MANAGER = algorithm_manager_factory(TEST_ALG_DICT)
+    ALGORITHM_MANAGER = algorithm_manager_factory(TEST_ALG_DICT, '__test_algorithm_manager')

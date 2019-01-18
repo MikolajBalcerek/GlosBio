@@ -4,14 +4,19 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 
 
-def algorithm_manager_factory(alg_dict):
-        new_class = type(
-            "__ALGORITHM_MANAGER_" + list(alg_dict.keys())[0],
-            (AlgorithmManager,),
-            {}
-        )
-        new_class.alg_dict = alg_dict
-        return new_class
+def algorithm_manager_factory(alg_dict, name):
+    """
+    Returns new class deriving after AlgorithmManager.
+    :param alg_dict: the new manager will use algorithms from this dict
+    :param name: the name of the new manager class, best if unique
+    """
+    new_class = type(
+        name,
+        (AlgorithmManager,),
+        {}
+    )
+    new_class.alg_dict = alg_dict
+    return new_class
 
 
 class NotTrainedException(Exception):

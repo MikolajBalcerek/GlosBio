@@ -12,7 +12,7 @@ from algorithms.tests.mocks import TEST_ALG_DICT, AlgorithmMock1
 class TestAlgorithmManager(unittest.TestCase):
 
     def setUp(self):
-        self.am = algorithm_manager_factory(TEST_ALG_DICT)
+        self.am = algorithm_manager_factory(TEST_ALG_DICT, '__test__alg__manager')
         self.alg_dict = TEST_ALG_DICT
         self.alg_list = ['first_mock', 'second_mock']
         self.params1 = {'some_name': '2'}
