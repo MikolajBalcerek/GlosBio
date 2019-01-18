@@ -8,7 +8,7 @@ from flask_api import FlaskAPI, status
 from flask_cors import CORS
 from functools import wraps
 
-from algorithms.algorithm_manager import AlgorithmManager, ALG_DICT, NotTrainedException
+from algorithms.algorithm_manager import NotTrainedException
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from utils import convert_audio
 
@@ -77,7 +77,7 @@ def get_algorithms_names():
     """
     Returns the list of names of all algorithms available.
     """
-    return {'algorithms': AlgorithmManager.get_algorithms()}, status.HTTP_200_OK
+    return {'algorithms': app.config['ALGORITHM_MANAGER'].get_algorithms()}, status.HTTP_200_OK
 
 
 @app.route('/algorithms/description/<string:name>', methods=['GET'])
@@ -85,11 +85,11 @@ def get_algorithm_description(name):
     """
     Returns the description of the algorithm with name <string:name>.
     """
-    valid_names = list(ALG_DICT.keys())
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
     if name not in valid_names:
         return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
-    description = AlgorithmManager(name).get_description()
+    description = app.config['ALGORITHM_MANAGER'](name).get_description()
     return description if description else "", status.HTTP_200_OK
 
 
@@ -104,11 +104,11 @@ def get_algorithm_parameters(name):
         }
     <string:name> is the name of the algorithm.
     """
-    valid_names = list(ALG_DICT.keys())
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
     if name not in valid_names:
         return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
-    return {'parameters': AlgorithmManager.get_parameters(name)}, status.HTTP_200_OK
+    return {'parameters': app.config['ALGORITHM_MANAGER'].get_parameters(name)}, status.HTTP_200_OK
 
 
 @app.route('/algorithms/train/<string:name>', methods=['POST'])
@@ -124,17 +124,17 @@ def train_algorithm(name):
     if 'parameters' not in request.data:
         return 'Missing "params" field in request body.', status.HTTP_400_BAD_REQUEST
 
-    valid_names = list(ALG_DICT.keys())
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
     if name not in valid_names:
         return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
     params = request.data['parameters']
-    params_legend = AlgorithmManager.get_parameters(name)
+    params_legend = app.config['ALGORITHM_MANAGER'].get_parameters(name)
 
     if set(params.keys()) != set(params_legend.keys()):
         return 'Bad algorithm parameters.', status.HTTP_400_BAD_REQUEST
 
-    params_types = AlgorithmManager.get_parameter_types(name)
+    params_types = app.config['ALGORITHM_MANAGER'].get_parameter_types(name)
 
     for param in params:
         try:
@@ -145,7 +145,7 @@ def train_algorithm(name):
     if any(params_types[key](params[key]) not in params_legend[key]['values'] for key in params):
         return 'At least one parameter has bad value.', status.HTTP_400_BAD_REQUEST
 
-    alg_manager = AlgorithmManager(name)
+    alg_manager = app.config['ALGORITHM_MANAGER'](name)
 
     samples, labels = app.config['SAMPLE_MANAGER'].get_all_samples(
         purpose='train',
@@ -153,7 +153,7 @@ def train_algorithm(name):
         sample_type='wav'
     )
 
-    AlgorithmManager(name).train(samples, labels, params)
+    app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params)
     return "Training ended.", status.HTTP_200_OK
 
 
@@ -173,7 +173,7 @@ def predict_algorithm(user_name, algorithm_name):
     if 'file' not in request.files:
         return 'No file part', status.HTTP_400_BAD_REQUEST
 
-    valid_names = list(ALG_DICT.keys())
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
     if algorithm_name not in valid_names:
         return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
 
@@ -182,7 +182,7 @@ def predict_algorithm(user_name, algorithm_name):
 
     file = request.files.get('file')
     file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
-    alg_manager = AlgorithmManager(algorithm_name)
+    alg_manager = app.config['ALGORITHM_MANAGER'](algorithm_name)
 
     try:
         prediction, meta = alg_manager.predict(user_name, file)

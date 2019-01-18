@@ -1,10 +1,17 @@
-from concurrent.futures import ThreadPoolExecutor
 import os
 import hashlib
 from pathlib import Path
 from typing import List, Tuple, Dict
 
-from algorithms.algorithms import ALG_DICT
+
+def algorithm_manager_factory(alg_dict):
+        new_class = type(
+            "__ALGORITHM_MANAGER_" + list(alg_dict.keys())[0],
+            (AlgorithmManager,),
+            dict(AlgorithmManager.__dict__)
+        )
+        new_class.alg_dict = alg_dict
+        return new_class
 
 
 class NotTrainedException(Exception):
@@ -27,13 +34,13 @@ class AlgorithmManager:
     """
     This class servs as an api between the application and algorithms.
     """
-    # TODO(all): shall this be changed to functions?
-    thread_pool_executor = ThreadPoolExecutor()
+
+    alg_dict = None
 
     def __init__(self, algorithm_name):
         self.models = {}
         self.algorithm_name = algorithm_name
-        self.algorithm = ALG_DICT[algorithm_name]
+        self.algorithm = self.alg_dict[algorithm_name]
 
     @property
     def multilabel(self):
@@ -47,7 +54,7 @@ class AlgorithmManager:
         """
         Returns a list of all available algorithms.
         """
-        return list(ALG_DICT.keys())
+        return list(cls.alg_dict.keys())
 
     @classmethod
     def get_parameters(cls, algorithm: str) -> Dict[str, dict]:
@@ -62,7 +69,7 @@ class AlgorithmManager:
             }
         :param algorithm: name of the algorithm
         """
-        raw_parameters = ALG_DICT[algorithm].get_parameters()
+        raw_parameters = cls.alg_dict[algorithm].get_parameters()
         for param in raw_parameters:
             raw_parameters[param].pop('type', None)
         return raw_parameters
@@ -76,7 +83,7 @@ class AlgorithmManager:
             }
         :param algorithm: name of the algorithm
         """
-        params = ALG_DICT[algorithm].get_parameters()
+        params = cls.alg_dict[algorithm].get_parameters()
         return {key: params[key]['type'] for key in params}
 
     def get_description(self):

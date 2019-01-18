@@ -1,3 +1,6 @@
+from algorithms.algorithm_manager import algorithm_manager_factory
+from algorithms.tests.mocks import TEST_ALG_DICT
+from algorithms.algorithms import ALG_DICT
 from sample_manager.SampleManager import SampleManager
 
 # this file provides configs for Backend Flask's app (db settings, global singletons)
@@ -40,12 +43,13 @@ class BaseConfig(object):
                             'json': ['json']}
 
     # MongoDB database settings
-    DATABASE_URL = "127.0.0.1"
+    DATABASE_URL = "192.168.56.101"
     DATABASE_PORT = "27018"
     DATABASE_NAME = "samplebase"
 
     # sample manager
     SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
+    ALGORITHM_MANAGER = algorithm_manager_factory(ALG_DICT)
 
 
 class ProductionConfig(BaseConfig):
@@ -68,4 +72,7 @@ class TestingConfig(BaseConfig):
     """
     TESTING = True
     DATABASE_NAME = f"{BaseConfig.DATABASE_NAME}_test"
-    SAMPLE_MANAGER = SampleManager(f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False")
+    SAMPLE_MANAGER = SampleManager(
+        f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False"
+    )
+    ALGORITHM_MANAGER = algorithm_manager_factory(TEST_ALG_DICT)
