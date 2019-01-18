@@ -24,6 +24,7 @@ import Tab from '@material-ui/core/Tab'
 import AppBar from '@material-ui/core/AppBar'
 import _ from 'lodash'
 import { withSnackbar } from 'notistack'
+import api_config from '../api_config.json'
 
 class Recorder extends Component {
 	constructor(props) {
@@ -72,7 +73,25 @@ class Recorder extends Component {
 		} else 
 		this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
 	}
-	
+
+	getUsers = () => {
+		console.log('działam')
+        var self = this
+        axios
+            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
+            .then(function(response) {
+				let userLetList = []
+                response.data.users.map(user => {
+                    userLetList.push(user)
+				})
+				self.setData(userLetList)
+            })
+            .catch(function(error) {
+				console.log('lol')
+                self.handleClickVariant("Nie można pobrać użytkowników, brak połączenia z API!", 'error')
+			})
+	}
+
 	onPressButtonUpload(value, onlyOne, counter) {
 		if (this.state.recorded && this.state.username) {
 			let fd = new FormData();
@@ -88,8 +107,10 @@ class Recorder extends Component {
 			let isRecorded = newlist.length > 0 ? true : false
 			let self = this;
 			 return axios
-				.post(`http://127.0.0.1:5000/audio/${this.state.type}`, fd, {
-					headers: { "Content-Type": "multipart/form-data" },
+				.post(api_config.usePath+`/audio/${this.state.type}`, fd, {
+					headers: { 
+						"Content-Type": "multipart/form-data",
+						'Authorization': api_config.apiKey },
 				})
 				.then(function(response) {
 					self.handleClickVariant(`Plik ${value} zapisano poprawnie! ${response.data.text} `, 'success')
@@ -108,11 +129,11 @@ class Recorder extends Component {
 						self.setState({
 							blob_audio_data: [],
 							recorded: false
-						}, ()=>self.props.getUsers())
+						}, ()=>self.getUsers())
 					}
 					onlyOne &&setTimeout(() => {
 						console.log('odświerzam userów')
-						self.props.getUsers()
+						self.getUsers()
 					}, 2000)
 				})
 				.catch(function(error) {

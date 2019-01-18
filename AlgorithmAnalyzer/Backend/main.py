@@ -199,36 +199,35 @@ def handle_plot_endpoint(sampletype, username, samplename):
     :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
     :param samplename: full name of the sample to create plot from, e.g. 1.wav
     """
-    # TODO: Perhaps handle both '1.wav' and '1' when new SampleManager is
-    #  available
 
     # TODO: later some kind of smart duplication of this endpoint's steps
     #  alongside with handle_get_file could be done - already tasked
 
-    # get the request's JSON
-    sent_json: dict = request.data
-
-    try:
-        sent_json_dict = json.loads(sent_json, encoding='utf8')
-    except TypeError:
-        # sent_json was already a type of dict
-        sent_json_dict = sent_json
-    except:
-        return ["Invalid request"], status.HTTP_400_BAD_REQUEST
+    # get the request's JSON from query params or body
+    sent_args = request.args.to_dict()
+    if not sent_args:
+        try:
+            sent_args = json.loads(request.data)
+        except TypeError:
+            sent_args = request.data
+        except Exception:
+            return ["Failed to parse request body or params"], status.HTTP_400_BAD_REQUEST
 
     # return a 400 if an invalid one/none was passed
-    if sent_json_dict is None or not sent_json_dict:
-        return ["No or invalid data/JSON was passed"], status.HTTP_400_BAD_REQUEST
-
+    if not sent_args:
+        return ["Expected field 'type' specified in request body or params"], status.HTTP_400_BAD_REQUEST
     # check for type
-    if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
+    if not sent_args['type']:
+        return [f"Missing 'type' field in request body or query params"],\
             status.HTTP_400_BAD_REQUEST
+    plot_type = sent_args.get('type')
+    if plot_type not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type ('{sent_args.get('type')}') was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"], status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
-    if sent_json_dict.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
-        if sent_json_dict.get('file_extension') is None:
-            sent_json_dict['file_extension'] = 'png'
+    if sent_args.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
+        if sent_args.get('file_extension') is None:
+            sent_args['file_extension'] = 'png'
         else:
             return ["Plot requested cannot be returned with that file extension,"
                     f"supported extensions {SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
@@ -244,17 +243,135 @@ def handle_plot_endpoint(sampletype, username, samplename):
     if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
             status.HTTP_400_BAD_REQUEST
-    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_json_dict['type'],
+    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_args['type'],
                                                                             set_type=sampletype,
                                                                             username=username,
                                                                             sample_name=samplename,
-                                                                            file_extension=sent_json_dict['file_extension'])
+                                                                            file_extension=sent_args['file_extension'])
 
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
     return send_file(io.BytesIO(file_bytes),
                      mimetype=mimetype),\
         status.HTTP_200_OK
+
+
+@app.route("/tag", methods=['GET', 'POST'])
+@requires_db_connection
+def handle_tag_entdpoint():
+    """
+    GET
+    will return list with all possible tags
+
+    POST
+    {
+        name: <tag_name>
+        values: [<value_1>, <value_2>, ...]
+    }
+    will add new tag to tagbase with its possible values
+    """
+    if request.method == "GET":
+        tag_list = app.config['SAMPLE_MANAGER'].get_all_tags()
+        return tag_list, status.HTTP_200_OK
+
+    if request.method == "POST":
+        for field in ["name", "values"]:
+            if field not in request.data:
+                return [f"Did not find '{field}' field in request body"], status.HTTP_400_BAD_REQUEST
+        # contain some special characters
+        name = request.data['name']
+        values = request.data['values']
+        if app.config['SAMPLE_MANAGER'].tag_exists(name):
+            return [f"Tag '{name}' already exists in tag base"], status.HTTP_400_BAD_REQUEST
+        try:
+            app.config['SAMPLE_MANAGER'].add_tag(name, values)
+        except ValueError as e:
+            return [f"Cound not add tag, couse: '{str(e)}'"], status.HTTP_400_BAD_REQUEST
+        return [f"Added tag '{name}'"], status.HTTP_201_CREATED
+
+
+@app.route("/tag/<string:name>", methods=['GET'])
+@requires_db_connection
+def handle_tag_value_entdpoint(name):
+    """
+    will list tag possible values
+    """
+    if not app.config['SAMPLE_MANAGER'].tag_exists(name):
+        return [f"Tag '{name}' does not exist in tag base"], status.HTTP_400_BAD_REQUEST
+
+    return app.config['SAMPLE_MANAGER'].get_tag_values(name), status.HTTP_200_OK
+
+
+@app.route("/users/<string:username>/tags", methods=['GET', 'POST'])
+@requires_db_connection
+def handle_user_tags_endpoint(username):
+    """
+    GET
+    list all users' tags
+
+    {
+        <tag_1>: <value_1>,
+        <tag_2>: <value_2>,
+        ...
+    }
+
+    POST
+    {
+        name: <tag_name>
+        value: <tag_value>
+    }
+    will add new tag to users' tag list
+    """
+    # check if user exists
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+
+    if request.method == 'GET':
+        tags = app.config['SAMPLE_MANAGER'].get_user_tags(username)
+        return tags, status.HTTP_200_OK
+
+    if request.method == 'POST':
+        for field in ["name", "value"]:
+            if field not in request.data:
+                return [f"Did not find '{field}' field in request body"], status.HTTP_400_BAD_REQUEST
+        tag_name = request.data['name']
+        tag_value = request.data['value']
+
+        # check if tag exists
+        if not app.config['SAMPLE_MANAGER'].tag_exists(tag_name):
+            return [f"Tag '{tag_name}' does not exist in tagbase"], status.HTTP_400_BAD_REQUEST
+
+        # check if tag has proper value
+        all_tag_values = app.config['SAMPLE_MANAGER'].get_tag_values(tag_name)
+        if tag_value not in all_tag_values:
+            return [f"Wrong tag value: '{tag_value}', expected one of: {all_tag_values}"], status.HTTP_400_BAD_REQUEST
+
+        # check if user does already have this tag
+        if app.config['SAMPLE_MANAGER'].user_has_tag(username, tag_name):
+            return [f"User '{username}' already has tag '{tag_name}'"], status.HTTP_400_BAD_REQUEST
+
+        app.config['SAMPLE_MANAGER'].add_tag_to_user(
+            username, tag_name, tag_value)
+
+        return [f"Added tag '{tag_name}' to user '{username}'"], status.HTTP_201_CREATED
+
+
+@app.route("/users/<string:username>", methods=['GET'])
+@requires_db_connection
+def handle_user_summary_endpoint(username):
+    """
+    will return user samplebase summary:
+      - name
+      - normalized name
+      - date of creation
+      - tags
+      - count of samples from test and train sets
+    """
+    # check if user exists
+    if not app.config['SAMPLE_MANAGER'].user_exists(username):
+        return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
+
+    return app.config['SAMPLE_MANAGER'].get_user_summary(username)
 
 
 if __name__ == "__main__":
