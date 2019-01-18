@@ -3,7 +3,7 @@ import urllib
 import json
 from io import BytesIO
 
-from flask import request, current_app, send_file
+from flask import request, current_app, send_file, jsonify
 from flask_api import FlaskAPI, status
 from flask_cors import CORS
 from functools import wraps
@@ -186,44 +186,35 @@ def handle_plot_endpoint(sampletype, username, samplename):
     :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
     :param samplename: full name of the sample to create plot from, e.g. 1.wav
     """
-    # TODO: Perhaps handle both '1.wav' and '1' when new SampleManager is
-    #  available
 
     # TODO: later some kind of smart duplication of this endpoint's steps
     #  alongside with handle_get_file could be done - already tasked
 
-    # get the request's JSON
-    sent_json: dict = request.data
-    if not sent_json:
-        type = request.args.get("type")
-        file_extension = request.args.get("file_extension")
-        sent_json = {"type": type, "file_extension": file_extension}
-        print(sent_json)
-
-    try:
-        sent_json_dict = json.loads(sent_json, encoding='utf8')
-    except TypeError:
-        # sent_json was already a type of dict
-        sent_json_dict = sent_json
-    except:
-        return ["Invalid request"], status.HTTP_400_BAD_REQUEST
+    # get the request's JSON from query params or body
+    sent_args = request.args.to_dict()
+    if not sent_args:
+        try:
+            sent_args = json.loads(request.data)
+        except TypeError:
+            sent_args = request.data
+        except Exception:
+            return ["Failed to parse request body or params"], status.HTTP_400_BAD_REQUEST
 
     # return a 400 if an invalid one/none was passed
-    if sent_json_dict is None or not sent_json_dict:
-        return ["Expected field 'type' specified in body or params"], status.HTTP_400_BAD_REQUEST
-
+    if not sent_args:
+        return ["Expected field 'type' specified in request body or params"], status.HTTP_400_BAD_REQUEST
     # check for type
-    if not sent_json_dict.get('type'):
+    if not sent_args['type']:
         return [f"Missing 'type' field in request body or query params"],\
             status.HTTP_400_BAD_REQUEST
-    if sent_json_dict.get('type') not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type ('{sent_json_dict.get('type')}') was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"],\
-            status.HTTP_400_BAD_REQUEST
+    plot_type = sent_args.get('type')
+    if plot_type not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
+        return [f"Plot of non-existing type ('{sent_args.get('type')}') was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"], status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
-    if sent_json_dict.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
-        if sent_json_dict.get('file_extension') is None:
-            sent_json_dict['file_extension'] = 'png'
+    if sent_args.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
+        if sent_args.get('file_extension') is None:
+            sent_args['file_extension'] = 'png'
         else:
             return ["Plot requested cannot be returned with that file extension,"
                     f"supported extensions {SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS}"],\
@@ -239,11 +230,11 @@ def handle_plot_endpoint(sampletype, username, samplename):
     if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
             status.HTTP_400_BAD_REQUEST
-    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_json_dict['type'],
+    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_args['type'],
                                                                             set_type=sampletype,
                                                                             username=username,
                                                                             sample_name=samplename,
-                                                                            file_extension=sent_json_dict['file_extension'])
+                                                                            file_extension=sent_args['file_extension'])
 
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
