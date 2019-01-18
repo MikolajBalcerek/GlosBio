@@ -8,7 +8,7 @@ def algorithm_manager_factory(alg_dict):
         new_class = type(
             "__ALGORITHM_MANAGER_" + list(alg_dict.keys())[0],
             (AlgorithmManager,),
-            dict(AlgorithmManager.__dict__)
+            {}
         )
         new_class.alg_dict = alg_dict
         return new_class
