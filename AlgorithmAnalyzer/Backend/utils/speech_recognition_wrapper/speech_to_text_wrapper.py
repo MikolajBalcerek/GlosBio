@@ -26,7 +26,8 @@ def _recognize_speech(audio_file : sr.AudioFile, language="pl-PL"):
         # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
         # instead of `r.recognize_google(audio)`
         return r.recognize_google(audio, language=language)
-    except:
+    except Exception as e:
+        print(e)
         # BING
         #TODO: NEW API KEY
         with suppress(Exception):
