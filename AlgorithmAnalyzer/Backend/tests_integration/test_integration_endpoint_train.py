@@ -2,13 +2,15 @@ import glob
 import unittest
 import json
 import abc
+from pathlib import Path
 
 import gridfs
 from flask_api import status
 from pymongo import MongoClient
 
-from main import app, ALG_DICT
+from main import app
 from sample_manager.SampleManager import SampleManager
+from algorithms.tests.mocks import TEST_ALG_DICT
 
 
 class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
@@ -584,7 +586,28 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             f.close()
 
     def setUp(self):
-        self.alg_list = list(ALG_DICT.keys())
+        self.am = self.app.config['ALGORITHM_MANAGER']
+        self.alg_list = self.am.get_algorithms()
+
+    def tearDown(self):
+        for alg_name in self.alg_list:
+            path = Path('./algorithms/saved_models/' + alg_name)
+            for subpath in path.rglob('*'):
+                subpath.rmdir()
+            if path.exists():
+                path.rmdir()
+
+    def _train_algorithm(self, name):
+        params = TEST_ALG_DICT[name].get_parameters()
+        some_params = {
+            param: params[param]['type'](params[param]['values'][0])
+            for param in params.keys()
+        }
+        data = {'parameters': some_params}
+        return self.client.post(f'/algorithms/train/{name}',
+                                data=json.dumps(data),
+                                content_type='application/json'
+                                )
 
     def test_get_algorithms_names(self):
         self.assertEqual(
@@ -596,7 +619,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
         for name in self.alg_list:
             self.assertEqual(
                 self.client.get(f'/algorithms/description/{name}').data,
-                ALG_DICT[name].__doc__.encode() if ALG_DICT[name].__doc__ else b"",
+                TEST_ALG_DICT[name].__doc__.encode() if TEST_ALG_DICT[name].__doc__ else b"",
                 "Bad description returned."
             )
 
@@ -615,7 +638,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_get_algorithm_parameters(self):
         for name in self.alg_list:
-            params = ALG_DICT[name].get_parameters()
+            params = TEST_ALG_DICT[name].get_parameters()
             for param in params:
                 params[param].pop('type', None)
             self.assertEqual(
@@ -639,17 +662,8 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             )
 
     def test_train_algorithm(self):
-        for name in ['Random', 'Multilabel Random']:
-            params = ALG_DICT[name].get_parameters()
-            some_params = {
-                param: params[param]['type'](params[param]['values'][0])
-                for param in params.keys()
-            }
-            data = {'parameters': some_params}
-            r = self.client.post(f'/algorithms/train/{name}',
-                                 data=json.dumps(data),
-                                 content_type='application/json'
-                                 )
+        for name in self.alg_list:
+            r = self._train_algorithm(name)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertEqual(r.data, b'Training ended.',
                              'Wrong message returned.'
@@ -669,13 +683,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_train_algorithm_no_parameters(self):
-        name = "Random"
-        params = ALG_DICT[name].get_parameters()
-        some_params = {
-            param: params[param]['type'](params[param]['values'][0])
-            for param in params.keys()
-        }
-        data = {'parameters': some_params}
+        name = "first_mock"
         r = self.client.post(f'/algorithms/train/{name}',
                              data=json.dumps({}),
                              content_type='application/json'
@@ -686,8 +694,8 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_train_algorithm_too_many_parameter_keys(self):
-        name = "Random"
-        params = ALG_DICT[name].get_parameters()
+        name = self.alg_list[0]
+        params = TEST_ALG_DICT[name].get_parameters()
         some_params = {
             param: params[param]['type'](params[param]['values'][0])
             for param in params.keys()
@@ -704,8 +712,8 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_train_algorithm_missing_parameters(self):
-        name = "Multilabel Random"
-        params = ALG_DICT[name].get_parameters()
+        name = self.alg_list[1]
+        params = TEST_ALG_DICT[name].get_parameters()
         some_params = {
             param: params[param]['type'](params[param]['values'][0])
             for param in list(params.keys())[:-1]
@@ -721,9 +729,10 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_train_algorithm_parameters_bad_type(self):
-        name = "Multilabel Random"
+        name = "second_mock"
         some_params = {
-            'num_classes': 'not_int'
+            'param1': 'not_int',
+            'param2': 'whatever'
         }
         data = {'parameters': some_params}
         r = self.client.post(f'/algorithms/train/{name}',
@@ -731,14 +740,15 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                              content_type='application/json'
                              )
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Bad value type of parameter "num_classes"',
+        self.assertEqual(r.data, b'Bad value type of parameter "param1"',
                          "Should't pass with bad parameter types."
                          )
 
     def test_train_algorithm_missing_parameters_bad_value(self):
-        name = "Multilabel Random"
+        name = "second_mock"
         some_params = {
-            'num_classes': 10**4
+            'param1': 10**4,
+            'param2': 'c'
         }
         data = {'parameters': some_params}
         r = self.client.post(f'/algorithms/train/{name}',
@@ -752,20 +762,36 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_predict_algorithm(self):
         username = self.TEST_USERNAMES[0]
-        for name in ['Multilabel Random', 'Random']:
+        for name in self.alg_list:
+            self._train_algorithm(name)
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
                 r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertIn('prediction', r.json)
-            if name == 'Multilabel Random':
+            if name == 'second_mock':
                 self.assertIn('Predicted user', r.json['meta'])
             else:
                 self.assertNotIn('Predicted user', r.json['meta'])
 
+    def test_predict_algorithm_no_trained_model(self):
+        username = self.TEST_USERNAMES[0]
+        for name in self.alg_list:
+            with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                data = {'file': f}
+                r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
+            self.assertEqual(r.status_code, 422)
+            if name == 'second_mock':
+                self.assertEqual(r.data, b'There is no model of second_mock trained.')
+            else:
+                self.assertNotIn(
+                    r.data,
+                    f'There is no model of {name} trained for {username}'.encode()
+                )
+
     def test_predict_algorithm_missing_file(self):
         username = self.TEST_USERNAMES[0]
-        for name in ['Multilabel Random', 'Random']:
+        for name in ['second_mock', 'first_mock']:
             data = {}
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
@@ -773,7 +799,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_predict_algorithm_bad_username(self):
         username = "______thereisnosuchalgname______"
-        for name in ['Multilabel Random', 'Random']:
+        for name in self.alg_list:
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
                 r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)

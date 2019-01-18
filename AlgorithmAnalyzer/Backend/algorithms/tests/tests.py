@@ -1,0 +1,234 @@
+import hashlib
+import unittest
+from pathlib import Path
+
+from algorithms.algorithm_manager import (
+    algorithm_manager_factory,
+    NotTrainedException
+)
+from algorithms.tests.mocks import TEST_ALG_DICT, AlgorithmMock1
+
+
+class TestAlgorithmManager(unittest.TestCase):
+
+    def setUp(self):
+        self.am = algorithm_manager_factory(TEST_ALG_DICT)
+        self.alg_dict = TEST_ALG_DICT
+        self.alg_list = ['first_mock', 'second_mock']
+        self.params1 = {'some_name': '2'}
+        self.params2 = {'param1': '1', 'param2': 'c'}
+        self.user_samples = {
+            'user1': [0, 1, 2],
+            'user2': ['a', 'b', 'c']
+        }
+        self.user_labels = {
+            'user1': [0, 1, 1],
+            'user2': [1, 1, 0]
+        }
+        self.samples = [1, 2, 3, 4]
+        self.labels = [0, 1, 2, 0]
+
+    def tearDown(self):
+        for alg_name in self.alg_list:
+            path = Path('./algorithms/saved_models/' + alg_name)
+            for subpath in path.rglob('*'):
+                subpath.rmdir()
+            if path.exists():
+                path.rmdir()
+
+    def test_get_algorithms(self):
+        self.assertEqual(self.am.get_algorithms(), self.alg_list)
+
+    def test_get_parameters(self):
+        for alg in self.alg_list:
+            params = self.alg_dict[alg].get_parameters()
+            for param in params:
+                params[param].pop('type', None)
+            self.assertEqual(
+                self.am.get_parameters(alg),
+                params
+            )
+
+    def test_multilabel(self):
+        self.assertEqual(self.am('first_mock').multilabel, False)
+        self.assertEqual(self.am('second_mock').multilabel, True)
+
+    def test_get_parameter_types(self):
+        self.assertEqual(
+            self.am.get_parameter_types('first_mock'),
+            {'some_name': int}
+        )
+        self.assertEqual(
+            self.am.get_parameter_types('second_mock'),
+            {'param1': int, 'param2': str},
+        )
+
+    def test_get_description(self):
+        for alg in self.alg_list:
+            self.assertEqual(
+                self.am(alg).get_description(),
+                self.alg_dict[alg].__doc__
+            )
+
+    def test_update_parameters(self):
+        self.assertEqual(
+            self.am('second_mock')._update_parameters(self.params2),
+            {'param1': 1, 'param2': 'c'}
+        )
+
+    def test_train_models(self):
+        am = self.am('first_mock')
+        am._train_models(
+            self.user_samples, self.user_labels, self.params1
+        )
+        self.assertEqual(am.models.keys(), self.user_labels.keys())
+        for usr, mdl in am.models.items():
+            self.assertTrue(mdl.called_train)
+            self.assertTrue(mdl.called_save)
+            self.assertFalse(mdl.called_load)
+            md5 = hashlib.md5(usr.encode('utf-8'))
+            base_path = f'./algorithms/saved_models/first_mock/'
+            base_path += md5.hexdigest()
+            self.assertEqual(mdl.save_path, base_path + '/model')
+            self.assertTrue(Path(base_path).exists())
+
+    def test_save_models(self):
+        mdls = [AlgorithmMock1(), AlgorithmMock1()]
+        usrs = ['user1', 'user2']
+        am = self.am('first_mock')
+        am.models = {
+            'user1': mdls[0],
+            'user2': mdls[1]
+        }
+        am._save_models()
+        for i in [0, 1]:
+            self.assertTrue(mdls[i].called_save)
+            self.assertFalse(mdls[i].called_train)
+            self.assertFalse(mdls[i].called_load)
+            md5 = hashlib.md5(usrs[i].encode('utf-8'))
+            base_path = f'./algorithms/saved_models/first_mock/'
+            base_path += md5.hexdigest()
+            self.assertEqual(mdls[i].save_path, base_path + '/model')
+            self.assertTrue(Path(base_path).exists())
+
+    def test_load_model_should_raise_without_model(self):
+        with self.assertRaises(NotTrainedException) as ctx:
+            self.am('first_mock')._load_model('user1')
+        self.assertEqual(
+            str(ctx.exception),
+            'There is no model of first_mock trained for user1.'
+        )
+
+    def test_load_model(self):
+        am = self.am('first_mock')
+        am._train_models(
+            self.user_samples, self.user_labels, self.params1
+        )
+        # creating new instance to clear everything
+        am = self.am('first_mock')
+        for u in ['user1', 'user2']:
+            self.assertFalse(
+                u in am.models
+            )
+            am._load_model(u)
+            self.assertTrue(
+                am.models[u].called_load
+            )
+
+    def test_train_multilabel_model(self):
+        am = self.am('second_mock')
+        am._train_multilabel_model(
+            self.samples, self.labels, self.params2
+        )
+        self.assertTrue(hasattr(am, 'model'))
+        self.assertTrue(am.model.called_train)
+        self.assertTrue(am.model.called_save)
+        self.assertFalse(am.model.called_load)
+        self.assertTrue(
+            Path('./algorithms/saved_models/second_mock').exists()
+        )
+
+    def test_load_multilabel_model_should_raise_without_model(self):
+        with self.assertRaises(NotTrainedException) as ctx:
+            self.am('second_mock')._load_multilabel_model()
+        self.assertEqual(
+            str(ctx.exception),
+            'There is no model of second_mock trained.'
+        )
+
+    def test_load_multilabel_model(self):
+        am = self.am('second_mock')
+        am._train_multilabel_model(
+            self.samples, self.labels, self.params2
+        )
+        # creating new instance to clear everything
+        am = self.am('second_mock')
+        self.assertFalse(hasattr(am, 'model'))
+        am._load_multilabel_model()
+        self.assertTrue(hasattr(am, 'model'))
+        self.assertIsNotNone(am.model)
+        self.assertFalse(am.model.called_train)
+        self.assertFalse(am.model.called_save)
+        self.assertTrue(am.model.called_load)
+
+    def test_predict_should_raise_without_model(self):
+        user, sample = 'user1', 'whatever'
+        for alg in self.alg_list:
+            with self.assertRaises(NotTrainedException) as ctx:
+                self.am(alg).predict(user, sample)
+        self.assertEqual(
+            str(ctx.exception),
+            {
+                'second_mock':
+                    f'There is no model of {alg} trained.',
+                'first_mock':
+                    f"There is no model of {alg} trained for {user}."
+            }[alg]
+        )
+
+    def test_predict_for_multilabel(self):
+        am = self.am('second_mock')
+        am._train_multilabel_model(
+            self.samples, self.labels, self.params2
+        )
+        user, sample = 'user1', 'whatever'
+        res = am.predict(user, sample)
+        self.assertEqual(res, (0, {"something": 0}))
+
+    def test_predict_for_binary_label(self):
+        am = self.am('first_mock')
+        am._train_models(
+            self.user_samples, self.user_labels, self.params1
+        )
+        user, sample = 'user1', 'whatever'
+        res = am.predict(user, sample)
+        self.assertEqual(res, (False, {"something": "Somethong"}))
+
+    def test_train_for_multilabel_model(self):
+        am = self.am('second_mock')
+        am.train(
+            self.samples, self.labels, self.params2
+        )
+        self.assertTrue(hasattr(am, 'model'))
+        self.assertTrue(am.model.called_train)
+        self.assertTrue(am.model.called_save)
+        self.assertFalse(am.model.called_load)
+        self.assertTrue(
+            Path('./algorithms/saved_models/second_mock').exists()
+        )
+
+    def test_train_for_binary_model(self):
+        am = self.am('first_mock')
+        am.train(
+            self.user_samples, self.user_labels, self.params1
+        )
+        self.assertEqual(am.models.keys(), self.user_labels.keys())
+        for usr, mdl in am.models.items():
+            self.assertTrue(mdl.called_train)
+            self.assertTrue(mdl.called_save)
+            self.assertFalse(mdl.called_load)
+            md5 = hashlib.md5(usr.encode('utf-8'))
+            base_path = f'./algorithms/saved_models/first_mock/'
+            base_path += md5.hexdigest()
+            self.assertEqual(mdl.save_path, base_path + '/model')
+            self.assertTrue(Path(base_path).exists())
