@@ -5,7 +5,7 @@ from tensorflow.python.keras.backend import clear_session
 from tensorflow import reset_default_graph
 
 from algorithms.algorithms.preprocessing import read_samples, read_sample
-from algorithms.base_algorithm import Algorithm, ModelLoadException
+from algorithms.base_algorithm import Algorithm
 
 
 class SimpleNN(Algorithm):
@@ -86,7 +86,4 @@ class SimpleNN(Algorithm):
         clear_session()
         # those are needed as tensorflow has some problems
         # see: https://github.com/tensorflow/tensorflow/issues/14356
-        try:
-            self.model = load_model(path + '.h5')
-        except FileNotFoundError:
-            raise ModelLoadException("There is no trained model.")
+        self.model = load_model(path + '.h5')

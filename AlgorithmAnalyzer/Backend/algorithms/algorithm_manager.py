@@ -1,11 +1,26 @@
 from concurrent.futures import ThreadPoolExecutor
-from functools import wraps
+import os
 import hashlib
 from pathlib import Path
 from typing import List, Tuple, Dict
 
 from algorithms.algorithms import ALG_DICT
-from algorithms.base_algorithm import ModelLoadException
+
+
+class NotTrainedException(Exception):
+    """
+    This exception is meant to be throen on models'
+        __init__(path=path)
+    method, when the model cannot be loaded.
+    Custom field 'message' will be sent to the end user,
+    it should inform about the error.
+    """
+    def __init__(self, message):
+        super().__init__(self, message)
+        self.message = message
+
+    def __str__(self):
+        return self.message
 
 
 class AlgorithmManager:
@@ -96,9 +111,10 @@ class AlgorithmManager:
         """
         for name in self.models:
             model = self.models[name]
-            Path(f'./algorithms/saved_models/{self.algorithm_name}').mkdir(parents=True, exist_ok=True)
             md5 = hashlib.md5(name.encode('utf-8'))
-            model.save(f'./algorithms/saved_models/{self.algorithm_name}/{md5.hexdigest()}')
+            base_path = f'./algorithms/saved_models/{self.algorithm_name}/' + md5.hexdigest()
+            Path(base_path).mkdir(parents=True, exist_ok=True)
+            model.save(base_path + '/model')
 
     def _load_model(self, user: str):
         """
@@ -109,7 +125,10 @@ class AlgorithmManager:
         # TODO(mikra): take care of models load returning errors!!!
         md5 = hashlib.md5(user.encode('utf-8'))
         base_path = f'./algorithms/saved_models/{self.algorithm_name}/{md5.hexdigest()}'
-        self.models[user] = self.algorithm(path=base_path)
+        if not os.path.isdir(base_path):
+            raise NotTrainedException(f"There is no model of {self.algorithm_name} trained for {user}.")
+        path = base_path + '/model'
+        self.models[user] = self.algorithm(path=path)
 
     def _train_multilabel_model(self, samples: list, labels: list, parameters: dict):
         """
@@ -125,15 +144,20 @@ class AlgorithmManager:
         Saves multilabeled model to ./saved_algorithms/agorithm_name/algorithm_name,
         using algorithm's save method.
         """
-        Path(f'./algorithms/saved_models/{self.algorithm_name}').mkdir(parents=True, exist_ok=True)
-        self.model.save(f'./algorithms/saved_models/{self.algorithm_name}/{self.algorithm_name}')
+        base_path = f'./algorithms/saved_models/{self.algorithm_name}'
+        Path(base_path).mkdir(parents=True, exist_ok=True)
+        self.model.save(base_path + '/model')
 
     def _load_multilabel_model(self):
         """
         Loads multilabeled model from ./saved_algorithms/agorithm_name/algorithm_name,
         using algorithm's __init__ method with "path" kwarg.
         """
-        path = f'./algorithms/saved_models/{self.algorithm_name}/{self.algorithm_name}'
+
+        base_path = f'./algorithms/saved_models/{self.algorithm_name}'
+        if not os.path.isdir(base_path):
+            raise NotTrainedException(f"There is no model of {self.algorithm_name} trained.")
+        path = base_path + '/model'
         self.model = self.algorithm(path=path)
 
     def predict(self, user: str, file) -> Tuple[bool, Dict[str, float]]:
@@ -151,7 +175,6 @@ class AlgorithmManager:
         else:
             self._load_model(user)
             return self.models[user].predict(file)
-
 
     def train(self, samples, labels, parameters):
         """
