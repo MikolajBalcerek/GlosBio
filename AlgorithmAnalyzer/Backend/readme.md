@@ -38,7 +38,8 @@ For checking test coverage using coverage.py library:
 pipenv run coverage run -m unittest
 ```
 
-For results either type: ```pipenv run coverage report``` (in console)
+For results either type:
+	```pipenv run coverage report --omit=algorithms/algorithms/*``` (in console)
 or  ```pipenv run coverage html``` to create html directory with logs.
 
 ![Tests coverage in HTML form](https://i.imgur.com/mMnOGv1.jpg)

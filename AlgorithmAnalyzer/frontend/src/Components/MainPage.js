@@ -7,8 +7,7 @@ import RecordTester from "./RecordTester";
 import axios from 'axios';
 import MiddleBar from './MiddleBar'
 import { SnackbarProvider } from 'notistack';
-import labels from '../labels.json'
-import _ from 'lodash'
+import api_config from '../api_config.json'
 
 class MainPage extends Component {
 	state = {
@@ -52,7 +51,7 @@ class MainPage extends Component {
 	getUsers = () => {
         var self = this
         axios
-            .get(labels.usePath+'/users',{} ,{ 'Authorization': labels.apiKey })
+            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
             .then(function(response) {
 				let userLetList = []
 				let userTrainSounds = []
@@ -129,7 +128,7 @@ handleClickVariant(text, variant){
     getAlgorithms = () => {
     	var self = this;
         axios
-            .get(labels.usePath + '/algorithms')
+            .get(api_config.usePath + '/algorithms')
             .then(function(response) {
 				let algorithmsList = []
                 response.data.algorithms.map(alg => {

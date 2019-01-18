@@ -2,14 +2,15 @@ import glob
 import unittest
 import json
 import abc
+from pathlib import Path
 
 import gridfs
 from flask_api import status
 from pymongo import MongoClient
 
+from main import app
 from sample_manager.SampleManager import SampleManager
-
-from main import app, ALG_DICT
+from algorithms.tests.mocks import TEST_ALG_DICT
 
 
 class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
@@ -384,6 +385,146 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED,
                          f"Expected response status code 405 but got {r.status_code}")
 
+    def test_params_via_query_params(self):
+        """ test if passing params via query params works properly """
+        sample_name = "1.wav"
+        user_name = self.TEST_USERNAMES[0]
+        type = 'train'
+        request_path = f"/plot/{type}/{user_name}/{sample_name}"
+        params = {"type": "mfcc", "file_extension": "pdf"}
+        r = self.client.get(request_path, query_string=params)
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path} wrong status code, expected 200, got {r.status_code}")
+        self.assertEqual(r.content_type, 'application/pdf',
+                         "Wrong content_type was returned"
+                         f"for pdf mfcc plot, should be application/pdf, is {r.content_type}")
+
+
+class TagEndpointsTests(BaseAbstractIntegrationTestsClass):
+
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
+        # create user:
+        self.test_user = "test tags user"
+        self.sm.create_user(self.test_user)
+
+        # populate tags
+        self.test_tags = {
+            "age": ["< 20", "20 - 40", "40 - 60", "> 60"],
+            "gender": ["male", "female"],
+            "class": ["1", "2", "3"]}
+        for tag_name in self.test_tags:
+            self.sm.add_tag(tag_name, self.test_tags[tag_name])
+
+        self.test_tags_names = list(self.test_tags.keys())
+
+        self.test_user_tags = {"age": "< 20", "gender": "male"}
+
+        for tag in self.test_user_tags:
+            self.sm.add_tag_to_user(self.test_user, tag, self.test_user_tags[tag])
+
+    def test_get_tags(self):
+        r = self.client.get('/tag')
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+        self.assertEqual(r.json, self.test_tags_names)
+
+    def test_post_tag(self):
+        tag_name = "test_tag"
+        wrong_tag_name = "%tag@#$"
+        values = ["v1", "v2", "v3"]
+        r = self.client.post('/tag', data={"name": tag_name, "values": values})
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED,
+                         f"wrong status code, expected 201, got {r.status_code}")
+
+        # test same tage second time
+        r = self.client.post('/tag', data={"name": tag_name, "values": values})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 201, got {r.status_code}")
+        # missing fields
+        r = self.client.post('/tag')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+        # wrong tag name
+        r = self.client.post('/tag', data={"name": wrong_tag_name, "values": values})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+        # empty values
+        r = self.client.post('/tag', data={"name": tag_name, "values": []})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_get_tag_values(self):
+        tag_name = self.test_tags_names[0]
+        r = self.client.get(f'/tag/{tag_name}')
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.json, self.test_tags[tag_name],
+                         f"Expected different tag values")
+
+        r = self.client.get(f'/tag/no-tag')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_get_user_tags(self):
+        r = self.client.get(f'/users/{self.test_user}/tags')
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.json, self.test_user_tags,
+                         f"Expected different user tags")
+
+        r = self.client.get('/users/mr_nobody/tags')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_post_user_tags(self):
+        proper_tag_name = "class"
+        tag_value = self.test_tags[proper_tag_name][0]
+        # proper values
+        data = {"name": proper_tag_name, "value": tag_value}
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED,
+                         f"wrong status code, expected 201, got {r.status_code}")
+
+        # try to add same tag twice
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+        # invalid username
+        r = self.client.post(f'/users/mr_nobody/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+        # invalid tag name
+        data["name"] = "invalid tag"
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+        # invalid tag value
+        data["name"] = proper_tag_name
+        data["value"] = "invalid value"
+        r = self.client.post(f'/users/{self.test_user}/tags', data=data)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
+    def test_get_user_summary(self):
+        r = self.client.get(f'/users/{self.test_user}')
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+
+        self.assertTrue(r.data, "Response should not be empty")
+
+        r = self.client.get(f'/users/mr-nobody')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
 
 class NoDbTests(BaseAbstractIntegrationTestsClass):
 
@@ -394,7 +535,7 @@ class NoDbTests(BaseAbstractIntegrationTestsClass):
         temp_sm = SampleManager(cls.sm.db_url, cls.db_name, show_logs=False)
         temp_sm.db_url = "_____:36363"
         temp_sm.db_client = MongoClient(
-            temp_sm.db_url, serverSelectionTimeoutMS=1000)
+            temp_sm.db_url, serverSelectionTimeoutMS=500)
         temp_sm.db_database = temp_sm.db_client["unknown_collection"]
         temp_sm.db_collection = temp_sm.db_database.samples
         temp_sm.db_file_storage = gridfs.GridFS(temp_sm.db_database)
@@ -460,7 +601,28 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             f.close()
 
     def setUp(self):
-        self.alg_list = list(ALG_DICT.keys())
+        self.am = self.app.config['ALGORITHM_MANAGER']
+        self.alg_list = self.am.get_algorithms()
+
+    def tearDown(self):
+        for alg_name in self.alg_list:
+            path = Path('./algorithms/saved_models/' + alg_name)
+            for subpath in path.rglob('*'):
+                subpath.rmdir()
+            if path.exists():
+                path.rmdir()
+
+    def _train_algorithm(self, name):
+        params = TEST_ALG_DICT[name].get_parameters()
+        some_params = {
+            param: params[param]['type'](params[param]['values'][0])
+            for param in params.keys()
+        }
+        data = {'parameters': some_params}
+        return self.client.post(f'/algorithms/train/{name}',
+                                data=json.dumps(data),
+                                content_type='application/json'
+                                )
 
     def test_get_algorithms_names(self):
         self.assertEqual(
@@ -472,7 +634,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
         for name in self.alg_list:
             self.assertEqual(
                 self.client.get(f'/algorithms/description/{name}').data,
-                ALG_DICT[name].__doc__.encode() if ALG_DICT[name].__doc__ else b"",
+                TEST_ALG_DICT[name].__doc__.encode() if TEST_ALG_DICT[name].__doc__ else b"",
                 "Bad description returned."
             )
 
@@ -485,13 +647,13 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             )
         self.assertEqual(
                 self.client.get(f'/algorithms/description/{name}').data,
-                b"Bad algorithm name.",
+                f"Bad algorithm name. Valid are {self.alg_list}.".encode(),
                 "Wrong error message."
             )
 
     def test_get_algorithm_parameters(self):
         for name in self.alg_list:
-            params = ALG_DICT[name].get_parameters()
+            params = TEST_ALG_DICT[name].get_parameters()
             for param in params:
                 params[param].pop('type', None)
             self.assertEqual(
@@ -510,22 +672,13 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             )
         self.assertEqual(
                 self.client.get(f'/algorithms/parameters/{name}').data,
-                b"Bad algorithm name.",
+                f"Bad algorithm name. Valid are {self.alg_list}.".encode(),
                 "Wrong error message."
             )
 
     def test_train_algorithm(self):
-        for name in ['Random', 'Multilabel Random']:
-            params = ALG_DICT[name].get_parameters()
-            some_params = {
-                param: params[param]['type'](params[param]['values'][0])
-                for param in params.keys()
-            }
-            data = {'parameters': some_params}
-            r = self.client.post(f'/algorithms/train/{name}',
-                                 data=json.dumps(data),
-                                 content_type='application/json'
-                                 )
+        for name in self.alg_list:
+            r = self._train_algorithm(name)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertEqual(r.data, b'Training ended.',
                              'Wrong message returned.'
@@ -539,30 +692,25 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                              content_type='application/json'
                              )
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Bad algorithm name.',
+        self.assertEqual(r.data,
+                         f"Bad algorithm name. Valid are {self.alg_list}.".encode(),
                          'Wrong error message.'
                          )
 
     def test_train_algorithm_no_parameters(self):
-        name = "Random"
-        params = ALG_DICT[name].get_parameters()
-        some_params = {
-            param: params[param]['type'](params[param]['values'][0])
-            for param in params.keys()
-        }
-        data = {'parameters': some_params}
+        name = "first_mock"
         r = self.client.post(f'/algorithms/train/{name}',
                              data=json.dumps({}),
                              content_type='application/json'
                              )
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Missing "params" in request data',
+        self.assertEqual(r.data, b'Missing "params" field in request body.',
                          'Wrong error message.'
                          )
 
     def test_train_algorithm_too_many_parameter_keys(self):
-        name = "Random"
-        params = ALG_DICT[name].get_parameters()
+        name = self.alg_list[0]
+        params = TEST_ALG_DICT[name].get_parameters()
         some_params = {
             param: params[param]['type'](params[param]['values'][0])
             for param in params.keys()
@@ -579,8 +727,8 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_train_algorithm_missing_parameters(self):
-        name = "Multilabel Random"
-        params = ALG_DICT[name].get_parameters()
+        name = self.alg_list[1]
+        params = TEST_ALG_DICT[name].get_parameters()
         some_params = {
             param: params[param]['type'](params[param]['values'][0])
             for param in list(params.keys())[:-1]
@@ -596,9 +744,10 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_train_algorithm_parameters_bad_type(self):
-        name = "Multilabel Random"
+        name = "second_mock"
         some_params = {
-            'num_classes': 'not_int'
+            'param1': 'not_int',
+            'param2': 'whatever'
         }
         data = {'parameters': some_params}
         r = self.client.post(f'/algorithms/train/{name}',
@@ -606,14 +755,15 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                              content_type='application/json'
                              )
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Bad value type of parameter "num_classes"',
+        self.assertEqual(r.data, b'Bad value type of parameter "param1"',
                          "Should't pass with bad parameter types."
                          )
 
     def test_train_algorithm_missing_parameters_bad_value(self):
-        name = "Multilabel Random"
+        name = "second_mock"
         some_params = {
-            'num_classes': 10**4
+            'param1': 10**4,
+            'param2': 'c'
         }
         data = {'parameters': some_params}
         r = self.client.post(f'/algorithms/train/{name}',
@@ -627,20 +777,36 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_predict_algorithm(self):
         username = self.TEST_USERNAMES[0]
-        for name in ['Multilabel Random', 'Random']:
+        for name in self.alg_list:
+            self._train_algorithm(name)
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
                 r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertIn('prediction', r.json)
-            if name == 'Multilabel Random':
+            if name == 'second_mock':
                 self.assertIn('Predicted user', r.json['meta'])
             else:
                 self.assertNotIn('Predicted user', r.json['meta'])
 
+    def test_predict_algorithm_no_trained_model(self):
+        username = self.TEST_USERNAMES[0]
+        for name in self.alg_list:
+            with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                data = {'file': f}
+                r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
+            self.assertEqual(r.status_code, 422)
+            if name == 'second_mock':
+                self.assertEqual(r.data, b'There is no model of second_mock trained.')
+            else:
+                self.assertNotIn(
+                    r.data,
+                    f'There is no model of {name} trained for {username}'.encode()
+                )
+
     def test_predict_algorithm_missing_file(self):
         username = self.TEST_USERNAMES[0]
-        for name in ['Multilabel Random', 'Random']:
+        for name in ['second_mock', 'first_mock']:
             data = {}
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
@@ -648,7 +814,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_predict_algorithm_bad_username(self):
         username = "______thereisnosuchalgname______"
-        for name in ['Multilabel Random', 'Random']:
+        for name in self.alg_list:
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
                 r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
@@ -662,4 +828,4 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             data = {'file': f}
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, b'Bad algorithm name.')
+        self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())

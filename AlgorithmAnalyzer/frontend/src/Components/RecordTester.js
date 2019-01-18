@@ -15,7 +15,7 @@ import Files from 'react-files'
 import FormControl from '@material-ui/core/FormControl';
 import micro from '../img/micro.png'
 import AudioSpectrum from "react-audio-spectrum"
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 
 class RecordTester extends Component {
     constructor(props) {
@@ -91,7 +91,7 @@ class RecordTester extends Component {
             fd.append("file", this.state.blob_audio_data ? this.state.blob_audio_data.blob : this.state.blob_audio_data2);
             let self = this;
             axios
-                .post(labels.usePath + `/algorithms/test/${this.state.username}/${this.state.algorithm}`,
+                .post(api_config.usePath + `/algorithms/test/${this.state.username}/${this.state.algorithm}`,
                     fd,
                     {
                     headers: { "Content-Type": "multipart/form-data" },

@@ -24,7 +24,7 @@ import Tab from '@material-ui/core/Tab'
 import AppBar from '@material-ui/core/AppBar'
 import _ from 'lodash'
 import { withSnackbar } from 'notistack'
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 
 class Recorder extends Component {
     constructor(props) {
@@ -67,12 +67,107 @@ class Recorder extends Component {
         });
     }
 
-      saveAll(){
-        if(this.state.blob_audio_data.length > 0){
-            this.onPressButtonUpload(0, false, 0)
-        } else
-        this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
-    }
+	saveAll(){
+		if(this.state.blob_audio_data.length > 0){
+			this.onPressButtonUpload(0, false, 0)
+		} else
+		this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
+	}
+
+	getUsers = () => {
+		console.log('działam')
+        var self = this
+        axios
+            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
+            .then(function(response) {
+				let userLetList = []
+                response.data.users.map(user => {
+                    userLetList.push(user)
+				})
+				self.setData(userLetList)
+            })
+            .catch(function(error) {
+				console.log('lol')
+                self.handleClickVariant("Nie można pobrać użytkowników, brak połączenia z API!", 'error')
+			})
+	}
+
+	onPressButtonUpload(value, onlyOne, counter) {
+		if (this.state.recorded && this.state.username) {
+			let fd = new FormData();
+			fd.append("username", this.state.username);
+			fd.append("file", this.state.blob_audio_data[value].blob ? this.state.blob_audio_data[value].blob : this.state.blob_audio_data[value] )
+			let uploadedlist = this.state.uploaded
+			uploadedlist.push({id: value})
+			this.setState({
+				uploaded: uploadedlist
+			})
+			let newlist = this.state.blob_audio_data.slice()
+			newlist.splice(value, 1)
+			let isRecorded = newlist.length > 0 ? true : false
+			let self = this;
+			 return axios
+				.post(api_config.usePath+`/audio/${this.state.type}`, fd, {
+					headers: {
+						"Content-Type": "multipart/form-data",
+						'Authorization': api_config.apiKey },
+				})
+				.then(function(response) {
+					self.handleClickVariant(`Plik ${value} zapisano poprawnie! ${response.data.text} `, 'success')
+					self.setState({
+						isRecording: false,
+						recorded: isRecorded,
+						blob_audio_data: newlist,
+						recognizedText: response.data.text,
+						uploaded: [],
+						value: 0,
+						apiError: false
+					});
+					!onlyOne && (value < self.state.blob_audio_data.length) && self.onPressButtonUpload(value, false, counter+1)
+					if(counter === self.state.blob_audio_data.length)
+					{
+						self.setState({
+							blob_audio_data: [],
+							recorded: false
+						}, ()=>self.getUsers())
+					}
+					onlyOne &&setTimeout(() => {
+						console.log('odświerzam userów')
+						self.getUsers()
+					}, 2000)
+				})
+				.catch(function(error) {
+					self.setState({
+						apiError: true
+					})
+					self.handleClickVariant(`Podczas zapisu pliku ${value} wystąpił błąd!`, 'error')
+					console.log(error);
+				})
+		} else {
+			if (!this.state.recorded) {
+				return this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
+			}
+			if (!this.state.username) {
+				return this.handleClickVariant("Nie można zapisać pliku, podaj imię i nazwisko!", 'error')
+			}
+		}
+
+	}
+	onInputChange(e) {
+		this.setState({ username: e.target.value });
+	}
+	onStop(recordedBlob) {
+		let blobList = this.state.blob_audio_data
+		blobList.push(recordedBlob)
+		this.setState({ blob_audio_data: blobList, recorded: true });
+		console.log("Recorded Blob:", recordedBlob);
+	}
+	onData(recordedBlob) {
+		// console.log("real time data", recordedBlob);
+	}
+	handleTypeChange = event => {
+		this.setState({ type: event.target.value });
+	  };
 
     onPressButtonUpload(value, onlyOne, counter) {
         if (this.state.recorded && this.state.username) {

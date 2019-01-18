@@ -16,7 +16,7 @@ import Paper from '@material-ui/core/Paper';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { withSnackbar } from 'notistack'
 import PropTypes from 'prop-types';
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 
 class Tags extends Component{
     state = {
@@ -30,7 +30,21 @@ class Tags extends Component{
     }
 
     componentDidMount(){
-        this.props.getTagList()
+        this.getTagList()
+    }
+
+    getTagList() {
+        var self = this
+        axios
+            .get(api_config.usePath +`/tag`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+				self.setState({
+                    tagNameList: response.data
+                })
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
     }
 
     handleClickVariant(text, variant){
@@ -62,7 +76,7 @@ class Tags extends Component{
         fd.append("name", this.props.tagNameList[this.state.name]);
         fd.append("value", this.state.tagValuesList[this.state.tagValue]);
         axios
-            .post(labels.usePath +`/users/${this.props.user}/tags`, fd, { 'Authorization': labels.apiKey })
+            .post(api_config.usePath +`/users/${this.props.user}/tags`, fd, { 'Authorization': api_config.apiKey })
             .then(function() {
                 self.props.getUserTags()
                 self.setState({
@@ -78,7 +92,7 @@ class Tags extends Component{
     getUserTagValues(){
         var self = this
         axios
-            .get(labels.usePath +`/tag/${this.props.tagNameList[this.state.name]}`, {}, { 'Authorization': labels.apiKey })
+            .get(api_config.usePath +`/tag/${this.state.tagNameList[this.state.name]}`, {}, { 'Authorization': api_config.apiKey })
             .then(function(response) {
                 console.log(response.data)
 				self.setState({
@@ -122,7 +136,7 @@ class Tags extends Component{
         fd.append("name", this.state.newTagName);
         fd.append("values", JSON.stringify(this.state.newTagValues));
         axios
-            .post(labels.usePath +`/tag`, fd, { 'Authorization': labels.apiKey })
+            .post(api_config.usePath +`/tag`, fd, { 'Authorization': api_config.apiKey })
             .then(function() {
                 self.props.getTagList()
                 self.setState({
