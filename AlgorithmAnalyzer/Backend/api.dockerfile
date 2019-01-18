@@ -12,7 +12,8 @@ RUN apk update && \
                        openblas-dev \
 	                   freetype-dev \
 	                   tini \
-	                   ffmpeg
+	                   ffmpeg \
+					   flac
 
 WORKDIR /opt/app
 
