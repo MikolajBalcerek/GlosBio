@@ -12,7 +12,7 @@ from main import app
 
 
 class BaseAbstractSampleManagerTestsClass(unittest.TestCase, abc.ABC):
-    """ 
+    """
     abstract class which is base for all SampleManager test classes
     it provides basic setup and cleanup before and after tests
     """
@@ -71,7 +71,7 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
     def test_fnc_save_new_sample(self):
         username = "Test Test"
         with open(self.TEST_AUDIO_WEBM_PATH, 'rb') as f:
-            self.sm.save_new_sample(username, "train", f.read(), "audio/webm")
+            self.sm.save_new_sample(username, "train", f.read(), "audio/webm", fake=False)
 
         # new user should be created
         db_out = self.db_collection.find_one({'name': username})
@@ -89,7 +89,7 @@ class TestSaveToDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
 
         with open(self.TEST_AUDIO_WAV_PATH, 'rb') as f:
             self.sm.save_new_sample(
-                username, "train", f.read(), "audio/wav", recognize=False)
+                username, "train", f.read(), "audio/wav", fake=False, recognize=False)
 
         # should not create second user with same name
         find_count = self.db_collection.count_documents({'name': username})
@@ -151,25 +151,25 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         username_2 = "Test Username 2"
 
         self.sm.save_new_sample(
-            username_1, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_1, "train", test_file_bytes_wav, "audio/wav", fake=False, recognize=False)
         self.sm.save_new_sample(
-            username_1, "train", test_file_bytes_webm, "audio/webm", recognize=False)
+            username_1, "train", test_file_bytes_webm, "audio/webm", fake=False, recognize=False)
         self.sm.save_new_sample(
-            username_1, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_1, "train", test_file_bytes_wav, "audio/wav", fake=True, recognize=False)
         self.sm.save_new_sample(
-            username_1, "test", test_file_bytes_webm, "audio/webm", recognize=False)
+            username_1, "test", test_file_bytes_webm, "audio/webm", fake=True, recognize=False)
         self.sm.save_new_sample(
-            username_1, "test", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_1, "test", test_file_bytes_wav, "audio/wav", fake=False, recognize=False)
 
         self.sm.save_new_sample(
-            username_2, "train", test_file_bytes_webm, "audio/webm", recognize=False)
+            username_2, "train", test_file_bytes_webm, "audio/webm", fake=True, recognize=False)
 
         self.sm.save_new_sample(
-            username_2, "train", test_file_bytes_wav, "audio/wav", recognize=False)
+            username_2, "train", test_file_bytes_wav, "audio/wav", fake=False, recognize=False)
 
         for i in range(10):
             self.sm.save_new_sample(
-                username_2, "test", test_file_bytes_wav, "audio/wav", recognize=False)
+                username_2, "test", test_file_bytes_wav, "audio/wav", fake=True, recognize=False)
 
         self.test_usernames = [username_1, username_2]
 
@@ -317,6 +317,67 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertEqual(out, '11.wav',
                          f"Next proper name is 11.wav', got '{out}' instead")
 
+    def test_fnc_label_sample_dicts(self):
+        user_num = 3
+        dicts = [{'id': k} for k in range(5)]
+        dicts.extend([{'id': k, 'fake': 'true'} for k in range(5, 10)])
+        dicts.extend([{'id': k, 'fake': 'fake'} for k in range(10, 15)])
+        res_dicts, labels = self.sm._label_sample_dicts(user_num, dicts, multilabel=True)
+        self.assertEqual(len(res_dicts), len(labels),
+                         'The number of sample dicts should be the same as labels.'
+                         )
+        self.assertEqual(res_dicts, dicts[:5] + dicts[10:],
+                         'The number of resulting samples should be the same as number of nonfake samples.'
+                         )
+        self.assertEqual(labels, [user_num] * 10,
+                         'If multilabel is true each nonfake sample should be labeled with user_num'
+                         )
+        res_dicts, labels = self.sm._label_sample_dicts(user_num, dicts, multilabel=False)
+        self.assertEqual(len(res_dicts), len(labels),
+                         'The number of sample dicts should be the same as labels.'
+                         )
+        self.assertEqual(res_dicts, dicts,
+                         'If multilabel is false, sample_dicts should not be changed.'
+                         )
+        self.assertEqual(labels, [1] * 5 + [0] * 5 + [1] * 5,
+                         'If multilabel is false, each label should be 0/1 depending on "fake" key.'
+                         )
+
+    def test_fnc_get_all_samples(self):
+        kwargs = {'purpose': 'train', 'multilabel': True, 'sample_type': 'wav'}
+        samples, labels = self.sm.get_all_samples(**kwargs)
+        self.assertEqual((type(samples), type(labels)), (list, list),
+                         'get_all_samples should return a pair of lists if multilabel is tru.e'
+                         )
+        self.assertEqual(len(samples), len(labels),
+                         'The number of samples and labels should be the same.'
+                         )
+        self.assertEqual(len(self.test_usernames) - 1, max(labels),
+                         'The nubmer of usernames and label values should be the same.'
+                         )
+
+        for sample in samples:
+            self.assertEqual(type(sample), GridOut, 'Each sample should have GridOut type.')
+        kwargs.update({'multilabel': False})
+        samples, labels = self.sm.get_all_samples(**kwargs)
+        self.assertEqual((type(samples), type(labels)), (dict, dict),
+                         'get_all_samples should return a pair of dicts if multilabel is false.'
+                         )
+        self.assertEqual(list(samples.keys()), list(labels.keys()),
+                         'The keys of samples should be the same as the keys of labels.'
+                         )
+        self.assertEqual(list(samples.keys()), self.test_usernames,
+                         'There should be a key for each username having a sample.'
+                         )
+        for name in self.test_usernames:
+            self.assertEqual(len(samples[name]), len(labels[name]),
+                             'The number of labels should be the same as the number of samples for each user'
+                             )
+            for label in labels[name]:
+                self.assertIn(label, (0, 1),
+                              'Each label can be either 0 or 1.'
+                              )
+
 
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
     """ tests for functions which do not operate on database """
@@ -353,8 +414,8 @@ class TestSampleManager(BaseAbstractSampleManagerTestsClass):
 
     def test_fnc_get_sample_file_document_template(self):
         out = self.sm._get_sample_file_document_template(
-            '1.wav', ObjectId('555fc7956cda204928c9dbab'))
-        expected_fields = set(['id', 'filename', 'recognizedSpeech'])
+            '1.wav', ObjectId('555fc7956cda204928c9dbab'), fake=False)
+        expected_fields = set(['id', 'filename', 'recognizedSpeech', 'fake'])
 
         self.assertEqual(set(out.keys()), expected_fields,
                          f"Expected fields: {expected_fields}, but got {out.keys()}")

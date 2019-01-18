@@ -135,14 +135,24 @@ export default class App extends Component {
 
 
   addSound(){
-    console.log(RNFetchBlob.wrap(RNFS.DocumentDirectoryPath +'test.wav'))
+    const file = {
+      uri: 'file:///data/user/0/com.glosbioandroid/files/test.wav',
+      name: 'test.wav',
+      type: 'audio/wav'
+    }
     let fd = new FormData()
+    fd.append('file', file)
+    fd.append('username', 'dupa')
+    fetch(api_config.usePath+`/audio/${this.state.type}`, {
+      method: 'POST',
+      body: fd })
+/*
     fd.append("username", this.state.username);
     fd.append("file", this.state.audio )
-    RNFetchBlob.fetch('POST', api_config.usePath+`/audio/${this.state.type}`, {
+    fetch('POST', api_config.usePath+`/audio/${this.state.type}`, {
     Authorization : api_config.apiKey,
     'Content-Type' : 'multipart/form-data',
-  }, [
+    },fd/* [
     // append field data from file path
     {
       username : this.state.username,
@@ -164,7 +174,7 @@ export default class App extends Component {
       mail : 'example@example.com',
       tel : '12345678'
     })},*/
-  ]).then((resp) => {
+  .then((resp) => {
     console.log('zajebiście', resp)
   }).catch((err) => {
     console.log('chujowo', err)

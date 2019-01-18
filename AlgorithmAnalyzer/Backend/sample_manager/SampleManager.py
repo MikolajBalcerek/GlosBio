@@ -3,7 +3,7 @@ import io
 import re
 import unicodedata
 from io import BytesIO
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, List
 
 import gridfs
 from werkzeug.utils import secure_filename
@@ -144,7 +144,10 @@ class SampleManager:
             sample_names.append(sample['filename'])
         return sample_names
 
-    def save_new_sample(self, username: str, set_type: str, file_bytes: bytes, content_type: str, recognize=True) -> Optional[str]:
+    def save_new_sample(
+            self, username: str, set_type: str, file_bytes: bytes,
+            content_type: str, fake: bool, recognize=True,
+            ) -> Optional[str]:
         """
         saves new sample in samplebase, creates new user if
         it wasn't created yet
@@ -178,7 +181,7 @@ class SampleManager:
             file_id = self._save_file_to_db(
                 filename, file_bytes=wav_bytesIO.read(), content_type=content_type)
             new_file_doc = self._get_sample_file_document_template(
-                filename, file_id, rec_speech=recognized_speech)
+                filename, file_id, fake=fake, rec_speech=recognized_speech)
             self.db_collection.update_one(
                 {'_id': user_id}, {'$push': {f'samples.{set_type}': new_file_doc}})
         except errors.PyMongoError as e:
@@ -342,11 +345,13 @@ class SampleManager:
                 "tags": []
                 }
 
-    def _get_sample_file_document_template(self, filename: str, id: ObjectId, rec_speech: str = "") -> dict:
+    def _get_sample_file_document_template(
+            self, filename: str, id: ObjectId, fake: bool, rec_speech: str = ""
+            ) -> dict:
         """
         get single file document template
         """
-        return {"filename": filename, "id": id, "recognizedSpeech": rec_speech}
+        return {"filename": filename, "id": id, "fake": fake, "recognizedSpeech": rec_speech}
 
     def _get_user_mongo_id(self, username: str) -> ObjectId:
         """
@@ -407,7 +412,7 @@ class SampleManager:
                 raise ValueError(
                     f"Invalid filename retrived from database: {filename}, should be: '<number>.wav'")
 
-            all_filenames_numbers.append(int(regex.group(1)))  
+            all_filenames_numbers.append(int(regex.group(1)))
         last_file = max(all_filenames_numbers)
         next_number = last_file + 1
         return f"{next_number}.wav"
@@ -430,6 +435,80 @@ class SampleManager:
     #             return False, file_extension
     #         else:
     #             return True, file_extension
+
+    def _label_sample_dicts(self, user_num, sample_dicts, multilabel: bool) -> Tuple[List[dict], List[int]]:
+        """
+        Creates labels for samples and filters samples. If `multilabel` is false,
+        labels each sample 0 / 1 depending on 'fake' key associated with sample.
+        If `multilabel` is true, returns only real samples (there is no 'fake' key or is false)
+        and labels each with `user_num`.
+        :param user_num: The user number
+        :param sample_dicts: all dicts associated with user's samples
+        :param multilabel: if false, labels will be 0/1 depending on sample being fake,
+        else `user_num` will be used to labelthe samples
+        :returns: list of filterd sample dicts and their labels
+        """
+        if multilabel:
+            sample_dicts = [
+                sample_dict for sample_dict in sample_dicts
+                if not ('fake' in sample_dict and sample_dict['fake'] == 'true')
+            ]
+            labels = [user_num] * len(sample_dicts)
+        else:
+            labels = [
+                1 - ('fake' in sample_dict and sample_dict['fake'] == 'true') for sample_dict in sample_dicts
+            ]
+        return sample_dicts, labels
+
+    def get_all_samples(self, purpose: str, multilabel: bool, sample_type: str) -> tuple:
+        """
+        Get all samples from the database.
+        :param purpose: either "train" for training samples or "test" for testing
+        :param multilabel: true for multilabel algorithms, false for yes/no models
+        :returns: If multilabel is false, returns two dicts:
+            {'username': [samplelist]}, {'username': [0/1 label list (real/fake)]}.
+        If multilabel is true, returns two lists
+            [sample_list], [label_list],
+        each label is the user's number (int) and won't change after the user is created.
+        """
+        # TODO(mikra): return a generator object instead of a list (memory efficiency)
+        if multilabel:
+            samples, labels = [], []
+        else:
+            samples, labels = {}, {}
+
+        try:
+            user_docs = self.db_collection.find({}).sort('id', 1)
+            # ^this effectively sorts all docs by timestamp created,
+            # so each user will have the same number each time
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+        for num, user_doc in enumerate(user_docs):
+            if not user_doc or 'samples' not in user_doc:
+                continue
+            username = user_doc['name']
+            user_samples = user_doc['samples'][purpose] if purpose in user_doc['samples'] else []
+            user_samples, user_labels = self._label_sample_dicts(num, user_samples, multilabel)
+            if multilabel:
+                samples.extend([self._get_file_from_db(sample['id']) for sample in user_samples])
+                labels.extend(user_labels)
+            else:
+                samples[username] = [self._get_file_from_db(sample['id']) for sample in user_samples]
+                labels[username] = user_labels
+        return samples, labels
+
+    def user_numbers_to_usernames(self, numbers):
+        """
+        Returns list of usernames of users with numbers given.
+        The ordering is based on creation timestamp (Mongo ID).
+        :param numbers: list of numbers to convert.
+        """
+        try:
+            usernames = self.db_collection.find({}, ['name']).sort('id', 1)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return [usernames[num]['name'] for num in numbers]
 
 
 class UsernameException(Exception):

@@ -27,6 +27,7 @@
     "react-scripts": "2.0.3",
     "react-select": "^2.1.2",
     "react-select-material-ui": "^1.1.2",
+    "recharts": "^1.4.2",
     "typeface-roboto": "0.0.54"
   },
   "scripts": {

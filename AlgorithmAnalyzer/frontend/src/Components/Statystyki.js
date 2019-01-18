@@ -5,6 +5,10 @@ import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
 import 'typeface-roboto'
 import labels from '../labels.json'
 import axios from 'axios';
+import _ from 'lodash'
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import WykresyKolowe from './WykresyKolowe'
 
 export default class Statystyki extends Component {
     getMuiTheme = () => createMuiTheme({
@@ -15,9 +19,13 @@ export default class Statystyki extends Component {
             MUIDataTableHeadCell: {
                 fixedHeader: {
                   backgroundColor: '#212121',
+                  minWidth: '105px'
                 },
                 sortActive: {
                     color: 'white'
+                },
+                toolButton:{
+                    margin: '5px'
                 }
               },
             MUIDataTableSelectCell: {
@@ -55,16 +63,25 @@ export default class Statystyki extends Component {
                 title: {
                     color: 'white'
                 } 
+            },
+            MuiTabScrollButton: {
+                root: {
+                    color: 'white'
+                }
             }
           }
       })
       state= {
           userList: [],
-          userFullList: []
+          userFullList: [],
+          value: 0
       }
-
+      componentDidMount(){
+          this.props.userList.map(user=>this.getUserTags(user))
+      }
+      
       componentWillReceiveProps(nextProps){
-          if(nextProps.userList !== this.state.userList) {
+          if(!_.isEqual(nextProps.userList, this.state.userList)) {
             var newUserList = nextProps.userList.slice()
             nextProps.userList.map(user=>this.getUserTags(user))
           }
@@ -74,81 +91,103 @@ export default class Statystyki extends Component {
       getUserTags(user) {
         var self = this
         axios({
-            url: labels.usePath +`/users/${this.props.userList[this.state.user]}/tags`,
+            url: labels.usePath +`/users/${user}/tags`,
             method: 'GET',
             headers: { 'Authorization': labels.apiKey}
           })
             .then(function(response) {
-                console.log(response)
                 var tags = self.state.userTags
+                var userTable = [user]
+                self.props.tagNameList.map(tag=>{
+                    (tag in response.data) ? userTable.push(response.data[tag]) : userTable.push('')}
+                    )
+                var newUserTable = self.state.userFullList
+                newUserTable.push(userTable)
                 self.setState({
-                    userTags: response.data
+                    userFullList: newUserTable
                 })
             })
             .catch(function(error) {
-                self.handleClickVariant("Podczas wczytywania wykresu mfcc wystąpił błąd!", 'error')
                 console.log(error);
 			})
     }
 
+    handleChange = (event, value) => {
+        this.setState({ value });
+      };
+
     render(){
-        const columns = this.props.tagNameList;
- 
-        const data = [
-        ["Joe James", "Test Corp", "Yonkers", "NY", "Joe James", "Test Corp", "Yonkers", "NY", "Joe James", "Test Corp"],
-        ["John Walsh", "Test Corp", "Hartford", "CT", "John Walsh", "Test Corp", "Hartford", "CT", "John Walsh", "Test Corp"],
-        ["Bob Herm", "Test Corp", "Tampa", "FL", "Bob Herm", "Test Corp", "Tampa", "FL", "Bob Herm", "Test Corp"],
-        ["James Houston", "Test Corp", "Dallas", "TX", "James Houston", "Test Corp", "Dallas", "TX", "James Houston", "Test Corp"],
-        ];
+        const columns = ['użytkownik'].concat(this.props.tagNameList)
         
         const options = {
-        filterType: 'checkbox',
-        responsive: 'scroll',
-        expandable: true,
-        textLabels: {
-            body: {
-              noMatch: "Brak danych",
-              toolTip: "Sortuj",
-            },
-            pagination: {
-              next: "Następna strona",
-              previous: "Poprzednia strona",
-              rowsPerPage: "Ilość wierszy na stronie:",
-              displayRows: "z",
-            },
-            toolbar: {
-              search: "Wyszukaj",
-              downloadCsv: "Pobierz CSV",
-              print: "Drukuj",
-              viewColumns: "Zobacz kolumny",
-              filterTable: "Filtruj tabelę",
-            },
-            filter: {
-              all: "Wszystkie",
-              title: "Filtry",
-              reset: "RESETUJ",
-            },
-            viewColumns: {
-              title: "Pokaż kolumny",
-              titleAria: "Pokaż/schowaj kolumny",
-            },
-            selectedRows: {
-              text: "zaznaczone wiersze",
-              delete: "Usuń",
-              deleteAria: "Usuń zaznaczone wiersze",
-            },
+            filterType: 'checkbox',
+            responsive: 'scroll',
+            expandable: true,
+            textLabels: {
+                body: {
+                noMatch: "Brak danych",
+                toolTip: "Sortuj",
+                },
+                pagination: {
+                next: "Następna strona",
+                previous: "Poprzednia strona",
+                rowsPerPage: "Ilość wierszy na stronie:",
+                displayRows: "z",
+                },
+                toolbar: {
+                search: "Wyszukaj",
+                downloadCsv: "Pobierz CSV",
+                print: "Drukuj",
+                viewColumns: "Zobacz kolumny",
+                filterTable: "Filtruj tabelę",
+                },
+                filter: {
+                all: "Wszystkie",
+                title: "Filtry",
+                reset: "RESETUJ",
+                },
+                viewColumns: {
+                title: "Pokaż kolumny",
+                titleAria: "Pokaż/schowaj kolumny",
+                },
+                selectedRows: {
+                text: "zaznaczone wiersze",
+                delete: "Usuń",
+                deleteAria: "Usuń zaznaczone wiersze",
+                },
           }
         };
+
         return(
-            <Paper style={{paddingLeft: 200, paddingRight: 200, paddingTop: 30, paddingBottom: 30, margin: 20,backgroundColor: 'rgba(0, 0, 0, .6)'}}>
-                <MuiThemeProvider theme={this.getMuiTheme()}>
-                    <MUIDataTable 
-                        title={"Lista użytkowników"}
-                        data={data}
-                        columns={columns}
-                        options={options}
-                        />
-                </MuiThemeProvider>
+            <Paper style={{paddingLeft: 30, paddingRight: 30,backgroundColor: 'rgba(0, 0, 0, .6)'}}>
+                <Tabs
+                    value={this.state.value}
+                    onChange={this.handleChange}
+                    indicatorColor="primary"
+                    textColor="primary"
+                    scrollable
+                    scrollButtons="auto"
+                    style={{backgroundColor: 'black', marginBottom: 10}}
+                    >
+                        <Tab label='Tabela' />
+                        <Tab label='Wykresy kołowe' />
+                    </Tabs>
+                {this.state.value === 0 &&
+                    <MuiThemeProvider theme={this.getMuiTheme()}>
+                        <MUIDataTable 
+                            title={"Lista użytkowników"}
+                            data={this.state.userFullList}
+                            columns={columns}
+                            options={options}
+                            />
+                    </MuiThemeProvider>}
+                {this.state.value === 1 &&
+                    <WykresyKolowe
+                        userSoundsTrainCount={this.props.userSoundsTrainCount}
+                        userSoundsTestCount={this.props.userSoundsTestCount}
+                        tagCount={this.props.tagCount}
+                    />
+                }
             </Paper>
         )
     }
