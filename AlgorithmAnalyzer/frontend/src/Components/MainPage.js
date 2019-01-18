@@ -8,7 +8,7 @@ import Testuj2 from "./Testuj2";
 import axios from 'axios';
 import MiddleBar from './MiddleBar'
 import { SnackbarProvider } from 'notistack';
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 
 class MainPage extends Component {
 	state = {
@@ -44,9 +44,8 @@ class MainPage extends Component {
 	getUsers = () => {
 		console.log('działam')
         var self = this
-        console.log(labels.usePath + '/users')
         axios
-            .get(labels.usePath+'/users',{} ,{ 'Authorization': labels.apiKey })
+            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
             .then(function(response) {
 				let userLetList = []
                 response.data.users.map(user => {
@@ -61,7 +60,7 @@ class MainPage extends Component {
     getAlgorithms = () => {
     	var self = this;
         axios
-            .get(labels.usePath + '/algorithms')
+            .get(api_config.usePath + '/algorithms')
             .then(function(response) {
 				let algorithmsList = []
                 response.data.algorithms.map(alg => {

@@ -9,14 +9,14 @@ import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import PropTypes from 'prop-types';
 import axios from 'axios';
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 
 class Train extends Component {
     constructor(props) {
         super(props);
         this.state = {
             algorithm: "", // the name of currently selected algorithm
-            description: "",
+            description: "", // the description of the algorithm
             parameters: {}, // the parameter name.{descriptions,values}
             parameter_values: {}, //values of parameters sent to server, name.{value} object
             status: "", // the status of train tesponse, if the training started or an error occured
@@ -52,7 +52,7 @@ class Train extends Component {
     getAlgorithmDecription = algorithm => {
         var self = this;
         axios
-            .get(labels.usePath + `/algorithms/description/${algorithm}`)
+            .get(api_config.usePath + `/algorithms/description/${algorithm}`)
             .then(function(response) {
                 let description = response.data;
                 console.log(description);
@@ -66,7 +66,7 @@ class Train extends Component {
     getAlgorithmParameters = algorithm => {
         var self = this;
         axios
-            .get(labels.usePath + `/algorithms/parameters/${algorithm}`)
+            .get(api_config.usePath + `/algorithms/parameters/${algorithm}`)
             .then(function(response) {
                 let params = response.data.parameters;
                 let param_vals = {}
@@ -85,7 +85,7 @@ class Train extends Component {
         this.setState({status: ""});
         if(this.state.algorithm === "") return;
         this.setState({status: "Trenowanie..."})
-        axios.post(labels.usePath + `/algorithms/train/${this.state.algorithm}`, {
+        axios.post(api_config.usePath + `/algorithms/train/${this.state.algorithm}`, {
             parameters: this.state.parameter_values
         }).then(res => {
             this.setState({

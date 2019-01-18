@@ -17,7 +17,7 @@ import AudioSpectrum from "react-audio-spectrum"
 import { withSnackbar } from 'notistack'
 import MFCC from './MFCC'
 import Tags from './Tags'
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -37,6 +37,24 @@ class Przeglad extends Component {
         }
     }
 
+    getUsers = () => {
+		console.log('działam')
+        var self = this
+        axios
+            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
+            .then(function(response) {
+				let userLetList = []
+                response.data.users.map(user => {
+                    userLetList.push(user)
+				})
+				self.setData(userLetList)
+            })
+            .catch(function(error) {
+				console.log('lol')
+                self.handleClickVariant("Nie można pobrać użytkowników, brak połączenia z API!", 'error')
+			})
+    }
+    
     pressPlay (){
         this.setState({
             isPlay: !this.state.isPlay
@@ -80,7 +98,7 @@ class Przeglad extends Component {
     getAllUserSounds(user) {
         var self = this
         axios
-            .get(labels.usePath + `/audio/${this.state.type}/${user}`, {}, { 'Authorization': labels.apiKey })
+            .get(api_config.usePath + `/audio/${this.state.type}/${user}`, {}, { 'Authorization': api_config.apiKey })
             .then(function(response) {
 				let userLetSounds = []
                 response.data.samples.map(user => {
@@ -99,17 +117,17 @@ class Przeglad extends Component {
       }
 
     getSound() {
-        this.getMfcc()
         var self = this
         axios({
-            url: labels.usePath +`/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            url: api_config.usePath +`/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
             responseType: 'blob',
             headers: { 
-                'Authorization': labels.apiKey}
+                'Authorization': api_config.apiKey}
           })
             .then(function(response) {
                 console.log(response)
+                self.getMfcc()
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 self.setState({
                     url: url
@@ -128,12 +146,12 @@ class Przeglad extends Component {
             "type": "mfcc"
         })
         axios({
-            url: labels.usePath +`/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            url: api_config.usePath +`/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
             method: 'GET',
-            data: data,
+            params: {"type": "mfcc"},
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': labels.apiKey
+                //'Authorization': api_config.apiKey
             },
             responseType: 'arraybuffer'
           })
@@ -154,14 +172,16 @@ class Przeglad extends Component {
                 console.log(error);
 			})
     }
-
+    componentDidMount () {
+		this.getUsers()
+	}
     getUserTags() {
         console.log('ahoj')
         var self = this
         axios({
-            url: labels.usePath +`/users/${this.props.userList[this.state.user]}/tags`,
+            url: api_config.usePath +`/users/${this.props.userList[this.state.user]}/tags`,
             method: 'GET',
-            headers: { 'Authorization': labels.apiKey}
+            headers: { 'Authorization': api_config.apiKey}
           })
             .then(function(response) {
                 console.log(response)
