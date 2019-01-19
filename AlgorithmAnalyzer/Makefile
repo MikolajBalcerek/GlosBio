@@ -14,13 +14,13 @@ logs:
 	docker-compose logs --follow
 
 logs-api:
-	docker-compose logs api --follow --tail=30
+	docker-compose logs --follow --tail=30 api
 
 logs-webapp:
-	docker-compose logs webapp --follow --tail=30
+	docker-compose logs --follow --tail=30 webapp
 
 logs-db:
-	docker-compose logs webapp --follow --tail=30
+	docker-compose logs --follow --tail=30 db
 
 tests-api:
 	docker-compose run api python -m unittest
