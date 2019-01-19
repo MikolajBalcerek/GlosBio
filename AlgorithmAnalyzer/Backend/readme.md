@@ -1,5 +1,6 @@
 # Algorithm Analyzer Backend REST API
-
+![Build Status](https://travis-ci.com/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.com/MikolajBalcerek/GlosBio)
+ 
 ![Backend's documentation in browser](https://i.imgur.com/WeSk8Dl.jpg)
 
 ### Installing
