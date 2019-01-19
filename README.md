@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.com/MikolajBalcerek/GlosBio)
+
 # GlosBio
 Projekt inżynierskie Głos Biometryczny
 
