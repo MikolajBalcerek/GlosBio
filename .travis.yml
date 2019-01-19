@@ -1,0 +1,32 @@
+dist: xenial
+
+language: python
+
+python: "3.6"
+
+addons:
+  apt:
+    packages:
+    - ffmpeg
+
+services: mongodb
+
+env:
+- APP_DIR=AlgorithmAnalyzer/Backend
+
+before_install:
+- cd $APP_DIR
+- mkdir -p data/db
+- mongod --dbpath=data/db --port 27018 &
+- sleep 3
+
+install:
+- pip install pipenv
+- pipenv install --dev
+
+script:
+- echo $PWD
+- coverage run -m unittest
+
+after_success:
+- codecov
