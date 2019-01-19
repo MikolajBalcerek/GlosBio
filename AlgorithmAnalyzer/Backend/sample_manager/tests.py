@@ -543,9 +543,9 @@ class TestSampleManager(BaseAbstractSampleManagerTestsClass):
                           self.sm._get_normalized_username, username_special)
 
     def test_fnc_is_allowed_file_extension(self):
-        self.assertTrue(self.sm._is_allowed_file_extension("audio/wav"),
+        self.assertTrue(self.sm.is_allowed_file_extension("audio/wav"),
                         "Expected True returned for 'audio/wav'")
-        self.assertFalse(self.sm._is_allowed_file_extension("audio/unknown"),
+        self.assertFalse(self.sm.is_allowed_file_extension("audio/unknown"),
                          "Expected False returned for unknown file extension")
 
     def test_fnc_get_sample_class_document_template(self):
