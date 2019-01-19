@@ -3,11 +3,19 @@ language: python
 python:
 - "3.6"
 
+addons:
+  apt:
+    packages:
+    - ffmpeg
+
+services: mongodb
+
 env:
 - APP_DIR=AlgorithmAnalyzer/Backend
 
 before_install:
 - cd $APP_DIR
+- mongod --shardsvr &
 
 install:
 - pip install pipenv
