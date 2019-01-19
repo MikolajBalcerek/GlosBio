@@ -402,6 +402,8 @@ class SampleManager:
 
         return out
 
+    def get_tags_summary(self):
+
     # def _is_username_valid(self, username: str) -> bool:
     #     """
     #     check if given username is valid
