@@ -6,8 +6,6 @@ python: "3.6"
 
 addons:
   apt:
-    sources:
-    - ppa:mc3man/trusty-media
     packages:
     - ffmpeg
 
