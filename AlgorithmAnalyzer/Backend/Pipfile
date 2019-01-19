@@ -13,9 +13,10 @@ SpeechRecognition = "*"
 pydub = "*"
 python-speech-features = "*"
 matplotlib = "*"
-coverage = "*"
 
 [dev-packages]
+coverage = "*"
+coveralls = "*"
 
 [requires]
 python_version = "3.7"
