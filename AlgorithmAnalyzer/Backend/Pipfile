@@ -13,6 +13,8 @@ SpeechRecognition = "*"
 pydub = "*"
 python-speech-features = "*"
 matplotlib = "*"
+"h5py" = "*"
+tensorflow = "*"
 
 [dev-packages]
 coverage = "*"
@@ -20,4 +22,4 @@ codecov = "*"
 coveralls = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.6"
