@@ -8,6 +8,7 @@ import axios from 'axios';
 import MiddleBar from './MiddleBar'
 import { SnackbarProvider } from 'notistack';
 import api_config from '../api_config.json'
+import _ from 'lodash'
 
 class MainPage extends Component {
 	state = {
@@ -78,7 +79,7 @@ class MainPage extends Component {
 	getTagList() {
         var self = this
         axios
-            .get(labels.usePath +`/tag`, {}, { 'Authorization': labels.apiKey })
+            .get(api_config.usePath +`/tag`, {}, { 'Authorization': api_config.apiKey })
             .then(function(response) {
 				self.setState({
                     tagNameList: response.data
@@ -87,7 +88,7 @@ class MainPage extends Component {
 				response.data.map((tag, id)=>{
 					tagCount.push({tagName: tag, values: []})
 					axios
-						.get(labels.usePath +`/tag/${tag}`, {}, { 'Authorization': labels.apiKey })
+						.get(api_config.usePath +`/tag/${tag}`, {}, { 'Authorization': api_config.apiKey })
 						.then(function(response) {
 							console.log(response.data)
 							Array.isArray(response.data)&&response.data.map(t=>
@@ -105,9 +106,9 @@ class MainPage extends Component {
 getUserTags(user) {
 	var self = this
 	axios({
-		url: labels.usePath +`/users/${user}/tags`,
+		url: api_config.usePath +`/users/${user}/tags`,
 		method: 'GET',
-		headers: { 'Authorization': labels.apiKey}
+		headers: { 'Authorization': api_config.apiKey}
 	  })
 		.then(function(response) {
 			console.log('tagi', response.data, typeof response.data)
@@ -146,7 +147,7 @@ handleClickVariant(text, variant){
 	getAllUserSounds(user, type) {
         var self = this
         axios
-            .get(labels.usePath + `/audio/${type}/${user}`, {}, { 'Authorization': labels.apiKey })
+            .get(api_config.usePath + `/audio/${type}/${user}`, {}, { 'Authorization': api_config.apiKey })
             .then(function(response) {
 				var userList = []
 				if(type === 'train') { 

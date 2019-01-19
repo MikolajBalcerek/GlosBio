@@ -2,8 +2,7 @@ import React, { Component } from 'react'
 import Paper from '@material-ui/core/Paper';
 import MUIDataTable from "mui-datatables";
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
-import 'typeface-roboto'
-import labels from '../labels.json'
+import api_config from '../api_config.json'
 import axios from 'axios';
 import _ from 'lodash'
 import Tabs from '@material-ui/core/Tabs';
@@ -36,7 +35,7 @@ export default class Statystyki extends Component {
             MUIDataTableToolbar: {
                 titleText: {
                     color: 'white !important',
-                    fontFamily: 'Roboto'
+                    fontFamily: 'Roboto, sans-serif'
                 }
             },
             MUIDataTableToolbarSelect: {
@@ -45,7 +44,7 @@ export default class Statystyki extends Component {
                 },
                 title: {
                     color: 'white',
-                    fontFamily: 'Roboto'
+                    fontFamily: 'Roboto, sans-serif'
                 }
             },
             MUIDataTableViewCol: {
@@ -91,9 +90,9 @@ export default class Statystyki extends Component {
       getUserTags(user) {
         var self = this
         axios({
-            url: labels.usePath +`/users/${user}/tags`,
+            url: api_config.usePath +`/users/${user}/tags`,
             method: 'GET',
-            headers: { 'Authorization': labels.apiKey}
+            headers: { 'Authorization': api_config.apiKey}
           })
             .then(function(response) {
                 var tags = self.state.userTags

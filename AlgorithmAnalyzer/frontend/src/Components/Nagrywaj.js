@@ -357,7 +357,7 @@ class Recorder extends Component {
                             style={{ display: "block", display: 'flex' }}
                             onClick={()=>this.onPressButtonUpload(this.state.value, true, 0)}
                         >
-                            Save
+                            Zapisz
                             <CloudUploadIcon style={{paddingLeft: 5}}/>
                         </Button>
                         <Button
@@ -366,7 +366,7 @@ class Recorder extends Component {
                             style={{ display: "block", display: 'flex', marginTop: 20 }}
                             onClick={()=>this.saveAll()}
                         >
-                            Save all
+                            Zapisz wszystkie
                             <CloudUploadIcon style={{paddingLeft: 5}}/>
                         </Button>
                 <Typography
