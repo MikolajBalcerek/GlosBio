@@ -19,7 +19,6 @@ tensorflow = "*"
 [dev-packages]
 coverage = "*"
 codecov = "*"
-coveralls = "*"
 
 [requires]
 python_version = "3.6"
