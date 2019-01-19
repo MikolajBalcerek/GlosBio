@@ -23,6 +23,10 @@ before_install:
 install:
 - pip install pipenv
 - pipenv install
+- pipenv install codecov
 
 script:
-- python -m unittest
+- coverage run -m unittest
+
+after_success:
+- codecov
