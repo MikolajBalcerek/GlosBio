@@ -30,33 +30,40 @@ export default class MiddleBar extends Component {
         }
         return(
             <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-around'}}>
-                <img  
+                <img
                     onMouseEnter={this.setLogo}
                     onMouseLeave={this.setLogo}
-                    src={this.state.isLogo ? logo2 : logo} 
+                    src={this.state.isLogo ? logo2 : logo}
                     style={{width: 150, height: 150, cursor: 'pointer'}}
                     onClick={()=>this.props.handleChange1()}
                 />
-                <Button 
-                    variant="outlined" 
-                    style={this.props.value === 1 ? styles.button : styles.buttonHidden } 
-                    onClick={this.props.handleChange1} 
+                <Button
+                    variant="outlined"
+                    style={this.props.value === 1 ? styles.button : styles.buttonHidden }
+                    onClick={this.props.handleChange1}
                 >
                     Nagrywaj
                 </Button>
-                <Button 
-                    variant="outlined" 
+                <Button
+                    variant="outlined"
                     style={this.props.value === 2 ? styles.button : styles.buttonHidden}
-                    onClick={this.props.handleChange2} 
+                    onClick={this.props.handleChange2}
                 >
                     Przegląd
                 </Button>
-                <Button 
-                    variant="outlined" 
-                    style={this.props.value === 3 ? styles.button : styles.buttonHidden} 
+                <Button
+                    variant="outlined"
+                    style={this.props.value === 3 ? styles.button : styles.buttonHidden}
                     onClick={this.props.handleChange3}
                     >
                     Trenuj
+                </Button>
+                <Button
+                    variant="outlined"
+                    style={this.props.value === 4 ? styles.button : styles.buttonHidden}
+                    onClick={this.props.handleChange4}
+                    >
+                    Nagraj i Testuj
                 </Button>
             </div>
         )
