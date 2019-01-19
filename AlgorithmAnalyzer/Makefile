@@ -25,3 +25,9 @@ logs-db:
 tests-api:
 	docker-compose run api python -m unittest
 	docker-compose stop
+
+populate-api-tags:
+	docker-compose run api python populate_tags.py
+
+db-clear:
+	docker-compose run db mongo samplebase --eval "db.dropDatabase()"
