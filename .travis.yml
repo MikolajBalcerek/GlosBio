@@ -1,0 +1,17 @@
+language: python
+
+python:
+- "3.6"
+
+env:
+- APP_DIR=AlgorithmAnalyzer/Backend
+
+before_install:
+- cd $APP_DIR
+
+install:
+- pip install pipenv
+- pipenv install
+
+script:
+- python -m unittest
