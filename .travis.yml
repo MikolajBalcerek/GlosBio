@@ -25,7 +25,9 @@ install:
 - pipenv install --dev
 
 script:
+- echo $PWD
 - coverage run -m unittest
 
 after_success:
+- codecov
 - coveralls
