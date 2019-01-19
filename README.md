@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.com/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.com/MikolajBalcerek/GlosBio)
-
+﻿[![Build Status](https://travis-ci.com/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.com/MikolajBalcerek/GlosBio) [![Coverage Status](https://coveralls.io/repos/github/MikolajBalcerek/GlosBio/badge.svg?branch=master)](https://coveralls.io/github/MikolajBalcerek/GlosBio?branch=master)
 # GlosBio
 Projekt inżynierskie Głos Biometryczny
 
