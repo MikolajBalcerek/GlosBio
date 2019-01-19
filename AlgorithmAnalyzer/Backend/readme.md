@@ -1,6 +1,7 @@
 # Algorithm Analyzer Backend REST API
-![Build Status](https://travis-ci.com/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.com/MikolajBalcerek/GlosBio)
+[![Build Status](https://travis-ci.com/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.com/MikolajBalcerek/GlosBio)
  
+[![Coverage Status](https://coveralls.io/repos/github/MikolajBalcerek/GlosBio/badge.svg?branch=master)](https://coveralls.io/github/MikolajBalcerek/GlosBio?branch=master)
 ![Backend's documentation in browser](https://i.imgur.com/WeSk8Dl.jpg)
 
 ### Installing
