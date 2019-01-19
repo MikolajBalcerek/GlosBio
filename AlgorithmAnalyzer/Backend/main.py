@@ -8,6 +8,7 @@ from flask_api import FlaskAPI, status
 from flask_cors import CORS
 from functools import wraps
 
+from algorithms.algorithm_manager import NotTrainedException
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from utils import convert_audio
 
@@ -71,6 +72,137 @@ def handle_users_endpoint():
     return {'users': app.config['SAMPLE_MANAGER'].get_all_usernames()}, status.HTTP_200_OK
 
 
+@app.route('/algorithms', methods=['GET'])
+def get_algorithms_names():
+    """
+    Returns the list of names of all algorithms available.
+    """
+    return {'algorithms': app.config['ALGORITHM_MANAGER'].get_algorithms()}, status.HTTP_200_OK
+
+
+@app.route('/algorithms/description/<string:name>', methods=['GET'])
+def get_algorithm_description(name):
+    """
+    Returns the description of the algorithm with name <string:name>.
+    """
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
+    if name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
+
+    description = app.config['ALGORITHM_MANAGER'](name).get_description()
+    return description if description else "", status.HTTP_200_OK
+
+
+@app.route('/algorithms/parameters/<string:name>', methods=['GET'])
+def get_algorithm_parameters(name):
+    """
+    Return all parameters of a given algorithm in the form:
+        {'parameter_name': {
+            'description': 'A description.',
+            'values': [list of possible values]
+            }
+        }
+    <string:name> is the name of the algorithm.
+    """
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
+    if name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
+
+    return {'parameters': app.config['ALGORITHM_MANAGER'].get_parameters(name)}, status.HTTP_200_OK
+
+
+@app.route('/algorithms/train/<string:name>', methods=['POST'])
+@requires_db_connection
+def train_algorithm(name):
+    """
+    Starts to train the algorithm with name <string:name>.
+    Request's data should containt the parameters in the form
+        {'parameter_name': 'value'}
+    Where the paremeter names and values should agree with the
+    output of GET /algorithm/parameters/<string:name>.
+    """
+    if 'parameters' not in request.data:
+        return 'Missing "params" field in request body.', status.HTTP_400_BAD_REQUEST
+
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
+    if name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
+
+    params = request.data['parameters']
+    params_legend = app.config['ALGORITHM_MANAGER'].get_parameters(name)
+
+    if set(params.keys()) != set(params_legend.keys()):
+        return 'Bad algorithm parameters.', status.HTTP_400_BAD_REQUEST
+
+    params_types = app.config['ALGORITHM_MANAGER'].get_parameter_types(name)
+
+    for param in params:
+        try:
+            params_types[param](params[param])
+        except (ValueError, TypeError):
+            return f'Bad value type of parameter "{param}"', status.HTTP_400_BAD_REQUEST
+
+    if any(params_types[key](params[key]) not in params_legend[key]['values'] for key in params):
+        return 'At least one parameter has bad value.', status.HTTP_400_BAD_REQUEST
+
+    alg_manager = app.config['ALGORITHM_MANAGER'](name)
+
+    samples, labels = app.config['SAMPLE_MANAGER'].get_all_samples(
+        purpose='train',
+        multilabel=alg_manager.multilabel,
+        sample_type='wav'
+    )
+
+    app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params)
+    return "Training ended.", status.HTTP_200_OK
+
+
+@app.route('/algorithms/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
+@requires_db_connection
+def predict_algorithm(user_name, algorithm_name):
+    """
+    Uses the algorithm with name <string:algorithm_name> to predict,
+    if the wav sent in request.files contains the voice of the user
+    with name <string:user_name>. Returns a json of the form
+        {
+            "prediction": "the result of prediction - true / false",
+            "meta": {"key": "value" additional data returned by the algorithm}
+        }
+    where the additional data may contain things like probabilities etc.
+    """
+    if 'file' not in request.files:
+        return 'No file part', status.HTTP_400_BAD_REQUEST
+
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
+    if algorithm_name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
+
+    if not app.config['SAMPLE_MANAGER'].user_exists(user_name):
+        return "Such user doesn't exist", status.HTTP_400_BAD_REQUEST
+
+    file = request.files.get('file')
+    if not app.config['SAMPLE_MANAGER'].is_allowed_file_extension(file.mimetype):
+        file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
+
+    alg_manager = app.config['ALGORITHM_MANAGER'](algorithm_name)
+
+    try:
+        prediction, meta = alg_manager.predict(user_name, file)
+    except NotTrainedException as e:
+            return str(e), 422
+
+    if alg_manager.multilabel:
+        try:
+            meta['Predicted user'] = \
+                app.config["SAMPLE_MANAGER"].user_numbers_to_usernames([prediction])[0]
+        except IndexError:
+            prediction = False
+            meta['Predicted user'] = 'Algorithm has predicted a nonexisting user.'
+        else:
+            prediction = meta['Predicted user'] == user_name
+    return {"prediction": prediction, 'meta': meta}, status.HTTP_200_OK
+
+
 @app.route("/audio/<string:type>", methods=['POST'])
 @requires_db_connection
 def handling_audio_endpoint(type):
@@ -79,6 +211,9 @@ def handling_audio_endpoint(type):
     being sent/received from test files
 
     POST to send a new audio file
+    <string:type> should be either 'train' or 'test';
+    Requests body should contain 'username' and optionally 'fake'.
+    The last should be true/false depending on the sample being real.
     """
     if type not in ['train', 'test']:
         return [f"Unexpected type '{type}' requested"], status.HTTP_400_BAD_REQUEST
@@ -93,9 +228,13 @@ def handling_audio_endpoint(type):
     username = request.data.get('username')
     file = request.files.get('file')
 
+    fake = False
+    if 'fake' in request.data:
+        fake = request.data['fake']
+
     try:
         recognized_speech = app.config['SAMPLE_MANAGER'].save_new_sample(
-            username, type, file.read(), content_type=file.mimetype)
+            username, type, file.read(), fake=fake, content_type=file.mimetype)
     except UsernameException:
         return ['Provided username contains special characters'], status.HTTP_400_BAD_REQUEST
 
