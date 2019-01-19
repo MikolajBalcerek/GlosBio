@@ -167,7 +167,7 @@ class SampleManager:
         if not self.user_exists(username):
             self.create_user(username)
 
-        if(self._is_allowed_file_extension(content_type)):
+        if(self.is_allowed_file_extension(content_type)):
             wav_bytesIO = BytesIO(file_bytes)
         else:
             webm_bytesIO = BytesIO(file_bytes)
@@ -355,7 +355,7 @@ class SampleManager:
         return out['values']
 
     def tag_exists(self, tag_name: str) -> bool:
-        """ 
+        """
         check if tag exists in tag base
         :params tag_name: str eg. 'gender'
         :return does tag exist: bool
@@ -408,13 +408,13 @@ class SampleManager:
     #     """
     #     return not re.match('^\w+$', username)
 
-    def _is_allowed_file_extension(self, file_type: str) -> bool:
+    def is_allowed_file_extension(self, file_type: str) -> bool:
         """
         checks whether mimetype of the file is allowed
         :param file_type: str
         :return: True/False
         """
-        return True if file_type in self.ALLOWED_SAMPLE_CONTENT_TYPE else False
+        return file_type in self.ALLOWED_SAMPLE_CONTENT_TYPE
 
     # def _create_plot_mfcc_for_sample(self, audio_bytes,
     #                                  file_extension: str = "png") -> bytes:
