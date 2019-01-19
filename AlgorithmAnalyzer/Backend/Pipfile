@@ -16,8 +16,6 @@ matplotlib = "*"
 "h5py" = "*"
 tensorflow = "*"
 coverage = "*"
-"h5py" = "*"
-tensorflow = "*"
 
 [dev-packages]
 
