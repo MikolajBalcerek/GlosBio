@@ -15,9 +15,9 @@ env:
 - APP_DIR=AlgorithmAnalyzer/Backend
 
 before_install:
-- mkdir -p /data/db
+- mkdir -p ~/data/db
 - cd $APP_DIR
-- mongod --dbpath=/data/db --port 27018 &
+- mongod --dbpath=~/data/db --port 27018 &
 - sleep 3
 
 install:
