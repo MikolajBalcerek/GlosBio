@@ -1,8 +1,9 @@
 from tensorflow.python.keras.layers import Activation, Dropout, Dense, Flatten
 from tensorflow.python.keras.models import Sequential, load_model
-from tensorflow.python.keras.utils.np_utils import to_categorical
+# from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflow.python.keras.backend import clear_session
 from tensorflow import reset_default_graph
+import numpy as np
 
 from algorithms.algorithms.preprocessing import read_samples, read_sample
 from algorithms.base_algorithm import Algorithm
@@ -61,11 +62,26 @@ class SimpleNN(Algorithm):
         print(samples)
         print(labels)  # for some reason gridFS has problems without those prints
         X, y = read_samples(samples, labels, normalized_length=self.SAMPLE_LENGTH)
-        y = to_categorical(y)
+
+        y = self.to_categorical(y)
         self._prepare_model()
         self.model.fit(X, y,
                        epochs=self.parameters['epochs'], validation_split=.25, verbose=self.parameters['verbosity']
                        )
+
+    def to_categorical(self, y):
+        y = np.array(y, dtype='int')
+        input_shape = y.shape
+        if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
+            input_shape = tuple(input_shape[:-1])
+        y = y.ravel()
+        num_classes = np.max(y) + 1
+        n = y.shape[0]
+        categorical = np.zeros((n, num_classes), dtype=float)
+        categorical[np.arange(n), y] = 1
+        output_shape = input_shape + (num_classes,)
+        categorical = np.reshape(categorical, output_shape)
+        return categorical
 
     def predict(self, data):
         data = read_sample(data, normalized_length=self.SAMPLE_LENGTH)
