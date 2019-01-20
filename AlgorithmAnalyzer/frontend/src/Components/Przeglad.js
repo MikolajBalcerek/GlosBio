@@ -1,23 +1,18 @@
 import React, { Component } from 'react'
 import Paper from '@material-ui/core/Paper';
-import MenuItem from '@material-ui/core/MenuItem';
-import FormControl from '@material-ui/core/FormControl';
-import Select from '@material-ui/core/Select';
-import InputLabel from '@material-ui/core/InputLabel';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
 import PropTypes from 'prop-types';
 import axios from 'axios';
-import FormLabel from '@material-ui/core/FormLabel';
-import RadioGroup from '@material-ui/core/RadioGroup';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Radio from '@material-ui/core/Radio';
-import AudioSpectrum from "react-audio-spectrum"
 import { withSnackbar } from 'notistack'
 import MFCC from './MFCC'
 import Tags from './Tags'
 import api_config from '../api_config.json'
+import UserPrzeglad from './UserPrzeglad' 
+import Fade from '@material-ui/core/Fade';
+import UserPrzegladComponent from './UserPrzegladComponent';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import TagPrzeglad from './TagPrzeglad'
+import TagPrzegladComponent from './TagPrzegladComponent'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -33,28 +28,60 @@ class Przeglad extends Component {
             mfcc: null,
             mfccOpen: false,
             userTags: [],
-            tagsOpen: false
+            tagsOpen: false,
+            value: 0,
+            userValue: 0,
+            userTagCount:[],
+            tagValue: null,
+            tabPrzeglad: 0,
+            tag: '',
+            tagValuesList: [],
+            tagValues: []
         }
     }
 
-    getUsers = () => {
-		console.log('działam')
+    handleChangeName = event => {
+        this.setState({ [event.target.name]: event.target.value }, ()=>this.getUserTagValues());
+      };
+
+      handleChangeTagValue = event => {
+        this.setState({ [event.target.name]: event.target.value });
+      };
+
+    getUserTagValues(){
         var self = this
         axios
-            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
+            .get(api_config.usePath +`/tag/${this.props.tagNameList[this.state.name]}`, {}, { 'Authorization': api_config.apiKey })
             .then(function(response) {
-				let userLetList = []
-                response.data.users.map(user => {
-                    userLetList.push(user)
-				})
-				self.setData(userLetList)
+                console.log(response.data)
+				self.setState({
+                    tagValuesList: response.data
+                })
             })
             .catch(function(error) {
-				console.log('lol')
-                self.handleClickVariant("Nie można pobrać użytkowników, brak połączenia z API!", 'error')
+                console.log(error);
 			})
     }
-    
+
+    addTagToUser(){
+        var self = this
+        let fd = new FormData();
+        fd.append("name", this.props.tagNameList[this.state.name]);
+        fd.append("value", this.state.tagValuesList[this.state.tagValue]);
+        axios
+            .post(api_config.usePath +`/users/${this.props.userList[this.state.user]}/tags`, fd, { 'Authorization': api_config.apiKey })
+            .then(function() {
+                self.getUserTags()
+                self.setState({
+                    tagValue: null,
+                    name: ''
+                })
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
+    }  
+
     pressPlay (){
         this.setState({
             isPlay: !this.state.isPlay
@@ -73,28 +100,42 @@ class Przeglad extends Component {
     }
 
     handleChangeSound = event => {
+        console.log(event.target.value)
         this.setState({ [event.target.name]: event.target.value });
       };
 
     handleChangeUser = event => {
-        this.setState({ [event.target.name]: event.target.value }, ()=>this.getUserTags());
-        this.getAllUserSounds(this.props.userList[event.target.value])
+        this.setState({ [event.target.name]: event.target.value }, ()=>{
+            this.getUserTags(this.props.userList[event.target.value])
+        });
+        
       };
 
-    setData (array)  {
-		this.setState({
-			userSounds: array
-		})
-    }
+    handleChangeTag = event => {
+        this.setState({ [event.target.name]: event.target.value }, ()=>this.getTagValues(this.props.tagNameList[event.target.value]))
+        
+      };
 
     handleTypeChange = event => {
         let self = this
-        this.setState({ type: event.target.value });
-        setTimeout(function(){
-            self.getAllUserSounds(self.props.userList[self.state.user])
-        }, 300);
+        this.setState({ type: event.target.value, sound: '' }, ()=>this.getAllUserSounds(this.props.userList[this.state.user]));
       };
-    
+    getTagCount(user){
+        var self = this
+        axios
+            .get(api_config.usePath + `/users/${user}`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+                let userTagCount = []
+                userTagCount.push({name: 'test', value: response.data.samples[0].test})
+                userTagCount.push({name: 'train', value: response.data.samples[0].train})
+				self.setState({
+                    userTagCount: userTagCount
+                })
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
+    }
     getAllUserSounds(user) {
         var self = this
         axios
@@ -104,13 +145,33 @@ class Przeglad extends Component {
                 response.data.samples.map(user => {
                     userLetSounds.push(user)
 				})
-				self.setData(userLetSounds)
+				self.setState({
+                    userSounds: userLetSounds
+                }, ()=>self.getTagCount(user))
             })
             .catch(function(error) {
                 console.log(error);
 			})
     }
-    
+
+    getTagValues(tag){
+        var self = this
+        axios
+            .get(api_config.usePath + `/tag/${tag}`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+				let tagValues = []
+                response.data.map(user => {
+                    tagValues.push(user)
+				})
+				self.setState({
+                    tagValues: tagValues
+                })
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
+    }
+
     handleClickVariant(text, variant){
 		// variant could be success, error, warning or info
 		this.props.enqueueSnackbar(text, { variant });
@@ -139,6 +200,14 @@ class Przeglad extends Component {
                 console.log(error);
 			})
     }
+
+    handleChange = (event, value) => {
+        this.setState({ value });
+      }
+    handleChangeUserTab = (event, value) => {
+        console.log('kurwa',event, value)
+        this.setState({ userValue: value });
+      }
 
     getMfcc() {
         var self = this
@@ -172,11 +241,8 @@ class Przeglad extends Component {
                 console.log(error);
 			})
     }
-    componentDidMount () {
-		this.getUsers()
-	}
-    getUserTags() {
-        console.log('ahoj')
+
+    getUserTags(user) {
         var self = this
         axios({
             url: api_config.usePath +`/users/${this.props.userList[this.state.user]}/tags`,
@@ -188,122 +254,113 @@ class Przeglad extends Component {
                 var tags = self.state.userTags
                 self.setState({
                     userTags: response.data
-                })
+                }, ()=>self.getAllUserSounds(user))
             })
             .catch(function(error) {
                 self.handleClickVariant("Podczas wczytywania wykresu mfcc wystąpił błąd!", 'error')
                 console.log(error);
 			})
     }
+    handleChangePrzeglad= (event, value) =>{
+        this.setState({
+            tabPrzeglad: value
+        })
+    }
     render(){
         return(
-            <Paper style={{ margin: 20,backgroundColor: 'rgba(0, 0, 0, .6)'}}>   
+            <Fade in={true}>
+            <Paper style={{ backgroundColor: 'rgba(0, 0, 0, .6)'}}>   
                 <div
 				    style={{display: 'flex', flexDirection: 'row'}}
 			        >
                     <div 
                         style={{
                             backgroundColor: 'rgba(0, 0, 0, .8)',
-                            width: '100%',
+                            width: 280,
                             margin: 20,
                             borderRadius: 5,
                             textAlign: 'center',
                             display: 'flex',
                             flexDirection: 'column',
-                            padding: 15,
+                            paddingLeft: 25,
+                            paddingRight: 25,
+                            paddingTop: 15,
                             border: '3px solid rgba(120, 0, 0, .6)',
                             alignItems: 'center',
                             justifyContent: 'center'
                         }}
-                    >
-                    <Grid item xs={12} style={{display: 'flex',  justifyContent:'space-around', alignItems:'center', width: '100%'}}> 
-                    <FormControl style={{ minWidth: 200, paddingRight: 10 }}>
-                        <InputLabel >Wybierz użytkownika</InputLabel>
-                        <Select
-                            value={this.state.user}
-                            onChange={this.handleChangeUser}
-                            inputProps={{
-                            name: 'user',
-                            }}
-                        >
-                        <MenuItem value="">
-                        <em>None</em>
-                    </MenuItem>
-                    {this.props.userList && this.props.userList.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
-
-                    </Select>
-                </FormControl>
-                <FormControl component="fieldset">
-                    <FormLabel component="legend">Wybierz typ nagrania:</FormLabel>
-                                <RadioGroup
-                                    value={this.state.type}
-                                    onChange={this.handleTypeChange}
-                                    style={{flexDirection: 'row'}}
-                                >
-                                    <FormControlLabel value="train" control={<Radio />} label="Trenowanie" />
-                                    <FormControlLabel value="test" control={<Radio />} label="Test" />
-                                </RadioGroup>
-                            </FormControl>
-                <FormControl style={{ minWidth: 200, paddingRight: 10 }}>
-                        <InputLabel >Wybierz próbkę</InputLabel>
-                        <Select
-                            value={this.state.sound}
-                            onChange={this.handleChangeSound}
-                            inputProps={{
-                            name: 'sound'
-                            }}
-                        >
-                        <MenuItem value=""/>
-                        {this.state.userSounds && this.state.userSounds.map((sound, id) => <MenuItem key={id} value={id}>{sound}</MenuItem>)}
-                    </Select>
-                </FormControl>
-                    <Button 
-                        onClick={()=>this.getSound()} 
-                        color='primary' 
-                        variant="contained">
-                        Załaduj próbkę
-                    </Button>
-                    <Button 
-                        onClick={()=>this.handleOpenTags()}
-                        color='primary' 
-                        variant="contained">
-                         Tagi
-                    </Button>
-                </Grid>
-                <Grid item xs={12} style={{display: 'flex',  justifyContent:'space-around', alignItems:'center', width: '100%', marginTop: 30, minHeight: 300 }}> 
-                <Typography variant="headline" gutterBottom>
-                        Analiza próbki
-                </Typography>
-                <audio id="audio-element"
-                            src={this.state.url}
-                            controls
-                            >
-                        </audio>
-                        <AudioSpectrum
-                            id="audio-canvas"
-                            height={200}
-                            width={300}
-                            audioId={'audio-element'}
-                            capColor={'red'}
-                            capHeight={2}
-                            meterWidth={2}
-                            meterCount={512}
-                            meterColor={[
-                                {stop: 0, color: '#f00'},
-                                {stop: 0.5, color: '#0CD7FD'},
-                                {stop: 1, color: 'red'}
-                            ]}
-                            gap={4}
-                            />
-                            {this.state.mfcc &&<Button onClick={()=>this.handleOpenMfcc()}>
-                              <img 
-                                src={this.state.mfcc} 
-                                style={{
-                                    width:280, backgroundColor: 'white', borderRadius: 10
-                                    }} 
-                                    />
-                            </Button>}
-                </Grid>
+                    > 
+            <Tabs
+                value={this.state.tabPrzeglad}
+                onChange={(e, v)=>this.handleChangePrzeglad(e,v)}
+                indicatorColor="primary"
+                textColor="primary"
+                fixed
+                style={{backgroundColor: 'black', marginBottom: 10, width: 320}}
+                >
+                <Tab label='Użytkownicy' />
+                <Tab label='Tagi' />
+            </Tabs>
+                {this.state.tabPrzeglad === 0 &&<UserPrzeglad
+                    user={this.state.user}
+                    handleChangeUser={(e)=>this.handleChangeUser(e)} 
+                    userList={this.props.userList}
+                    userValue={this.state.userValue}
+                    handleChangeUserTab={(e, v)=>this.handleChangeUserTab(e, v)}
+                    userTagCount={this.state.userTagCount}
+                    userTags={this.state.userTags}
+                    name={this.state.name}
+                    handleChangeName={(e)=>this.handleChangeName(e)}
+                    tagNameList={this.props.tagNameList}
+                    tagValue={this.state.tagValue}
+                    handleChangeTagValue={(e)=>this.handleChangeTagValue(e)}
+                    tagValuesList={this.state.tagValuesList}
+                    addTagToUser={()=>this.addTagToUser()}
+                />}
+                {this.state.tabPrzeglad === 1 &&<TagPrzeglad
+                    tagNameList={this.props.tagNameList}
+                    handleOpenTags={()=>this.handleOpenTags()}
+                    tag={this.state.tag}
+                    tagValuesList={this.state.tagValues}
+                    handleChangeTag={(e,v)=>this.handleChangeTag(e,v)}
+                />}
+                </div>
+                <div
+                    style={{
+                        backgroundColor: 'rgba(0, 0, 0, .6)',
+                        width: '100%',
+                        height: 440,
+                        margin: 20,
+                        borderRadius: 5,
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: 15,
+                        border: '3px solid rgba(120, 0, 0, .6)',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                {this.state.tabPrzeglad === 0 &&<UserPrzegladComponent 
+                    userList={this.props.userList}
+                    user={this.state.user}
+                    type={this.state.type}
+                    handleTypeChange={(e)=>this.handleTypeChange(e)}
+                    sound={this.state.sound}
+                    handleChangeSound={(e)=>this.handleChangeSound(e)}
+                    userSounds={this.state.userSounds}
+                    getSound={()=>this.getSound()}
+                    url={this.state.url}
+                    value={this.state.value}
+                    handleChange={(e, v)=>this.handleChange(e,v)}
+                    mfcc={this.state.mfcc}
+                    handleOpenMfcc={()=>this.handleOpenMfcc()}
+                />}
+                {this.state.tabPrzeglad === 1 &&
+                    <TagPrzegladComponent
+                        tagNameList={this.props.tagNameList}
+                        userFullList={this.props.userFullList}
+                    />}
                 </div>
               </div>
               <MFCC 
@@ -318,8 +375,11 @@ class Przeglad extends Component {
                     tagsOpen={this.state.tagsOpen}
                     handleOpenTags={()=>this.handleOpenTags()}
                     getUserTags={()=>this.getUserTags()}
+                    getTagList={()=>this.props.getTagList()}
+                    tagNameList={this.props.tagNameList}
                 />
             </Paper>
+            </Fade>
         )
     }
 }

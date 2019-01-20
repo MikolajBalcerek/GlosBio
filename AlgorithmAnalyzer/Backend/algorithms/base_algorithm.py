@@ -1,6 +1,20 @@
 from abc import ABCMeta, abstractmethod, abstractclassmethod
 
 
+class AlgorithmException(Exception):
+    """
+    This exception is meant to be thrown at any point
+    in the algorithm. If something goes wrong,
+    the error with the message given.
+    """
+    def __init__(self, message):
+        super().__init__(self, message)
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
 class Algorithm(metaclass=ABCMeta):
     """
     This is an interface for all algorithms to be added.

@@ -148,9 +148,14 @@ android {
 }
 
 dependencies {
+    compile project(':react-native-fs')
+    compile project(':rn-fetch-blob')
     compile project(':react-native-sound')
     compile project(':react-native-audio-record')
-    compile project(':react-native-vector-icons')
+    compile project(':react-native-background-upload')
+    implementation project(':react-native-sound')
+    implementation project(':react-native-audio-record')
+    implementation project(':react-native-vector-icons')
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "com.android.support:appcompat-v7:${rootProject.ext.supportLibVersion}"
     implementation "com.facebook.react:react-native:+"  // From node_modules

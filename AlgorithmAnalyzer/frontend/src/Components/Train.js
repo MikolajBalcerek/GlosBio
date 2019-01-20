@@ -10,6 +10,13 @@ import Button from '@material-ui/core/Button';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import api_config from '../api_config.json'
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Fade from '@material-ui/core/Fade';
+import { withSnackbar } from 'notistack'
 
 class Train extends Component {
     constructor(props) {
@@ -23,6 +30,11 @@ class Train extends Component {
             // TODO(mikra): add server events informing about training status
         }
     }
+
+    handleClickVariant(text, variant){
+        // variant could be success, error, warning or info
+        this.props.enqueueSnackbar(text, { variant });
+      }
 
     handleChangeAlgorithm = event => {
         this.setState({
@@ -93,7 +105,8 @@ class Train extends Component {
             })
             console.log(res)
         }).catch(err => {
-            console.log(err.response.data)
+            this.handleClickVariant(err.response.data, 'error')
+
         })
     };
     renderParameter  = name => {
@@ -101,26 +114,27 @@ class Train extends Component {
         let params = this.state.parameters[name];
         let val = this.state.parameter_values[name];
         return (
-        <tr style={{borderBottom: "1px solid #fff"}} key={name /* needed to mitigate a warning */}>
-            <td><Typography variant="body2" style={{color: "#fff"}} gutterBottom> {name}</Typography></td>
-            <td style={{borderLeft: "2px solid #fff"}}><Typography variant="body2" style={{color: "#fff"}} gutterBottom> {params.description} </Typography></td>
-            <td style={{borderLeft: "2px solid #fff"}}>
-                <Select
-                                    value={val}
-                                    onChange={event => this.handleChangeParameter(event, name)}
-                                    inputProps={{
-                                        name: 'algorithm',
-                                    }}
-                                >
-                                {params.values.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
-                </Select>
-            </td>
-        </tr>
+            <TableRow key={name}>
+                <TableCell>{name}</TableCell>
+                <TableCell>{params.description}</TableCell>
+                <TableCell>
+                    <Select
+                        value={val}
+                        onChange={event => this.handleChangeParameter(event, name)}
+                        inputProps={{
+                            name: 'algorithm',
+                            }}
+                    >
+                        {params.values.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+                    </Select>
+                </TableCell>
+            </TableRow>
         )
     };
 
     render(){
         return(
+            <Fade in={true}>
             <Paper style={{ margin: 20,backgroundColor: 'rgba(0, 0, 0, .6)'}}>
                 <div
 				    style={{display: 'flex', flexDirection: 'row'}}
@@ -168,27 +182,33 @@ class Train extends Component {
                         }
                         {this.state.algorithm !== "" && Object.keys(this.state.parameters).length !== 0 && (
                             <div>
-                            <Typography variant="title" style={{color: "#fff"}} gutterBottom>
-                                Parametry algorytmu
-                            </Typography>
-                            <table style={{width: "100%", textAlign: "center", tableLayout: "fixed", borderCollapse: "collapse"}}><tbody>
-                            <tr style={{borderBottom: "1px solid #fff"}}>
-                                <td><Typography variant="subheading" style={{color: "#fff"}} gutterBottom>Nazwa</Typography></td>
-                                <td><Typography variant="subheading" style={{color: "#fff"}} gutterBottom>Opis</Typography></td>
-                                <td><Typography variant="subheading" style={{color: "#fff"}} gutterBottom>Wartość</Typography></td>
-                            </tr>
-                            {Object.keys(this.state.parameters).map( this.renderParameter )}
-                            </tbody></table>
+                                <Typography variant="title" style={{color: "#fff"}} gutterBottom>
+                                    Parametry algorytmu
+                                </Typography>
+                                <Table style={{width: '100%'}}>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Nazwa</TableCell>
+                                            <TableCell>Opis</TableCell>
+                                            <TableCell>Wartość</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {Object.keys(this.state.parameters).map( this.renderParameter )}
+                                    </TableBody>
+                                </Table>
                             </div>
                         )}
                 </Grid>
                 </div>
               </div>
             </Paper>
+            </Fade>
         )
     }
 }
 Train.propTypes = {
+    enqueueSnackbar: PropTypes.func.isRequired,
     algorithmList: PropTypes.array
   };
-export default Train
+export default  withSnackbar(Train)
