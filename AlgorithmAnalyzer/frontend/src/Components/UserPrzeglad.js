@@ -82,8 +82,8 @@ export default class UserPrzeglad extends Component {
                         {(this.props.userValue === 1 && this.props.userList[this.props.user]) && <div style={{ margin: 20, padding: 10, height: 190, 
                                     overflow: 'auto'}}>
                         <div style={{
-                                    height: 180, 
-                                    overflow: 'auto'}}>
+                                    
+                                    }}>
                             <Table>
                                 <TableHead>
                                 <TableRow>

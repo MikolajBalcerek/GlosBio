@@ -19,7 +19,8 @@ class MainPage extends Component {
 		userSoundsTrainCount: [],
 		userSoundsTestCount: [],
 		tagCount: [],
-		userFullList: []
+		userFullList: [],
+		tagReady: false
 	};
 
 	handleChange1 = ()=> {
@@ -133,29 +134,23 @@ class MainPage extends Component {
 			})
     }
 	getExtraTagList() {
-        var self = this
+		var self = this
+		this.setState({
+			tagReady: false
+		})
         axios
-            .get(api_config.usePath +`/tag`, {}, { 'Authorization': api_config.apiKey })
+            .get(api_config.usePath +`/summary/tags`, {}, { 'Authorization': api_config.apiKey })
             .then(function(response) {
-				self.setState({
-                    tagNameList: response.data
-				})
 				var tagCount = []
-				response.data.map((tag, id)=>{
-					tagCount.push({tagName: tag, values: []})
-					axios
-						.get(api_config.usePath +`/tag/${tag}`, {}, { 'Authorization': api_config.apiKey })
-						.then(function(response) {
-							Array.isArray(response.data) && response.data.map(t=>
-								_.find(tagCount, {tagName: tag}).values.push({id: id, name: t, value: 0})
-								)
-								
-						}
-					)
-				}
-				)
+				Object.keys(response.data).map(function(key, index) {
+					var values = []
+					console.log('daasd',key, response.data[key])
+					response.data[key].map((v, i)=>values.push({id: i, name: v.value, value: v.count}))
+					tagCount.push({tagName: key, values: values})
+				})
 				self.setState({
-					tagCount: tagCount
+					tagCount: tagCount,
+					tagReady: true
 				})
 		})
 }
@@ -264,9 +259,10 @@ handleClickVariant(text, variant){
 							userSoundsTestCount={this.state.userSoundsTestCount}
 							tagCount={this.state.tagCount}
 							userFullList={this.state.userFullList}
+							tagReady={this.state.tagReady}
 							/>
 					</SnackbarProvider>}
-				{value === 4 && <Train algorithmList={this.state.algorithmList} />}
+				{value === 4 && <SnackbarProvider maxSnack={20}><Train algorithmList={this.state.algorithmList} /></SnackbarProvider>}
 				{value === 5 && <RecordTester userList={this.state.userList} algorithmList={this.state.algorithmList}/>}
 			</div>
 		);

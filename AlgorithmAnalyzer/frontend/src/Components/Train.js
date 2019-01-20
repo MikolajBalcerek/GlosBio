@@ -16,6 +16,7 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Fade from '@material-ui/core/Fade';
+import { withSnackbar } from 'notistack'
 
 class Train extends Component {
     constructor(props) {
@@ -29,6 +30,11 @@ class Train extends Component {
             // TODO(mikra): add server events informing about training status
         }
     }
+
+    handleClickVariant(text, variant){
+        // variant could be success, error, warning or info
+        this.props.enqueueSnackbar(text, { variant });
+      }
 
     handleChangeAlgorithm = event => {
         this.setState({
@@ -99,7 +105,8 @@ class Train extends Component {
             })
             console.log(res)
         }).catch(err => {
-            console.log(err)
+            this.handleClickVariant(err.response.data, 'error')
+
         })
     };
     renderParameter  = name => {
@@ -201,6 +208,7 @@ class Train extends Component {
     }
 }
 Train.propTypes = {
+    enqueueSnackbar: PropTypes.func.isRequired,
     algorithmList: PropTypes.array
   };
-export default Train
+export default  withSnackbar(Train)

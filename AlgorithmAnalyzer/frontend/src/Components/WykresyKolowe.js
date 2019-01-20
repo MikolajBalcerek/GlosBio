@@ -158,7 +158,7 @@ export default class WykresyKolowe extends Component {
                     </div>
                     }
                     {
-                        this.props.tagCount.map((tag, id)=>
+                        this.props.tagReady && this.props.tagCount.map((tag, id)=>
                             this.state.value === id+1 &&
                             <div style={{
                                 backgroundColor: 'black',

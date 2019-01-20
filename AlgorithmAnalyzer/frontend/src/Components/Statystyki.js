@@ -27,24 +27,13 @@ export default class Statystyki extends Component {
                     paddingRight: 30,
                     backgroundColor: 'rgba(0, 0, 0, .6)'
                 }}>
-                <Tabs
-                    value={this.state.value}
-                    onChange={this.handleChange}
-                    indicatorColor="primary"
-                    textColor="primary"
-                    scrollable
-                    scrollButtons="auto"
-                    style={{backgroundColor: 'black', marginBottom: 10}}
-                    >
-                        <Tab label='Wykresy kołowe' />
-                    </Tabs>
-                {this.state.value === 0 &&
+
                     <WykresyKolowe
                         userSoundsTrainCount={this.props.userSoundsTrainCount}
                         userSoundsTestCount={this.props.userSoundsTestCount}
                         tagCount={this.props.tagCount}
+                        tagReady={this.props.tagReady}
                     />
-                }
             </Paper>
             </Fade>
         )
