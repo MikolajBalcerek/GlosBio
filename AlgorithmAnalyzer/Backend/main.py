@@ -192,12 +192,9 @@ def predict_algorithm(user_name, algorithm_name):
     try:
         prediction, meta = alg_manager.predict(user_name, file)
     except AlgorithmException as e:
-            # TODO: same
             return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
     except NotTrainedException as e:
             return str(e), 422
-    except AlgorithmException as e:
-            return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
 
     if alg_manager.multilabel:
         try:
