@@ -11,6 +11,8 @@ import Fade from '@material-ui/core/Fade';
 import UserPrzegladComponent from './UserPrzegladComponent';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
+import TagPrzeglad from './TagPrzeglad'
+import TagPrzegladComponent from './TagPrzegladComponent'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -30,7 +32,11 @@ class Przeglad extends Component {
             value: 0,
             userValue: 0,
             userTagCount:[],
-            tagValue: null
+            tagValue: null,
+            tabPrzeglad: 0,
+            tag: '',
+            tagValuesList: [],
+            tagValues: []
         }
     }
 
@@ -99,11 +105,14 @@ class Przeglad extends Component {
       };
 
     handleChangeUser = event => {
-        console.log('ech', event.target.value)
         this.setState({ [event.target.name]: event.target.value }, ()=>{
             this.getUserTags(this.props.userList[event.target.value])
-            //this.getTagCount(this.props.userList[event.target.value])
         });
+        
+      };
+
+    handleChangeTag = event => {
+        this.setState({ [event.target.name]: event.target.value }, ()=>this.getTagValues(this.props.tagNameList[event.target.value]))
         
       };
 
@@ -144,7 +153,25 @@ class Przeglad extends Component {
                 console.log(error);
 			})
     }
-    
+
+    getTagValues(tag){
+        var self = this
+        axios
+            .get(api_config.usePath + `/tag/${tag}`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+				let tagValues = []
+                response.data.map(user => {
+                    tagValues.push(user)
+				})
+				self.setState({
+                    tagValues: tagValues
+                })
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
+    }
+
     handleClickVariant(text, variant){
 		// variant could be success, error, warning or info
 		this.props.enqueueSnackbar(text, { variant });
@@ -234,40 +261,47 @@ class Przeglad extends Component {
                 console.log(error);
 			})
     }
+    handleChangePrzeglad= (event, value) =>{
+        this.setState({
+            tabPrzeglad: value
+        })
+    }
     render(){
         return(
             <Fade in={true}>
-            <Paper style={{ margin: 20,backgroundColor: 'rgba(0, 0, 0, .6)'}}>   
+            <Paper style={{ backgroundColor: 'rgba(0, 0, 0, .6)'}}>   
                 <div
 				    style={{display: 'flex', flexDirection: 'row'}}
 			        >
                     <div 
                         style={{
                             backgroundColor: 'rgba(0, 0, 0, .8)',
-                            minWidth: 400,
+                            width: 280,
                             margin: 20,
                             borderRadius: 5,
                             textAlign: 'center',
                             display: 'flex',
                             flexDirection: 'column',
-                            padding: 35,
+                            paddingLeft: 25,
+                            paddingRight: 25,
+                            paddingTop: 15,
                             border: '3px solid rgba(120, 0, 0, .6)',
                             alignItems: 'center',
                             justifyContent: 'center'
                         }}
                     > 
             <Tabs
-                value={this.props.value}
-                onChange={(e, v)=>this.props.handleChange(e,v)}
+                value={this.state.tabPrzeglad}
+                onChange={(e, v)=>this.handleChangePrzeglad(e,v)}
                 indicatorColor="primary"
                 textColor="primary"
                 fixed
-                style={{backgroundColor: 'black', marginBottom: 10, width: 280}}
+                style={{backgroundColor: 'black', marginBottom: 10, width: 320}}
                 >
                 <Tab label='Użytkownicy' />
                 <Tab label='Tagi' />
             </Tabs>
-                <UserPrzeglad
+                {this.state.tabPrzeglad === 0 &&<UserPrzeglad
                     user={this.state.user}
                     handleChangeUser={(e)=>this.handleChangeUser(e)} 
                     userList={this.props.userList}
@@ -282,13 +316,20 @@ class Przeglad extends Component {
                     handleChangeTagValue={(e)=>this.handleChangeTagValue(e)}
                     tagValuesList={this.state.tagValuesList}
                     addTagToUser={()=>this.addTagToUser()}
+                />}
+                {this.state.tabPrzeglad === 1 &&<TagPrzeglad
+                    tagNameList={this.props.tagNameList}
                     handleOpenTags={()=>this.handleOpenTags()}
-                />
+                    tag={this.state.tag}
+                    tagValuesList={this.state.tagValues}
+                    handleChangeTag={(e,v)=>this.handleChangeTag(e,v)}
+                />}
                 </div>
                 <div
                     style={{
                         backgroundColor: 'rgba(0, 0, 0, .6)',
                         width: '100%',
+                        height: 440,
                         margin: 20,
                         borderRadius: 5,
                         textAlign: 'center',
@@ -300,7 +341,7 @@ class Przeglad extends Component {
                         justifyContent: 'center'
                     }}
                 >
-                <UserPrzegladComponent 
+                {this.state.tabPrzeglad === 0 &&<UserPrzegladComponent 
                     userList={this.props.userList}
                     user={this.state.user}
                     type={this.state.type}
@@ -314,7 +355,12 @@ class Przeglad extends Component {
                     handleChange={(e, v)=>this.handleChange(e,v)}
                     mfcc={this.state.mfcc}
                     handleOpenMfcc={()=>this.handleOpenMfcc()}
-                />
+                />}
+                {this.state.tabPrzeglad === 1 &&
+                    <TagPrzegladComponent
+                        tagNameList={this.props.tagNameList}
+                        userFullList={this.props.userFullList}
+                    />}
                 </div>
               </div>
               <MFCC 

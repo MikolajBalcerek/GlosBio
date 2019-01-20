@@ -99,7 +99,7 @@ class Train extends Component {
             })
             console.log(res)
         }).catch(err => {
-            console.log(err.response.data)
+            console.log(err)
         })
     };
     renderParameter  = name => {

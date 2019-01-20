@@ -29,6 +29,7 @@ class MainPage extends Component {
 		this.setState({ value: 2 });
 		this.getUsers()
 		this.getTagList()
+		this.getUsersExtra()
 	};
 	handleChange3 = ()=> {
 		this.setState({ value: 3 });
@@ -251,6 +252,7 @@ handleClickVariant(text, variant){
 								userList={this.state.userList} 
 								tagNameList={this.state.tagNameList}
 								getTagList={()=>this.getTagList()}
+								userFullList={this.state.userFullList}
 								/>
 					</SnackbarProvider>}
 				{value === 3 && 

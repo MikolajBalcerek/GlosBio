@@ -225,11 +225,10 @@ class Recorder extends Component {
             <Fade in={true}>
             <Paper
                 style={{
-                    paddingBottom: 30,
                     margin: 20,
                     backgroundColor: 'transparent',
                     backgroundSize: 'cover',
-                    height: 'calc(100% - 245px)'
+                    height: 'calc(100% - 215px)'
                 }}
                 elevation={12}
             >
@@ -240,8 +239,6 @@ class Recorder extends Component {
                 style={{
                     backgroundColor: 'rgba(0, 0, 0, .8)',
                     width: '25%',
-                    minHeight: 350,
-                    margin: 20,
                     borderRadius: 5,
                     textAlign: 'center',
                     display: 'flex',
@@ -324,12 +321,13 @@ class Recorder extends Component {
                 style={{
                     backgroundColor: 'rgba(0, 0, 0, .6)',
                     width: '75%',
-                    margin: 20,
+                    marginLeft: 20,
                     borderRadius: 5,
+                    height: '100%',
                     textAlign: 'center',
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: 5,
+                    padding: 15,
                     border: '3px solid rgba(120, 0, 0, .6)',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -340,8 +338,7 @@ class Recorder extends Component {
                     alignItems: 'center',
                     justifyContent: 'space-around',
                     width: '100%',
-                    paddingTop: 20,
-                    paddingBottom: 20}}>
+            }}>
                 <Button onClick={()=>this.handleRecordChange()}>
                     <img
                         src={micro}
@@ -368,7 +365,7 @@ class Recorder extends Component {
                             </Button>
                         </Files>
                     </div>
-                    <div style={{height: 280}}>
+                    <div style={{minHeight: '280px'}}>
             {this.state.recorded && (
                 <div style={{width: '100%'}}>
                 <AppBar position="static" color="default">

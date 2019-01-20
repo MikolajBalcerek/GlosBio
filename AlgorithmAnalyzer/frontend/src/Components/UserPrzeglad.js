@@ -57,14 +57,14 @@ export default class UserPrzeglad extends Component {
                     indicatorColor="primary"
                     textColor="primary"
                     fixed
-                    style={{backgroundColor: 'black', marginBottom: 10, width: 280}}
+                    style={{backgroundColor: 'black', marginBottom: 10, width: 300}}
                     >
                     <Tab  label='Typ' />
                     <Tab  label='Tagi' />
                 </Tabs>
-                    <div style={{height: 240}}>
+                    <div style={{height: 220}}>
                         {(this.props.userTagCount.length !== 0 && this.props.userValue === 0) &&
-                                    <BarChart width={280} height={200} data={this.props.userTagCount}
+                                    <BarChart width={280} height={180} data={this.props.userTagCount}
                                             margin={{top: 5, right: 30, left: 20, bottom: 5}}>
                                         <CartesianGrid strokeDasharray="3 3"/>
                                         <XAxis dataKey="name"/>
@@ -82,7 +82,7 @@ export default class UserPrzeglad extends Component {
                         {(this.props.userValue === 1 && this.props.userList[this.props.user]) && <div style={{ margin: 20, padding: 10, height: 190, 
                                     overflow: 'auto'}}>
                         <div style={{
-                                    height: 200, 
+                                    height: 180, 
                                     overflow: 'auto'}}>
                             <Table>
                                 <TableHead>
@@ -152,12 +152,6 @@ export default class UserPrzeglad extends Component {
                                 Przypisz tag
                             </Button>
                         </div>
-                        <Button 
-                                onClick={()=>this.propshandleOpenTags()}
-                                color='primary' 
-                                variant="contained">
-                                Tagi
-                            </Button>
                     </div>}
                 </div>
             </div>
