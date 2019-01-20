@@ -507,6 +507,16 @@ def handle_user_summary_endpoint(username):
     return app.config['SAMPLE_MANAGER'].get_user_summary(username)
 
 
+@app.route("/summary/tags", methods=['GET'])
+@requires_db_connection
+def handle_tags_summary():
+    """
+    will return summary of all tags across samplebase
+    """
+    summary = app.config['SAMPLE_MANAGER'].get_tags_summary()
+    return summary, status.HTTP_200_OK
+
+
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
     app.run()

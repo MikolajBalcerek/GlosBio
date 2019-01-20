@@ -522,6 +522,13 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         out = self.sm.get_user_summary("Mr Nobody")
         self.assertFalse(out, "Expected empty dictionary for non-existing user but got '{out}'")
 
+    def test_fnc_get_tags_summary(self):
+        out = self.sm.get_tags_summary()
+        self.assertTrue(isinstance(out, dict),
+                        f"Expected 'dict' returned but got '{type(out)}'")
+        self.assertEqual(len(out.keys()), 2, f"Should return 2 tags but got {len(out.keys())}")
+        self.assertEqual(out["gender"], [{'value': 'male', 'count': 1}])
+
 
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
     """ tests for functions which do not operate on database """
