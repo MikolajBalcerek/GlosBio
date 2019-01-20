@@ -7,8 +7,13 @@ stop:
 remove:
 	docker-compose down
 
-build:
-	docker-compose build
+build-image-all: build-image-api build-image-webapp
+
+build-image-api:
+	docker-compose build api
+
+build-image-webapp:
+	docker-compose build webapp
 
 logs:
 	docker-compose logs --follow
@@ -23,11 +28,10 @@ logs-db:
 	docker-compose logs --follow --tail=30 db
 
 tests-api:
-	docker-compose run api python -m unittest
-	docker-compose stop
+	docker-compose run --rm api python -m unittest
+	docker-compose stop db
 
 populate-api-tags:
 	docker-compose run api python populate_tags.py
 
-db-clear:
-	docker-compose run db mongo samplebase --eval "db.dropDatabase()"
+
