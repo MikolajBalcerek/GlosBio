@@ -228,14 +228,14 @@ class AlgorithmManager:
         for user in users:
             for i, sample in enumerate(samples[user]):
                 pred, _ = self.models[user].predict(sample)
-                result.append([user, i, labels[user][i],  pred == labels[user][i]])
+                result.append([user, i, labels[user][i],  pred])
         return result
 
     def _test_multilabel_model(self, samples, labels, users, user_numbers):
         """
         This method is used by method `test` for multilabel algorithms.
         """
-        result = [[0] * (max(user_numbers) + 1) for _ in users]
+        result = [[0] * (max(user_numbers) + 2) for _ in users]
         for i, sample in enumerate(samples):
             if labels[i] not in user_numbers:
                 continue

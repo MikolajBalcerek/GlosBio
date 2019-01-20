@@ -232,3 +232,100 @@ class TestAlgorithmManager(unittest.TestCase):
             base_path += md5.hexdigest()
             self.assertEqual(mdl.save_path, base_path + '/model')
             self.assertTrue(Path(base_path).exists())
+
+    def test_test_models(self):
+        am = self.am('first_mock')
+        all_users = list(self.user_samples.keys())
+        for users in (all_users, all_users[:-1],):
+            am.train(
+                self.user_samples, self.user_labels, self.params1
+            )
+            res = am._test_models(
+                self.user_samples, self.user_labels, users
+            )
+            expected = [
+
+                    [u, i, self.user_labels[u][i], False]
+                    for u in users for i in range(len(self.user_labels[u]))
+            ]
+            self.assertEqual(res, expected)
+
+    def test_test_multilabel_model(self):
+        am = self.am('second_mock')
+        users = ['u0', 'u1', 'u2']
+        user_numbers = list(range(len(users)))
+        am.train(
+            self.samples, self.labels, self.params2
+        )
+        res = am._test_multilabel_model(
+            self.samples, self.labels, users, user_numbers
+        )
+        expected = {
+                'users': users,
+                'matrix': [[2, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]]
+        }
+        self.assertEqual(res, expected)
+
+    def test_test_multilabel_model_missing_users(self):
+        am = self.am('second_mock')
+        users = ['u1', 'u2']
+        user_numbers = [1, 2]
+        am.train(
+            self.samples, self.labels, self.params2
+        )
+        res = am._test_multilabel_model(
+            self.samples, self.labels, users, user_numbers
+        )
+        expected = {
+                'users': users,
+                'matrix': [[0, 0, 0, 1], [0, 0, 0, 1]]
+        }
+        self.assertEqual(res, expected)
+
+    def test_test_should_raise_without_model(self):
+        users = ['u0', 'u1']
+        for alg in self.alg_list:
+            with self.assertRaises(NotTrainedException) as ctx:
+                self.am(alg).test([], [], users, [])
+        self.assertEqual(
+            str(ctx.exception),
+            {
+                'second_mock':
+                    f'There is no model of {alg} trained.',
+                'first_mock':
+                    f"There is no model of {alg} trained for {users[0]}."
+            }[alg]
+        )
+
+    def test_test_for_binary_model(self):
+        am = self.am('first_mock')
+        all_users = list(self.user_samples.keys())
+        for users in (all_users, all_users[:-1],):
+            am.train(
+                self.user_samples, self.user_labels, self.params1
+            )
+            res = am.test(
+                self.user_samples, self.user_labels, users, range(len(users))
+            )
+            expected = [
+
+                    [u, i, self.user_labels[u][i], False]
+                    for u in users for i in range(len(self.user_labels[u]))
+            ]
+            self.assertEqual(res, expected)
+
+    def test_test_for_multilabel_model(self):
+        am = self.am('second_mock')
+        users = ['u0', 'u1', 'u2']
+        user_numbers = list(range(len(users)))
+        am.train(
+            self.samples, self.labels, self.params2
+        )
+        res = am._test_multilabel_model(
+            self.samples, self.labels, users, user_numbers
+        )
+        expected = {
+                'users': users,
+                'matrix': [[2, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]]
+        }
+        self.assertEqual(res, expected)

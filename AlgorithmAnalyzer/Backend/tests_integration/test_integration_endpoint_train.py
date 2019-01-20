@@ -821,7 +821,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
             self.assertEqual(r.data, b"Such user doesn't exist")
 
-    def test_predict_algorithm_bad_algorithm_ame(self):
+    def test_predict_algorithm_bad_algorithm_name(self):
         username = self.TEST_USERNAMES[0]
         name = "______thereisnosuchalgname______"
         with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
@@ -829,3 +829,42 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())
+
+    def test_test_algorithm_bad_algorithm_name(self):
+        name = "______thereisnosuchalgname______"
+        r = self.client.post(f'/algorithms/test_all/{name}')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())
+
+    def test_test_algorithm_bad_username(self):
+        username = "______thereisnosuchalgname______"
+        for name in self.alg_list:
+            r = self.client.post(f'/algorithms/test_all/{name}',
+                                 data={'users': [username]}
+                                 )
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(r.data, b"Incorrect username!")
+
+    def test_test_algorithm_not_trained_model(self):
+        for name in self.alg_list:
+            r = self.client.post(f'/algorithms/test_all/{name}')
+            self.assertEqual(r.status_code, 422)
+
+    def test_test_algorithm(self):
+        users = ['Train Person', 'Test Person']
+        for name in self.alg_list:
+            self._train_algorithm(name)
+
+            data = {'users': users}
+            r = self.client.post(
+                f'/algorithms/test_all/{name}',
+                data=data,
+                content_type='application/json'
+            )
+
+            self.assertEqual(r.status_code, status.HTTP_200_OK)
+            if name == 'second_mock':
+                self.assertIn('matrix', r.json)
+                self.assertEqual(r.json['users'], data['users'])
+            else:
+                self.assertNotIn('matrix', r.json)

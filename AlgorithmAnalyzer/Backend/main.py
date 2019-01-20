@@ -241,7 +241,12 @@ def test_algorithm(algorithm_name):
         sample_type='wav'
     )
 
-    return alg_manager.test(samples, labels, users, numbers), status.HTTP_200_OK
+    try:
+        result = alg_manager.test(samples, labels, users, numbers)
+    except NotTrainedException as e:
+        return str(e), 422
+
+    return result, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])
