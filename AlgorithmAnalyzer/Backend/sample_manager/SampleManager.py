@@ -402,6 +402,30 @@ class SampleManager:
 
         return out
 
+    def get_tags_summary(self) -> dict:
+        '''
+        get all tags summary in form:
+        {
+           '<tag_1>': [{'value': '<val_1>', 'count': <val_1_count>}, ...]
+           '<tag_2>': [...]
+        }
+        :return out: dict
+        '''
+        out = {}
+        aggregation_pipeline = [
+                {'$unwind': "$tags"},
+                {'$project': {'name': '$tags.name', 'value': '$tags.value', '_id': 0}},
+                {'$group': {'_id': {'name': '$name', 'value': '$value'}, 'count': {'$sum': 1}}},
+                {'$project': {'name': '$_id.name', 'value': '$_id.value', 'count': '$count', '_id': 0}},
+                {'$group': {'_id': '$name', 'values': {'$push': {'value': '$value', 'count': '$count'}}}}
+            ]
+        try:
+            for tag in list(self.db_collection.aggregate(aggregation_pipeline)):
+                out[tag['_id']] = tag['values']
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+        return out
+
     # def _is_username_valid(self, username: str) -> bool:
     #     """
     #     check if given username is valid

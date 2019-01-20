@@ -525,6 +525,13 @@ class TagEndpointsTests(BaseAbstractIntegrationTestsClass):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
                          f"wrong status code, expected 400, got {r.status_code}")
 
+    def test_get_tags_summary(self):
+        r = self.client.get('/summary/tags')
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+
+        self.assertTrue(r.data, "Response should not be empty")
+
 
 class NoDbTests(BaseAbstractIntegrationTestsClass):
 
