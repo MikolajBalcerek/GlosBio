@@ -129,6 +129,38 @@ class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
                              "wrong string")
 
 
+class AudioDeleteTests(BaseAbstractIntegrationTestsClass):
+
+    def test_delete_sample(self):
+        set_type = "train"
+        user = self.TEST_USERNAMES[0]
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            self.client.post(f'/audio/{set_type}',
+                             data={"username": user,
+                                   "file": f})
+        r1 = self.client.delete(f'/audio/{set_type}/{user}/1.wav')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+
+        r2 = self.client.delete(f'/audio/{set_type}/{user}/1.wav')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
+
+    def test_delete_user(self):
+        user = self.TEST_USERNAMES[0]
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            self.client.post(f'/users/{user}',
+                             data={"username": user,
+                                   "file": f})
+        r1 = self.client.delete(f'/users/{user}')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+
+        r2 = self.client.delete(f'/users/{user}')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
+
+
 class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
 
     @classmethod

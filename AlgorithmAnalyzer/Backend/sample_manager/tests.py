@@ -530,6 +530,59 @@ class TestReadFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertEqual(out["gender"], [{'value': 'male', 'count': 1}])
 
 
+class TestDeleteFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
+    """ tests for functions realted to deleting from database """
+
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
+        self.db_collection = self.sm.db_collection
+        with open(self.TEST_AUDIO_WAV_PATH, 'rb') as f:
+            self.test_file_bytes = f.read()
+
+    @classmethod
+    def tearDown(self):
+        super().tearDownClass()
+
+    def test_fnc_delete_sample(self):
+        user = "Delete User"
+        set_type = "train"
+
+        # populate test base
+        self.sm.save_new_sample(
+            user, set_type, self.test_file_bytes, "audio/wav", fake=False, recognize=False)
+        self.sm.save_new_sample(
+            user, set_type, self.test_file_bytes, "audio/wav", fake=False, recognize=False)
+
+        self.sm.delete_sample(user, set_type, '1.wav')
+        all_train = self.sm.get_user_sample_list(user, set_type)
+        self.assertEqual(all_train, ['2.wav'])
+
+        self.assertRaises(ValueError, self.sm.delete_sample, user, set_type, '1.wav')
+
+    def test_fnc_delete_user(self):
+        user_1 = "Delete User 1"
+        user_2 = "Delete User 2"
+        set_type = "train"
+
+        # populate test base
+        self.sm.save_new_sample(
+            user_1, set_type, self.test_file_bytes, "audio/wav", fake=False, recognize=False)
+        self.sm.save_new_sample(
+            user_2, set_type, self.test_file_bytes, "audio/wav", fake=False, recognize=False)
+
+        self.sm.delete_user(user_1)
+        all_users = self.sm.get_all_usernames()
+        self.assertEqual(all_users, [user_2])
+
+        self.sm.delete_user(user_2)
+        all_users = self.sm.get_all_usernames()
+        self.assertFalse(all_users)
+
+        self.assertRaises(ValueError, self.sm.delete_user, user_1)
+        self.assertRaises(ValueError, self.sm.delete_user, user_2)
+
+
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
     """ tests for functions which do not operate on database """
 
