@@ -15,9 +15,10 @@ python-speech-features = "*"
 matplotlib = "*"
 "h5py" = "*"
 tensorflow = "*"
-coverage = "*"
 
 [dev-packages]
+coverage = "*"
+codecov = "*"
 
 [requires]
 python_version = "3.6"
