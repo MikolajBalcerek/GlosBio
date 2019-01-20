@@ -12,11 +12,11 @@ import Button from "@material-ui/core/Button";
 import FiberManualRecord from "@material-ui/icons/FiberManualRecord";
 import Stop from "@material-ui/icons/Stop";
 import Files from 'react-files'
-import MySnackbarContent from './MySnackbarContent'
 import FormControl from '@material-ui/core/FormControl';
 import micro from '../img/micro.png'
 import AudioSpectrum from "react-audio-spectrum"
 import api_config from '../api_config.json'
+import Fade from '@material-ui/core/Fade';
 
 class RecordTester extends Component {
     constructor(props) {
@@ -193,6 +193,7 @@ class RecordTester extends Component {
     }
     render() {
         return (
+            <Fade in={true}>
             <Paper
                 style={{
                     paddingBottom: 30,
@@ -368,18 +369,8 @@ class RecordTester extends Component {
             )}
             </div>
             </div>
-                <MySnackbarContent
-                    openErrorNoAudio={this.state.openErrorNoAudio}
-                    openSuccess={this.state.openSuccess}
-                    openErrorNoUser={this.state.openErrorNoUser}
-                    openErrorSave={this.state.openErrorSave}
-                    SnackbarHandleClose={()=>this.SnackbarHandleClose}
-                    openErrorFileType={this.state.openErrorFileType}
-                    openErrorFileSize={this.state.openErrorFileSize}
-                    openUploadSuccess={this.state.openUploadSuccess}
-                    openErrorNoAlgorithm={this.state.openErrorNoAlgorithm}
-                />
             </Paper>
+            </Fade>
         );
     }
 }

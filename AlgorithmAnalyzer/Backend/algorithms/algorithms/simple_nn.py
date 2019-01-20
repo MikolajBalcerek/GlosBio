@@ -6,7 +6,7 @@ from tensorflow import reset_default_graph, get_default_graph
 import numpy as np
 
 from algorithms.algorithms.preprocessing import read_samples, read_sample
-from algorithms.base_algorithm import Algorithm
+from algorithms.base_algorithm import Algorithm, AlgorithmException
 
 
 class SimpleNN(Algorithm):
@@ -67,10 +67,13 @@ class SimpleNN(Algorithm):
 
         y = self.to_categorical(y)
         with SimpleNN.tensorflow_graph.as_default():
-            self._prepare_model()
-            self.model.fit(X, y,
-                           epochs=self.parameters['epochs'], validation_split=.25, verbose=self.parameters['verbosity']
-                           )
+            try:
+                self._prepare_model()
+                self.model.fit(X, y,
+                               epochs=self.parameters['epochs'], validation_split=.25, verbose=self.parameters['verbosity']
+                               )
+            except Exception as e:
+                raise AlgorithmException(str(e))
 
     def to_categorical(self, y):
         y = np.array(y, dtype='int')
@@ -102,7 +105,7 @@ class SimpleNN(Algorithm):
             with SimpleNN.tensorflow_graph.as_default():
                 save_model(self.model, path + '.h5')
         except Exception as e:
-            print(str(e))
+            raise AlgorithmException(str(e))
 
     def load(self, path):
         # those are needed as tensorflow has some problems
