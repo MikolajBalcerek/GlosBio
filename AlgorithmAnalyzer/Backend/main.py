@@ -156,7 +156,6 @@ def train_algorithm(name):
     try:
         app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params)
     except AlgorithmException as e:
-        # TODO: 503 or 500? Algorithms aren't a path of the app, but are a dependency?
         return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
     return "Training ended.", status.HTTP_200_OK
 
@@ -192,6 +191,8 @@ def predict_algorithm(user_name, algorithm_name):
 
     try:
         prediction, meta = alg_manager.predict(user_name, file)
+    except AlgorithmException as e:
+            return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
     except NotTrainedException as e:
             return str(e), 422
 
@@ -199,9 +200,6 @@ def predict_algorithm(user_name, algorithm_name):
         try:
             meta['Predicted user'] = \
                 app.config["SAMPLE_MANAGER"].user_numbers_to_usernames([prediction])[0]
-        except AlgorithmException as e:
-            # TODO: same
-            return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
         except IndexError:
             prediction = False
             meta['Predicted user'] = 'Algorithm has predicted a nonexisting user.'

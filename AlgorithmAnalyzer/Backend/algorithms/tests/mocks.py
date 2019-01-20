@@ -1,4 +1,4 @@
-from algorithms.base_algorithm import Algorithm
+from algorithms.base_algorithm import Algorithm, AlgorithmException
 
 
 class BaseAlgorithmMock(Algorithm):
@@ -66,7 +66,34 @@ class AlgorithmMock2(BaseAlgorithmMock):
         return 0, {"something": 0}
 
 
+class RaisingAlgorithmExceptionMock(BaseAlgorithmMock):
+
+    multilabel = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'path' in kwargs:
+            raise AlgorithmException('load exception')
+
+    @classmethod
+    def get_parameters(cls):
+        return {}
+
+    def train(self, samples, labels):
+        super().train(samples, labels)
+        raise AlgorithmException("train exception")
+
+    def predict(self, sample):
+        super().predict(sample)
+        raise AlgorithmException('predict exception')
+
+    def save(self, path):
+        super().save(path)
+        raise AlgorithmException('path exception')
+
+
 TEST_ALG_DICT = {
     'first_mock': AlgorithmMock1,
-    'second_mock': AlgorithmMock2
+    'second_mock': AlgorithmMock2,
+    'raise_mock': RaisingAlgorithmExceptionMock
 }
