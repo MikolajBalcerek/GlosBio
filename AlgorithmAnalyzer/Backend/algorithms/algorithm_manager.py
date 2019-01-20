@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 
 
-def algorithm_manager_factory(alg_dict, name):
+def algorithm_manager_factory(alg_dict, database_url, database_name, name):
     """
     Returns new class deriving after AlgorithmManager.
     :param alg_dict: the new manager will use algorithms from this dict
@@ -16,6 +16,8 @@ def algorithm_manager_factory(alg_dict, name):
         {}
     )
     new_class.alg_dict = alg_dict
+    new_class.database_url = database_url
+    new_class.database_name = database_name
     return new_class
 
 
@@ -41,6 +43,8 @@ class AlgorithmManager:
     """
 
     alg_dict = None
+    database_url = None
+    database_name = None
 
     def __init__(self, algorithm_name):
         self.models = {}
