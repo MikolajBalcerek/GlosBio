@@ -8,6 +8,7 @@ coverage:
         branches: null
         if_ci_failed: error
         only_pulls: true
+    patch: off
 
 comment:
     layout: "diff"
