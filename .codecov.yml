@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 75%
+        threshold: 5%
+        base: auto
+        branches: null
+        if_ci_failed: error
+        only_pulls: true
+    patch: off
+
+comment:
+    layout: "diff"

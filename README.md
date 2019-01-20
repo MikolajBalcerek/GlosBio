@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.com/MikolajBalcerek/GlosBio) [![codecov](https://codecov.io/gh/MikolajBalcerek/GlosBio/branch/master/graph/badge.svg)](https://codecov.io/gh/MikolajBalcerek/GlosBio)
+[![Build Status](https://travis-ci.org/MikolajBalcerek/GlosBio.svg?branch=master)](https://travis-ci.org/MikolajBalcerek/GlosBio) [![codecov](https://codecov.io/gh/MikolajBalcerek/GlosBio/branch/master/graph/badge.svg)](https://codecov.io/gh/MikolajBalcerek/GlosBio)
 
 
 
