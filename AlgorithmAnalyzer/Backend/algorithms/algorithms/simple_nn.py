@@ -9,8 +9,8 @@ from algorithms.algorithms.preprocessing import read_samples, read_sample
 from algorithms.base_algorithm import Algorithm
 
 
-global tensorwlof_graph
-tensorwlof_graph = get_default_graph()
+global tensorflow_graph
+tensorflow_graph = get_default_graph()
 
 
 class SimpleNN(Algorithm):
@@ -68,7 +68,7 @@ class SimpleNN(Algorithm):
         X, y = read_samples(samples, labels, normalized_length=self.SAMPLE_LENGTH)
 
         y = self.to_categorical(y)
-        with tensorwlof_graph.as_default():
+        with tensorflow_graph.as_default():
             self._prepare_model()
             self.model.fit(X, y,
                            epochs=self.parameters['epochs'], validation_split=.25, verbose=self.parameters['verbosity']
@@ -91,7 +91,7 @@ class SimpleNN(Algorithm):
     def predict(self, data):
         data = read_sample(data, normalized_length=self.SAMPLE_LENGTH)
         data = data.reshape((1, self.SAMPLE_LENGTH))
-        with tensorwlof_graph.as_default():
+        with tensorflow_graph.as_default():
             preds = self.model.predict(data)
         return bool(preds[0][1] > preds[0][0]), {
             "Probability of being real: ": float(preds[0][1]),
@@ -101,7 +101,7 @@ class SimpleNN(Algorithm):
     def save(self, path):
         print(path)
         try:
-            with tensorwlof_graph.as_default():
+            with tensorflow_graph.as_default():
                 save_model(self.model, path + '.h5')
         except Exception as e:
             print('DUPE')
@@ -111,5 +111,5 @@ class SimpleNN(Algorithm):
     def load(self, path):
         # those are needed as tensorflow has some problems
         # see: https://github.com/tensorflow/tensorflow/issues/14356
-        with tensorwlof_graph.as_default():
+        with tensorflow_graph.as_default():
             self.model = load_model(path + '.h5')
