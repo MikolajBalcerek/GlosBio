@@ -659,6 +659,20 @@ class SampleManager:
             raise DatabaseException(e)
         return [usernames[num]['name'] for num in numbers]
 
+    def usernames_to_user_numbers(self, usernames: List[str]) -> List[int]:
+        """
+        Returns list of positions in the list of all users,
+        for users sorted by time created.
+        :param usernames: list of usernames to convert.
+        """
+        try:
+            all_usernames = self.db_collection.find({}, ['name']).sort('id', 1)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+        all_usernames = [username['name'] for username in all_usernames]
+        return [all_usernames.index(user) for user in usernames]
+
 
 class UsernameException(Exception):
     def __init__(self, *args, **kwargs):

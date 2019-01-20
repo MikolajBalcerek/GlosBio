@@ -203,6 +203,47 @@ def predict_algorithm(user_name, algorithm_name):
     return {"prediction": prediction, 'meta': meta}, status.HTTP_200_OK
 
 
+@app.route('/algorithms/test_all/<string:algorithm_name>', methods=['POST', 'GET'])
+@requires_db_connection
+def test_algorithm(algorithm_name):
+    """
+    Creates the confussion matrix of an algorithm with name <string:algorithm_name>.
+    Optionally, request's body may contain field 'users' with a list of usernames,
+    for which to compute the matrix.
+    If algorithm is not multilabel, returns a list lists:
+        [[username, sample_number, fake (T/F), prediction (T/F)]]
+    If algorithm is multilabel, returns:
+        {
+            'users': [list of usernames],
+            'matrix': [[matrix as lists of lists]]
+        }
+    in that case, the last column counts predictions that don't give any user.
+    """
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
+    if algorithm_name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
+
+    if 'users' in request.data:
+        users = request.data['users']
+    else:
+        users = app.config['SAMPLE_MANAGER'].get_all_usernames()
+
+    try:
+        numbers = app.config['SAMPLE_MANAGER'].usernames_to_user_numbers(users)
+    except ValueError:
+        return "Incorrect username!", status.HTTP_400_BAD_REQUEST
+
+    alg_manager = app.config['ALGORITHM_MANAGER'](algorithm_name)
+
+    samples, labels = app.config['SAMPLE_MANAGER'].get_all_samples(
+        purpose='test',
+        multilabel=alg_manager.multilabel,
+        sample_type='wav'
+    )
+
+    return alg_manager.test(samples, labels, users, numbers), status.HTTP_200_OK
+
+
 @app.route("/audio/<string:type>", methods=['POST'])
 @requires_db_connection
 def handling_audio_endpoint(type):

@@ -142,6 +142,13 @@ class AlgorithmManager:
         path = base_path + '/model'
         self.models[user] = self.algorithm(path=path)
 
+    def _load_models(self, users):
+        """
+        loads models for a list of users
+        """
+        for user in users:
+            self._load_model(user)
+
     def _train_multilabel_model(self, samples: list, labels: list, parameters: dict):
         """
         Trains one multilabeled model for all users.
@@ -211,3 +218,57 @@ class AlgorithmManager:
             self._train_multilabel_model(samples, labels, parameters)
         else:
             self._train_models(samples, labels, parameters)
+
+    def _test_models(self, samples, labels, users):
+        """
+        This method is used by method `test` for algorithms
+        that are not multilabel.
+        """
+        result = []
+        for user in users:
+            for i, sample in enumerate(samples[user]):
+                pred, _ = self.models[user].predict(sample)
+                result.append([user, i, labels[user][i],  pred == labels[user][i]])
+        return result
+
+    def _test_multilabel_model(self, samples, labels, users, user_numbers):
+        """
+        This method is used by method `test` for multilabel algorithms.
+        """
+        result = [[0] * (max(user_numbers) + 1) for _ in users]
+        for i, sample in enumerate(samples):
+            if labels[i] not in user_numbers:
+                continue
+            pred, _ = self.model.predict(sample)
+            if pred in user_numbers:
+                result[user_numbers.index(labels[i])][user_numbers.index(pred)] += 1
+            else:
+                result[user_numbers.index(labels[i])][-1] += 1
+        return {
+            'users': users,
+            'matrix': result
+        }
+
+    def test(self, samples, labels, users, user_numbers):
+        """
+        Tests model(s) depending on algorithm being multilabel,
+        then saves it (them).
+        :param samples: either a dictionary of the form
+                    { 'username': [samples] }
+        or a list of the form
+                    [all user samples],
+        where each sample is file like.
+        :param labels: either a dictionary of the form
+                    {'username': [0/1 labels of samples]}
+        or a list [0/1/.../number_of_users labels] depending
+        on the algorithm being multilabel.
+        :param users: list of users, whose samples will be used
+        :param user_numbers: the numbers of users in an order compatible with
+        the order of labels.
+        """
+        if self.algorithm.multilabel:
+            self._load_multilabel_model()
+            return self._test_multilabel_model(samples, labels, users, user_numbers)
+        else:
+            self._load_models(users)
+            return self._test_models(samples, labels, users)
