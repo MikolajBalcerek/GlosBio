@@ -1,3 +1,6 @@
+import os
+
+os.sys.path.append('..')
 from main import app
 
 app.config.from_object('config.DevelopmentConfig')
