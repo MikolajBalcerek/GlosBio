@@ -112,8 +112,9 @@ class AlgorithmManager:
         parameters = self._update_parameters(parameters)
         for username in usernames:
             model = self.algorithm(parameters=parameters)
-            model.train(samples[username], labels[username])
-            self.models[username] = model
+            if samples[username]:
+                model.train(samples[username], labels[username])
+                self.models[username] = model
         self._save_models()
 
     def _save_models(self):

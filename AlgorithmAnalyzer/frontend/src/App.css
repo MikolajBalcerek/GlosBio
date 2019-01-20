@@ -2,3 +2,7 @@ html {
     background-image: url('./img/background.jpg');
     background-size: cover;
 }
+
+* {
+    font-weight: 400;
+}

@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { ReactMic } from "react-mic";
 import axios from "axios";
 import FormData from "form-data";
 import PropTypes from 'prop-types';
@@ -7,8 +6,6 @@ import TextField from "@material-ui/core/TextField";
 import Paper from "@material-ui/core/Paper";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import Button from "@material-ui/core/Button";
-import FiberManualRecord from "@material-ui/icons/FiberManualRecord";
-import Stop from "@material-ui/icons/Stop";
 import Files from 'react-files'
 import Typography from '@material-ui/core/Typography';
 import FormLabel from '@material-ui/core/FormLabel';
@@ -25,6 +22,9 @@ import AppBar from '@material-ui/core/AppBar'
 import _ from 'lodash'
 import { withSnackbar } from 'notistack'
 import api_config from '../api_config.json'
+import Checkbox from '@material-ui/core/Checkbox';
+import RecordModal from './RecordModal'
+import Fade from '@material-ui/core/Fade';
 
 class Recorder extends Component {
     constructor(props) {
@@ -39,7 +39,10 @@ class Recorder extends Component {
             fileErr: false,
             value: 0,
             uploaded: [],
-            apiError: false
+            apiError: false,
+            generowanyTekst: '',
+            fake: false,
+            recordModalOpen: false
         };
         this.onPressButtonRecord = this.onPressButtonRecord.bind(this);
         this.onPressButtonStop = this.onPressButtonStop.bind(this);
@@ -51,6 +54,12 @@ class Recorder extends Component {
         // variant could be success, error, warning or info
         this.props.enqueueSnackbar(text, { variant });
       }
+
+    generujTekst(){
+        this.setState({
+            generowanyTekst: 'Nikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycji'
+        })
+    }
 
     onPressButtonRecord() {
         console.log("record", this.state);
@@ -73,86 +82,6 @@ class Recorder extends Component {
 		} else
 		this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
 	}
-
-	getUsers = () => {
-		console.log('działam')
-        var self = this
-        axios
-            .get(api_config.usePath+'/users',{} ,{ 'Authorization': api_config.apiKey })
-            .then(function(response) {
-				let userLetList = []
-                response.data.users.map(user => {
-                    userLetList.push(user)
-				})
-				self.setData(userLetList)
-            })
-            .catch(function(error) {
-				console.log('lol')
-                self.handleClickVariant("Nie można pobrać użytkowników, brak połączenia z API!", 'error')
-			})
-	}
-
-	onPressButtonUpload(value, onlyOne, counter) {
-		if (this.state.recorded && this.state.username) {
-			let fd = new FormData();
-			fd.append("username", this.state.username);
-			fd.append("file", this.state.blob_audio_data[value].blob ? this.state.blob_audio_data[value].blob : this.state.blob_audio_data[value] )
-			let uploadedlist = this.state.uploaded
-			uploadedlist.push({id: value})
-			this.setState({
-				uploaded: uploadedlist
-			})
-			let newlist = this.state.blob_audio_data.slice()
-			newlist.splice(value, 1)
-			let isRecorded = newlist.length > 0 ? true : false
-			let self = this;
-			 return axios
-				.post(api_config.usePath+`/audio/${this.state.type}`, fd, {
-					headers: {
-						"Content-Type": "multipart/form-data",
-						'Authorization': api_config.apiKey },
-				})
-				.then(function(response) {
-					self.handleClickVariant(`Plik ${value} zapisano poprawnie! ${response.data.text} `, 'success')
-					self.setState({
-						isRecording: false,
-						recorded: isRecorded,
-						blob_audio_data: newlist,
-						recognizedText: response.data.text,
-						uploaded: [],
-						value: 0,
-						apiError: false
-					});
-					!onlyOne && (value < self.state.blob_audio_data.length) && self.onPressButtonUpload(value, false, counter+1)
-					if(counter === self.state.blob_audio_data.length)
-					{
-						self.setState({
-							blob_audio_data: [],
-							recorded: false
-						}, ()=>self.getUsers())
-					}
-					onlyOne &&setTimeout(() => {
-						console.log('odświerzam userów')
-						self.getUsers()
-					}, 2000)
-				})
-				.catch(function(error) {
-					self.setState({
-						apiError: true
-					})
-					self.handleClickVariant(`Podczas zapisu pliku ${value} wystąpił błąd!`, 'error')
-					console.log(error);
-				})
-		} else {
-			if (!this.state.recorded) {
-				return this.handleClickVariant("Nie można zapisać pliku, nie został nagrany!", 'error')
-			}
-			if (!this.state.username) {
-				return this.handleClickVariant("Nie można zapisać pliku, podaj imię i nazwisko!", 'error')
-			}
-		}
-
-	}
 	onInputChange(e) {
 		this.setState({ username: e.target.value });
 	}
@@ -168,12 +97,18 @@ class Recorder extends Component {
 	handleTypeChange = event => {
 		this.setState({ type: event.target.value });
 	  };
-
+    handleRecordChange=()=>{
+        this.setState({
+            recordModalOpen: !this.state.recordModalOpen,
+            generowanyTekst: ''
+        })
+    }
     onPressButtonUpload(value, onlyOne, counter) {
         if (this.state.recorded && this.state.username) {
             let fd = new FormData();
             fd.append("username", this.state.username);
             fd.append("file", this.state.blob_audio_data[value].blob ? this.state.blob_audio_data[value].blob : this.state.blob_audio_data[value] )
+            fd.append("fake", this.state.fake)
             let uploadedlist = this.state.uploaded
             uploadedlist.push({id: value})
             this.setState({
@@ -204,12 +139,8 @@ class Recorder extends Component {
                         self.setState({
                             blob_audio_data: [],
                             recorded: false
-                        }, ()=>self.props.getUsers())
+                        })
                     }
-                    onlyOne &&setTimeout(() => {
-                        console.log('odświerzam userów')
-                        self.props.getUsers()
-                    }, 2000)
                 })
                 .catch(function(error) {
                     self.setState({
@@ -282,20 +213,22 @@ class Recorder extends Component {
     }
         console.log('error code ' + error.code + ': ' + error.message)
     }
-
+    handleChangeCheckbox = name => event => {
+        this.setState({ [name]: event.target.checked });
+      };
     handleChange = (event, value) => {
         this.setState({ value });
       }
 
     render() {
         return (
+            <Fade in={true}>
             <Paper
                 style={{
-                    paddingBottom: 30,
                     margin: 20,
                     backgroundColor: 'transparent',
                     backgroundSize: 'cover',
-                    height: 'calc(100% - 245px)'
+                    height: 'calc(100% - 215px)'
                 }}
                 elevation={12}
             >
@@ -306,8 +239,6 @@ class Recorder extends Component {
                 style={{
                     backgroundColor: 'rgba(0, 0, 0, .8)',
                     width: '25%',
-                    minHeight: 350,
-                    margin: 20,
                     borderRadius: 5,
                     textAlign: 'center',
                     display: 'flex',
@@ -350,14 +281,24 @@ class Recorder extends Component {
                                 <FormControlLabel value="train" control={<Radio />} label="Trenowanie" />
                                 <FormControlLabel value="test" control={<Radio />} label="Test" />
                             </RadioGroup>
-                        </FormControl>
+                    </FormControl>
+                    <div style={{display: 'flex', alignItems: 'center'}}>
+                        <div style={{color: 'white', fontFamily: 'Roboto, sans-serif'}}>
+                            Fałszywa próbka: 
+                        </div>
+                        <Checkbox
+                            checked={this.state.fake}
+                            onChange={this.handleChangeCheckbox('fake')}
+                            value="fake"
+                            />
+                    </div>
                         <Button
                             variant="contained"
                             color="default"
                             style={{ display: "block", display: 'flex' }}
                             onClick={()=>this.onPressButtonUpload(this.state.value, true, 0)}
                         >
-                            Save
+                            Zapisz
                             <CloudUploadIcon style={{paddingLeft: 5}}/>
                         </Button>
                         <Button
@@ -366,7 +307,7 @@ class Recorder extends Component {
                             style={{ display: "block", display: 'flex', marginTop: 20 }}
                             onClick={()=>this.saveAll()}
                         >
-                            Save all
+                            Zapisz wszystkie
                             <CloudUploadIcon style={{paddingLeft: 5}}/>
                         </Button>
                 <Typography
@@ -380,12 +321,13 @@ class Recorder extends Component {
                 style={{
                     backgroundColor: 'rgba(0, 0, 0, .6)',
                     width: '75%',
-                    margin: 20,
+                    marginLeft: 20,
                     borderRadius: 5,
+                    height: '100%',
                     textAlign: 'center',
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: 5,
+                    padding: 15,
                     border: '3px solid rgba(120, 0, 0, .6)',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -396,29 +338,13 @@ class Recorder extends Component {
                     alignItems: 'center',
                     justifyContent: 'space-around',
                     width: '100%',
-                    paddingTop: 20,
-                    paddingBottom: 20}}>
-                <img
-                    src={micro}
-                    style={{width: 60, margin: 0}}
-                />
-                    <Button
-                            variant="fab"
-                            color={this.state.isRecording ? "default" : "secondary"}
-                            aria-label="Add"
-                            style={{margin: 20}}
-                            onClick={
-                                this.state.isRecording
-                                    ? this.onPressButtonStop
-                                    : this.onPressButtonRecord
-                            }
-                        >
-                            {this.state.isRecording ? (
-                                <Stop />
-                            ) : (
-                                <FiberManualRecord />
-                            )}
-                        </Button>
+            }}>
+                <Button onClick={()=>this.handleRecordChange()}>
+                    <img
+                        src={micro}
+                        style={{width: 60, margin: 0}}
+                    />
+                </Button>
                         <Files
                             className='files-dropzone'
                             onChange={this.onFilesChange.bind(this)}
@@ -439,7 +365,8 @@ class Recorder extends Component {
                             </Button>
                         </Files>
                     </div>
-            {this.state.recorded ? (
+                    <div style={{minHeight: '280px'}}>
+            {this.state.recorded && (
                 <div style={{width: '100%'}}>
                 <AppBar position="static" color="default">
                     <Tabs
@@ -487,37 +414,29 @@ class Recorder extends Component {
                             </Paper>
                 )}
                 </div>
-            ) : (
-                    <div style={{
-                        border: '10px solid black',
-                        backgroundColor: 'black',
-                        borderRadius: 10,
-                        marginTop: 43,
-                        marginBottom: 43
-                        }}>
-                    <ReactMic
-                        record={this.state.isRecording}
-                        className="sound-wave"
-                        onStop={this.onStop}
-                        onData={this.onData}
-                        strokeColor="yellow"
-                        style={{border: '4px solid black', borderRadius: 15}}
-                        backgroundColor='black'
-                        mimeType="audio/webm; codecs=opus"
-                    />
-                    </div>
             )}
             </div>
-
+            </div>
+                <RecordModal 
+                    recordModalOpen={this.state.recordModalOpen}
+                    handleRecordChange={()=>this.handleRecordChange()}
+                    onPressButtonStop={()=>this.onPressButtonStop()}
+                    onPressButtonRecord={()=>this.onPressButtonRecord()}
+                    isRecording={this.state.isRecording}
+                    onStop={()=>this.onStop}
+                    onData={()=>this.onData}
+                    generowanyTekst={this.state.generowanyTekst}
+                    generujTekst={()=>this.generujTekst()}
+                    />
             </div>
             </Paper>
+            </Fade>
         );
     }
 }
 
 Recorder.propTypes = {
-    enqueueSnackbar: PropTypes.func.isRequired,
-    getUsers: PropTypes.func
+    enqueueSnackbar: PropTypes.func.isRequired
   };
 
 export default withSnackbar(Recorder);

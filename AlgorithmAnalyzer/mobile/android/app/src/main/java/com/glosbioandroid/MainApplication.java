@@ -3,8 +3,11 @@ package com.glosbioandroid;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.rnfs.RNFSPackage;
+import com.RNFetchBlob.RNFetchBlobPackage;
 import com.zmxv.RNSound.RNSoundPackage;
 import com.goodatlas.audiorecord.RNAudioRecordPackage;
+import com.vydia.RNUploader.UploaderReactPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
@@ -26,8 +29,11 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNFSPackage(),
+            new RNFetchBlobPackage(),
             new RNSoundPackage(),
             new RNAudioRecordPackage(),
+            new UploaderReactPackage(),
             new VectorIconsPackage()
       );
     }
