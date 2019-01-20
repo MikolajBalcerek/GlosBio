@@ -31,7 +31,9 @@ export default class TestModal extends Component {
                         <TableBody>
                             <TableRow>
                                 <TableCell style={{textAlign: 'center'}}>Prognozowany wynik:</TableCell>
-                                <TableCell style={{textAlign: 'center'}}>{this.props.predictions&&this.props.predictions.prediction ? 'UŻYTKOWNIK POTWIERDZONY' : 'UŻYTKOWNIK ODRZUCONY'  }</TableCell>
+                                <TableCell style={{textAlign: 'center'}}>{this.props.predictions&&this.props.predictions.prediction ? 
+                                    <div style={{backgroundColor: 'green', padding: 15, borderRadius: 10}}>Użytkownik potrwierdzony</div> : 
+                                    <div style={{backgroundColor: 'red', padding: 15, borderRadius: 10}}>Użytkownik odrzucony</div>  }</TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
