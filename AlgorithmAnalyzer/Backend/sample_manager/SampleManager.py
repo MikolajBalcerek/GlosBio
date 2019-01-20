@@ -440,6 +440,54 @@ class SampleManager:
         """
         return file_type in self.ALLOWED_SAMPLE_CONTENT_TYPE
 
+    def delete_user(self, username: str):
+        '''
+        delete user from samplebase with all samples
+        :params username: eg. 'Hugo Kołątaj'
+        '''
+        if not self.user_exists(username):
+            raise ValueError(f"User '{username}' does not exist")
+
+        # delete users' sample files
+        for set_type in ['test', 'train']:
+            for samplename in self.get_user_sample_list(username, set_type):
+                try:
+                    self.delete_sample(username, set_type, samplename)
+                except ValueError as e:
+                    print(str(e))
+                    continue
+
+        # delete users' document
+        try:
+            self.db_collection.delete_one({'_id': self._get_user_mongo_id(username)})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+    def delete_sample(self, username: str, set_type: str, samplename: str):
+        '''
+        delete single sample
+        :params username: str - eg. 'Hugo Kołątaj'
+        :params set_type: str -'train' or 'test'
+        :params samplename: str - eg. '1.wav'
+        '''
+        user_id = self._get_user_mongo_id(username)
+        aggregation_pipeline = [
+                {'$match': {'_id': user_id}},
+                {'$project': {'samples': f'$samples.{set_type}', '_id': 0}},
+                {'$unwind': '$samples'},
+                {'$match': {'samples.filename': samplename}},
+                {'$project': {'id': '$samples.id'}}
+            ]
+        try:
+            out = list(self.db_collection.aggregate(aggregation_pipeline))
+            if not out:
+                raise ValueError(f"Could not find sample '{samplename}' from set '{set_type}' in user '{username}' samplebase")
+            file_id = out[0]['id']
+            self.db_collection.update_one({'_id': user_id}, {'$pull': {f'samples.{set_type}': {'id': file_id}}})
+            self.db_file_storage.delete(file_id)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
     # def _create_plot_mfcc_for_sample(self, audio_bytes,
     #                                  file_extension: str = "png") -> bytes:
     #     """
