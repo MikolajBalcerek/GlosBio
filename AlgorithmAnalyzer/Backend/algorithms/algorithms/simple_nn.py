@@ -1,12 +1,16 @@
 from tensorflow.python.keras.layers import Activation, Dropout, Dense, Flatten
-from tensorflow.python.keras.models import Sequential, load_model
+from tensorflow.python.keras.models import Sequential, load_model, save_model
 # from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflow.python.keras.backend import clear_session
-from tensorflow import reset_default_graph
+from tensorflow import reset_default_graph, get_default_graph
 import numpy as np
 
 from algorithms.algorithms.preprocessing import read_samples, read_sample
 from algorithms.base_algorithm import Algorithm
+
+
+global tensorwlof_graph
+tensorwlof_graph = get_default_graph()
 
 
 class SimpleNN(Algorithm):
@@ -64,10 +68,11 @@ class SimpleNN(Algorithm):
         X, y = read_samples(samples, labels, normalized_length=self.SAMPLE_LENGTH)
 
         y = self.to_categorical(y)
-        self._prepare_model()
-        self.model.fit(X, y,
-                       epochs=self.parameters['epochs'], validation_split=.25, verbose=self.parameters['verbosity']
-                       )
+        with tensorwlof_graph.as_default():
+            self._prepare_model()
+            self.model.fit(X, y,
+                           epochs=self.parameters['epochs'], validation_split=.25, verbose=self.parameters['verbosity']
+                           )
 
     def to_categorical(self, y):
         y = np.array(y, dtype='int')
@@ -75,7 +80,7 @@ class SimpleNN(Algorithm):
         if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
             input_shape = tuple(input_shape[:-1])
         y = y.ravel()
-        num_classes = np.max(y) + 1
+        num_classes = max(y) + 1
         n = y.shape[0]
         categorical = np.zeros((n, num_classes), dtype=float)
         categorical[np.arange(n), y] = 1
@@ -86,8 +91,8 @@ class SimpleNN(Algorithm):
     def predict(self, data):
         data = read_sample(data, normalized_length=self.SAMPLE_LENGTH)
         data = data.reshape((1, self.SAMPLE_LENGTH))
-        preds = self.model.predict(data)
-        clear_session()
+        with tensorwlof_graph.as_default():
+            preds = self.model.predict(data)
         return bool(preds[0][1] > preds[0][0]), {
             "Probability of being real: ": float(preds[0][1]),
             "Probability of being fake: ": float(preds[0][0])
@@ -95,11 +100,16 @@ class SimpleNN(Algorithm):
 
     def save(self, path):
         print(path)
-        self.model.save(path + '.h5')
+        try:
+            with tensorwlof_graph.as_default():
+                save_model(self.model, path + '.h5')
+        except Exception as e:
+            print('DUPE')
+            print(str(e))
+        print('saved')
 
     def load(self, path):
-        reset_default_graph()
-        clear_session()
         # those are needed as tensorflow has some problems
         # see: https://github.com/tensorflow/tensorflow/issues/14356
-        self.model = load_model(path + '.h5')
+        with tensorwlof_graph.as_default():
+            self.model = load_model(path + '.h5')
