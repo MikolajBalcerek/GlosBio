@@ -592,24 +592,26 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
     def setUpClass(cls):
         """ setup before tests_integration for this class """
         super().setUpClass()
-        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
-            r = cls.client.post('/audio/train',
-                                data={"username": cls.TEST_USERNAMES[0],
-                                      "file": f})
-            assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
-                                                             " for file upload during class setup"
-            f.close()
+        for uname in cls.TEST_USERNAMES:
+            with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                r = cls.client.post('/audio/train',
+                                    data={"username": uname,
+                                          "file": f})
+                assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
+                                                                 " for file upload during class setup"
+
         with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
             r = cls.client.post('/audio/test',
                                 data={"username": cls.TEST_USERNAMES[1],
                                       "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
-            f.close()
 
     def setUp(self):
         self.am = self.app.config['ALGORITHM_MANAGER']
         self.alg_list = self.am.get_algorithms()
+        self.valid_algs = self.alg_list[:-1]
+        self.exception_raiser = self.alg_list[-1]
 
     def tearDown(self):
         for alg_name in self.alg_list:
@@ -638,7 +640,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             })
 
     def test_get_algorithm_description(self):
-        for name in self.alg_list:
+        for name in self.valid_algs:
             self.assertEqual(
                 self.client.get(f'/algorithms/description/{name}').data,
                 TEST_ALG_DICT[name].__doc__.encode() if TEST_ALG_DICT[name].__doc__ else b"",
@@ -684,7 +686,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             )
 
     def test_train_algorithm(self):
-        for name in self.alg_list:
+        for name in self.alg_list[:-1]:
             r = self._train_algorithm(name)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertEqual(r.data, b'Training ended.',
@@ -784,7 +786,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_predict_algorithm(self):
         username = self.TEST_USERNAMES[0]
-        for name in self.alg_list:
+        for name in self.valid_algs:
             self._train_algorithm(name)
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
@@ -858,20 +860,39 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             self.assertEqual(r.status_code, 422)
 
     def test_test_algorithm(self):
-        users = ['Train Person', 'Test Person']
-        for name in self.alg_list:
-            self._train_algorithm(name)
-
+        users = self.TEST_USERNAMES[:1]
+        for name in self.valid_algs:
+            r = self._train_algorithm(name)
             data = {'users': users}
             r = self.client.post(
                 f'/algorithms/test_all/{name}',
-                data=data,
-                content_type='application/json'
+                json=data
             )
-
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             if name == 'second_mock':
                 self.assertIn('matrix', r.json)
-                self.assertEqual(r.json['users'], data['users'])
+                self.assertEqual(r.json['users'], users)
             else:
                 self.assertNotIn('matrix', r.json)
+
+    def test_train_algorithm_raising_algorithmexception(self):
+        r = self._train_algorithm(self.exception_raiser)
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(r.data, b"There was an exception within the algorithm: train exception",
+                         'Wrong message returned.'
+                         )
+
+    def test_predict_algorithm_raising_algorithmexception(self):
+
+        # make alg_manager think that the model for raise_alg is trained
+        base_path = f'./algorithms/saved_models/{self.exception_raiser}/'
+        username = self.TEST_USERNAMES[0]
+        Path(base_path).mkdir(parents=True)
+
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                data = {'file': f}
+                r = self.client.post(f'/algorithms/test/{username}/{self.exception_raiser}', data=data)
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(r.data, b"There was an exception within the algorithm: load exception",
+                         'Wrong message returned.'
+                         )
