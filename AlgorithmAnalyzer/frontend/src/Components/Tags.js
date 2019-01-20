@@ -52,14 +52,6 @@ class Tags extends Component{
 		this.props.enqueueSnackbar(text, { variant });
       }
 
-    handleChangeName = event => {
-        this.setState({ [event.target.name]: event.target.value }, ()=>this.getUserTagValues());
-      };
-
-    handleChangeTagValue = event => {
-        this.setState({ [event.target.name]: event.target.value });
-      };
-
     onInputChange(e) {
 		this.setState({ newTagName: e.target.value });
     }
@@ -70,39 +62,6 @@ class Tags extends Component{
 		this.setState({ newTagValues: list });
     }
 
-    addTagToUser(){
-        var self = this
-        let fd = new FormData();
-        fd.append("name", this.props.tagNameList[this.state.name]);
-        fd.append("value", this.state.tagValuesList[this.state.tagValue]);
-        axios
-            .post(api_config.usePath +`/users/${this.props.user}/tags`, fd, { 'Authorization': api_config.apiKey })
-            .then(function() {
-                self.props.getUserTags()
-                self.setState({
-                    tagValue: null,
-                    name: ''
-                })
-            })
-            .catch(function(error) {
-                console.log(error);
-			})
-    }  
-
-    getUserTagValues(){
-        var self = this
-        axios
-            .get(api_config.usePath +`/tag/${this.state.tagNameList[this.state.name]}`, {}, { 'Authorization': api_config.apiKey })
-            .then(function(response) {
-                console.log(response.data)
-				self.setState({
-                    tagValuesList: response.data
-                })
-            })
-            .catch(function(error) {
-                console.log(error);
-			})
-    }
     closeTags(){
         this.props.handleOpenTags()
         this.setState({
@@ -153,80 +112,6 @@ class Tags extends Component{
         return(
           <Dialog open={this.props.tagsOpen} maxWidth='lg' >
           <div style={{display: 'flex', flexDirection: 'row', backgroundColor: 'rgb(20, 21, 25)'}}>
-                {this.props.user &&<Paper style={{ margin: 20, padding: 10}}>
-                    <DialogTitle id="simple-dialog-title">Tagi użytkownika {this.props.user}</DialogTitle>
-                    <div style={{
-                                height: 260, 
-                                overflow: 'auto'}}>
-                        <Table >
-                            <TableHead>
-                            <TableRow>
-                                <TableCell>Nazwa</TableCell>
-                                <TableCell align="right">Wartość</TableCell>
-                            </TableRow>
-                            </TableHead>
-                            <TableBody>
-                            {this.props.tagsKeys.length > 0 && this.props.tagsKeys.map((tag, i) => {
-                                return (
-                                <TableRow key={i}>
-                                    <TableCell component="th" scope="row">
-                                    {tag}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                    {this.props.tags[tag]}
-                                    </TableCell>
-                                </TableRow>
-                                );
-                            })}
-                            <TableRow>
-                                    <TableCell component="th" scope="row">
-                                        <Select
-                                            value={this.state.name}
-                                            onChange={this.handleChangeName}
-                                            inputProps={{
-                                            name: 'name',
-                                            }}
-                                        >
-                                        <MenuItem value="">
-                                            <em>None</em>
-                                        </MenuItem>
-                                        {this.props.tagNameList && this.props.tagNameList.map(
-                                            (name, id) => 
-                                            this.props.tagsKeys.indexOf(name) === -1 && <MenuItem key={id} value={id}>{name}</MenuItem>
-                                            )
-                                            }
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <Select
-                                            value={this.state.tagValue}
-                                            onChange={this.handleChangeTagValue}
-                                            inputProps={{
-                                            name: 'tagValue',
-                                            }}
-                                        >
-                                        <MenuItem value="">
-                                            <em>None</em>
-                                        </MenuItem>
-                                        {this.state.tagValuesList && this.state.tagValuesList.map((val, id) => <MenuItem key={id} value={id}>{val}</MenuItem>)}
-                                        </Select>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
-                    <div style={{display: 'flex'}}>
-                        <Button 
-                            variant="contained" 
-                            onClick={()=>this.addTagToUser()} 
-                            style={{margin: 30}}
-                            disabled={!(this.state.tagValue || this.state.tagValue === 0)}
-                            color='primary'
-                            >
-                            Przypisz tag
-                        </Button>
-                    </div>
-                </Paper>}
                 <Paper style={{ margin: 20, padding: 10, height: 400}}>
                     <DialogTitle id="simple-dialog-title">Dodaj nowy tag</DialogTitle>
                     <div style={{display: 'flex'}}>

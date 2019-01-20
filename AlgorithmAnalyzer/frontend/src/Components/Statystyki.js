@@ -2,12 +2,11 @@ import React, { Component } from 'react'
 import Paper from '@material-ui/core/Paper';
 import MUIDataTable from "mui-datatables";
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
-import api_config from '../api_config.json'
-import axios from 'axios';
 import _ from 'lodash'
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import WykresyKolowe from './WykresyKolowe'
+import Fade from '@material-ui/core/Fade';
 
 export default class Statystyki extends Component {
     getMuiTheme = () => createMuiTheme({
@@ -75,41 +74,6 @@ export default class Statystyki extends Component {
           userFullList: [],
           value: 0
       }
-      componentDidMount(){
-          this.props.userList.map(user=>this.getUserTags(user))
-      }
-      
-      componentWillReceiveProps(nextProps){
-          if(!_.isEqual(nextProps.userList, this.state.userList)) {
-            var newUserList = nextProps.userList.slice()
-            nextProps.userList.map(user=>this.getUserTags(user))
-          }
-
-      }
-
-      getUserTags(user) {
-        var self = this
-        axios({
-            url: api_config.usePath +`/users/${user}/tags`,
-            method: 'GET',
-            headers: { 'Authorization': api_config.apiKey}
-          })
-            .then(function(response) {
-                var tags = self.state.userTags
-                var userTable = [user]
-                self.props.tagNameList.map(tag=>{
-                    (tag in response.data) ? userTable.push(response.data[tag]) : userTable.push('')}
-                    )
-                var newUserTable = self.state.userFullList
-                newUserTable.push(userTable)
-                self.setState({
-                    userFullList: newUserTable
-                })
-            })
-            .catch(function(error) {
-                console.log(error);
-			})
-    }
 
     handleChange = (event, value) => {
         this.setState({ value });
@@ -119,6 +83,8 @@ export default class Statystyki extends Component {
         const columns = ['użytkownik'].concat(this.props.tagNameList)
         
         const options = {
+            rowsPerPageOptions: [5, 10, 50],
+            rowsPerPage: 5,
             filterType: 'checkbox',
             responsive: 'scroll',
             expandable: true,
@@ -158,7 +124,13 @@ export default class Statystyki extends Component {
         };
 
         return(
-            <Paper style={{paddingLeft: 30, paddingRight: 30,backgroundColor: 'rgba(0, 0, 0, .6)'}}>
+            <Fade in={true}>
+            <Paper 
+                style={{
+                    paddingLeft: 30, 
+                    paddingRight: 30,
+                    backgroundColor: 'rgba(0, 0, 0, .6)'
+                }}>
                 <Tabs
                     value={this.state.value}
                     onChange={this.handleChange}
@@ -173,12 +145,12 @@ export default class Statystyki extends Component {
                     </Tabs>
                 {this.state.value === 0 &&
                     <MuiThemeProvider theme={this.getMuiTheme()}>
-                        <MUIDataTable 
-                            title={"Lista użytkowników"}
-                            data={this.state.userFullList}
-                            columns={columns}
-                            options={options}
-                            />
+                            <MUIDataTable 
+                                title={"Lista użytkowników"}
+                                data={this.props.userFullList}
+                                columns={columns}
+                                options={options}
+                                />
                     </MuiThemeProvider>}
                 {this.state.value === 1 &&
                     <WykresyKolowe
@@ -188,6 +160,7 @@ export default class Statystyki extends Component {
                     />
                 }
             </Paper>
+            </Fade>
         )
     }
 }

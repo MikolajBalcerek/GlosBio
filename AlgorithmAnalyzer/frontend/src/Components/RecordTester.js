@@ -16,6 +16,7 @@ import FormControl from '@material-ui/core/FormControl';
 import micro from '../img/micro.png'
 import AudioSpectrum from "react-audio-spectrum"
 import api_config from '../api_config.json'
+import Fade from '@material-ui/core/Fade';
 
 class RecordTester extends Component {
     constructor(props) {
@@ -192,6 +193,7 @@ class RecordTester extends Component {
     }
     render() {
         return (
+            <Fade in={true}>
             <Paper
                 style={{
                     paddingBottom: 30,
@@ -368,6 +370,7 @@ class RecordTester extends Component {
             </div>
             </div>
             </Paper>
+            </Fade>
         );
     }
 }

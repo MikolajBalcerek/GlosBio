@@ -1,7 +1,11 @@
 import React, { Component } from 'react'
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
-
+import FormLabel from '@material-ui/core/FormLabel';
+import RadioGroup from '@material-ui/core/RadioGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Radio from '@material-ui/core/Radio';
+import FormControl from '@material-ui/core/FormControl';
 import { PieChart, 
     Pie, 
     Sector, 
@@ -11,6 +15,7 @@ import { PieChart,
     YAxis, 
     CartesianGrid, 
     Tooltip,
+    Legend,
     Cell
    } from 'recharts'
 
@@ -18,7 +23,8 @@ export default class WykresyKolowe extends Component {
     
     state= {
         value: 0,
-        activeIndex: 0
+        activeIndex: 0,
+        type: 'train'
     }
 
     handleChange = (event, value) => {
@@ -30,9 +36,11 @@ export default class WykresyKolowe extends Component {
           activeIndex: index
         })
       }
-
+      handleTypeChange = event => {
+		this.setState({ type: event.target.value });
+	  }
     render(){
-
+        const colors = ['#801515', '#D46A6A', '#AA3939', '#550000']
         const renderActiveShape = (props) => {
             const RADIAN = Math.PI / 180;
             const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle,
@@ -49,7 +57,7 @@ export default class WykresyKolowe extends Component {
           
             return (
               <g>
-                <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>{payload.name}</text>
+                <text style={{ fontFamily: 'Roboto, sans-serif' }} x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>{payload.name}</text>
                 <Sector
                   cx={cx}
                   cy={cy}
@@ -100,22 +108,53 @@ export default class WykresyKolowe extends Component {
                     <div style={{
                         backgroundColor: 'black',
                         display: 'flex',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        alignItems: 'center'
                         }}>
-                        <PieChart width={650} height={300}>
+                        <FormControl component="fieldset">
+                                <FormLabel component="legend">Wybierz typ nagrania:</FormLabel>
+                                <RadioGroup
+                                    value={this.state.type}
+                                    onChange={this.handleTypeChange}
+                                    style={{flexDirection: 'row', alignItems: 'center'}}
+                                >
+                                    <FormControlLabel value="train" control={<Radio />} label="Trenowanie" />
+                                    <FormControlLabel value="test" control={<Radio />} label="Test" />
+                                </RadioGroup>
+                        </FormControl>
+                        <PieChart width={350} height={300}>
                             <Pie 
                                 dataKey='value'
                                 activeIndex={this.state.activeIndex}
                                 activeShape={renderActiveShape} 
-                                data={this.props.userSoundsTrainCount} 
-                                cx={320} 
+                                data={this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount} 
+                                cx={160} 
                                 cy={150} 
                                 innerRadius={60}
                                 outerRadius={80} 
                                 fill="rgb(100,100,100)"
                                 onMouseEnter={this.onPieEnter.bind(this)}
-                                />
+                                >
+                                {
+                                    this.props.userSoundsTrainCount.map((entry, index) => <Cell fill={colors[index%4]}/>)
+                                }
+                                </Pie>
                         </PieChart>
+                        <BarChart width={500} height={300} data={this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount}
+                                margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                            <CartesianGrid strokeDasharray="3 3"/>
+                            <XAxis dataKey="name" style={{ fontFamily: 'Roboto, sans-serif' }}/>
+                            <YAxis />
+                            <Tooltip/>
+                            <Legend />
+                            <Bar dataKey="value">
+                            {
+                                (this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={colors[index%4]}/>
+                                ))
+                            }
+                            </Bar>
+                        </BarChart>
                     </div>
                     }
                     {
@@ -138,8 +177,27 @@ export default class WykresyKolowe extends Component {
                                         outerRadius={80} 
                                         fill="rgb(100,100,100)"
                                         onMouseEnter={this.onPieEnter.bind(this)}
-                                        />
+                                        >
+                                        {
+                                            tag.values.map((entry, index) => <Cell fill={colors[index%4]}/>)
+                                        }
+                                        </Pie>
                                 </PieChart>
+                                <BarChart width={600} height={300} data={tag.values}
+                                        margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                                    <CartesianGrid strokeDasharray="3 3"/>
+                                    <XAxis dataKey="name" style={{ fontFamily: 'Roboto, sans-serif' }}/>
+                                    <YAxis/>
+                                    <Tooltip/>
+                                    <Legend />
+                                    <Bar dataKey="value">
+                                    {
+                                        tag.values.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={colors[index%4]}/>
+                                        ))
+                                    }
+                                    </Bar>
+                                </BarChart>
                             </div>
                         )
                     }
