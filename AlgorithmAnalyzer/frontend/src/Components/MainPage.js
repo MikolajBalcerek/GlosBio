@@ -42,7 +42,6 @@ class MainPage extends Component {
 	handleChange5 = ()=> {
 		this.setState({ value: 5 });
 	};
-
 	setData (array)  {
 		this.setState({
 			userList: array
@@ -229,6 +228,7 @@ handleClickVariant(text, variant){
 
 	render() {
 		const { value } = this.state;
+		console.log(value)
 		return (
 			<div>
 				<MiddleBar

@@ -181,7 +181,9 @@ def predict_algorithm(user_name, algorithm_name):
         return "Such user doesn't exist", status.HTTP_400_BAD_REQUEST
 
     file = request.files.get('file')
-    file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
+    if not app.config['SAMPLE_MANAGER'].is_allowed_file_extension(file.mimetype):
+        file = convert_audio.convert_audio_to_format(BytesIO(file.read()),  "wav")
+
     alg_manager = app.config['ALGORITHM_MANAGER'](algorithm_name)
 
     try:
