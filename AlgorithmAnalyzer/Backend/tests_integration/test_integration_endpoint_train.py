@@ -592,20 +592,20 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
     def setUpClass(cls):
         """ setup before tests_integration for this class """
         super().setUpClass()
-        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
-            r = cls.client.post('/audio/train',
-                                data={"username": cls.TEST_USERNAMES[0],
-                                      "file": f})
-            assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
-                                                             " for file upload during class setup"
-            f.close()
+        for uname in cls.TEST_USERNAMES:
+            with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                r = cls.client.post('/audio/train',
+                                    data={"username": uname,
+                                          "file": f})
+                assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
+                                                                 " for file upload during class setup"
+
         with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
             r = cls.client.post('/audio/test',
                                 data={"username": cls.TEST_USERNAMES[1],
                                       "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
-            f.close()
 
     def setUp(self):
         self.am = self.app.config['ALGORITHM_MANAGER']
@@ -830,7 +830,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
             self.assertEqual(r.data, b"Such user doesn't exist")
 
-    def test_predict_algorithm_bad_algorithm_ame(self):
+    def test_predict_algorithm_bad_algorithm_name(self):
         username = self.TEST_USERNAMES[0]
         name = "______thereisnosuchalgname______"
         with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
@@ -838,6 +838,42 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())
+
+    def test_test_algorithm_bad_algorithm_name(self):
+        name = "______thereisnosuchalgname______"
+        r = self.client.post(f'/algorithms/test_all/{name}')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())
+
+    def test_test_algorithm_bad_username(self):
+        username = "______thereisnosuchalgname______"
+        for name in self.alg_list:
+            r = self.client.post(f'/algorithms/test_all/{name}',
+                                 data={'users': [username]}
+                                 )
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(r.data, b"Incorrect username!")
+
+    def test_test_algorithm_not_trained_model(self):
+        for name in self.alg_list:
+            r = self.client.post(f'/algorithms/test_all/{name}')
+            self.assertEqual(r.status_code, 422)
+
+    def test_test_algorithm(self):
+        users = self.TEST_USERNAMES[:1]
+        for name in self.valid_algs:
+            r = self._train_algorithm(name)
+            data = {'users': users}
+            r = self.client.post(
+                f'/algorithms/test_all/{name}',
+                json=data
+            )
+            self.assertEqual(r.status_code, status.HTTP_200_OK)
+            if name == 'second_mock':
+                self.assertIn('matrix', r.json)
+                self.assertEqual(r.json['users'], users)
+            else:
+                self.assertNotIn('matrix', r.json)
 
     def test_train_algorithm_raising_algorithmexception(self):
         r = self._train_algorithm(self.exception_raiser)
