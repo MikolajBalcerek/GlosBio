@@ -6,6 +6,7 @@ from algorithms.algorithm_manager import (
     algorithm_manager_factory,
     NotTrainedException
 )
+from algorithms.base_algorithm import AlgorithmException
 from algorithms.tests.mocks import TEST_ALG_DICT, AlgorithmMock1
 
 
@@ -14,7 +15,10 @@ class TestAlgorithmManager(unittest.TestCase):
     def setUp(self):
         self.am = algorithm_manager_factory(TEST_ALG_DICT, '__test__alg__manager')
         self.alg_dict = TEST_ALG_DICT
+        self.full_alg_list = list(TEST_ALG_DICT.keys())
+        # they differ by mock throwing exceptions
         self.alg_list = ['first_mock', 'second_mock']
+        self.raise_alg = 'raise_mock'
         self.params1 = {'some_name': '2'}
         self.params2 = {'param1': '1', 'param2': 'c'}
         self.user_samples = {
@@ -37,7 +41,7 @@ class TestAlgorithmManager(unittest.TestCase):
                 path.rmdir()
 
     def test_get_algorithms(self):
-        self.assertEqual(self.am.get_algorithms(), self.alg_list)
+        self.assertEqual(self.am.get_algorithms(), self.full_alg_list)
 
     def test_get_parameters(self):
         for alg in self.alg_list:
@@ -232,3 +236,19 @@ class TestAlgorithmManager(unittest.TestCase):
             base_path += md5.hexdigest()
             self.assertEqual(mdl.save_path, base_path + '/model')
             self.assertTrue(Path(base_path).exists())
+
+    def test_train_with_raise_mock(self):
+        am = self.am(self.raise_alg)
+        with self.assertRaises(AlgorithmException) as ctx:
+            am.train(self.user_samples, self.user_labels, {})
+        self.assertEqual(str(ctx.exception), 'train exception')
+
+    def test_load_with_raise_mock(self):
+        am = self.am(self.raise_alg)
+        base_path = f'./algorithms/saved_models/{self.raise_alg}/'
+        Path(base_path).mkdir(parents=True)
+        with self.assertRaises(AlgorithmException) as ctx:
+            am._load_multilabel_model()
+        self.assertEqual(str(ctx.exception), 'load exception')
+
+
