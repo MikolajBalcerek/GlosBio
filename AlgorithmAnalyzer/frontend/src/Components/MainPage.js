@@ -134,7 +134,8 @@ class MainPage extends Component {
             .catch(function(error) {
                 console.log(error);
 			})
-    }
+	}
+	
 	getExtraTagList() {
 		var self = this
 		this.setState({
