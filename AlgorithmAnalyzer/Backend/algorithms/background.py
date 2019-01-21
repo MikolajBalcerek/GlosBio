@@ -105,11 +105,18 @@ class JobStatusProvider:
         self._jobs.remove({'_id': ObjectId(jid)})
 
     @database_secure
-    def job_with_data_is_running(self, job_data: dict) -> bool:
+    def job_with_data_is_running(self, data: dict) -> bool:
         # TODO: should we check with full data or only algorithm?
-        res = self._job.find({'data.algoritm': job_data['algorithm']})
-        print(res)
-        return res
+        docs = self._jobs.find(
+            {
+                'finished': False,
+                'error': None
+            }
+        )
+        for doc in docs:
+            if doc['data']['algorithm'] == data['algorithm']:
+                return str(doc['_id'])
+        return False
 
     @database_secure
     def get_all_running_jobs(self):
@@ -126,6 +133,11 @@ class JobStatusProvider:
 
 
 class StatusUpdater:
+    """
+    This class can only update statuse.
+    It is passed to AlgorithmManager, which in turn passes it to
+    algorithms to enable them to update status.
+    """
     def __init__(self, job_id, job_status_provider):
         self._jid = job_id
         self._jsp = job_status_provider

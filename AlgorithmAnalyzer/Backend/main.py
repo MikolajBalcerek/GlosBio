@@ -148,20 +148,25 @@ def train_algorithm(name):
 
     alg_manager = app.config['ALGORITHM_MANAGER'](name)
 
+    data = {'algorithm': name, 'parameters': params}
+
+    job_status = app.config['JOB_STATUS_PROVIDER'].job_with_data_is_running(data)
+    if job_status:
+        return {'job_id': job_status, 'message': 'There is allready such job.'}, status.HTTP_200_OK
+
     samples, labels = app.config['SAMPLE_MANAGER'].get_all_samples(
         purpose='train',
         multilabel=alg_manager.multilabel,
         sample_type='wav'
     )
 
-    data = {'algorithm': name, 'parameters': params}
     job_id = app.config['JOB_STATUS_PROVIDER'].create_job_status(data=data)
 
     try:
         app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params, job_id)
     except AlgorithmException as e:
         return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
-    return {'job_id': job_id}, status.HTTP_200_OK
+    return {'job_id': job_id, 'message': "Job started successfully."}, status.HTTP_200_OK
 
 
 @app.route('/algorithms/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
