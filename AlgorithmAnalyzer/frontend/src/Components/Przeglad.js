@@ -268,7 +268,6 @@ class Przeglad extends Component {
             .then(function(response) {
                 console.log(response)
                 self.getMfcc()
-                self.getSpectrogram()
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 self.setState({
                     url: url
@@ -314,6 +313,7 @@ class Przeglad extends Component {
                 self.setState({
                     mfcc: image
                 })
+                self.getSpectrogram()
                 self.handleClickVariant("Wykres mfcc wczytano poprawnie!", 'success')
             })
             .catch(function(error) {
