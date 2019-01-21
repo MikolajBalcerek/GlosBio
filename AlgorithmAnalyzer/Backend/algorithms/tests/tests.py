@@ -257,9 +257,11 @@ class TestAlgorithmManager(unittest.TestCase):
 
     def test_train_with_raise_mock(self):
         am = self.am(self.raise_alg)
-        with self.assertRaises(AlgorithmException) as ctx:
-            am.train(self.user_samples, self.user_labels, {})
-        self.assertEqual(str(ctx.exception), 'train exception')
+        jid = self.jsp.create_job_status()
+        thread = am.train(self.user_samples, self.user_labels, {}, jid)
+        thread.join()
+        status = self.jsp.read_job_status(jid)
+        self.assertIn('error', status)
 
     def test_load_with_raise_mock(self):
         am = self.am(self.raise_alg)
@@ -268,5 +270,3 @@ class TestAlgorithmManager(unittest.TestCase):
         with self.assertRaises(AlgorithmException) as ctx:
             am._load_multilabel_model()
         self.assertEqual(str(ctx.exception), 'load exception')
-
-

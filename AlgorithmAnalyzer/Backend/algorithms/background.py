@@ -130,7 +130,7 @@ class StatusUpdater:
         self._jid = job_id
         self._jsp = job_status_provider
 
-    def update(self, progress: float, finished: bool = False, error: str = None):
+    def update(self, progress: float = 0, finished: bool = False, error: str = None):
         try:
             self._jsp.update_job_status(
                 jid=self._jid, progress=progress, finished=finished, error=error

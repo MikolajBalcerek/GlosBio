@@ -839,10 +839,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_train_algorithm_raising_algorithmexception(self):
         r = self._train_algorithm(self.exception_raiser)
-        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-        self.assertEqual(r.data, b"There was an exception within the algorithm: train exception",
-                         'Wrong message returned.'
-                         )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_predict_algorithm_raising_algorithmexception(self):
 
