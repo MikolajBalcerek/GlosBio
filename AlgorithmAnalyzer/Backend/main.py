@@ -154,11 +154,11 @@ def train_algorithm(name):
         sample_type='wav'
     )
     try:
-        app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params)
+        jid = app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params)
     except AlgorithmException as e:
         # TODO: 503 or 500? Algorithms aren't a path of the app, but are a dependency?
         return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
-    return "Training ended.", status.HTTP_200_OK
+    return {'job_id': jid}, status.HTTP_200_OK
 
 
 @app.route('/algorithms/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
@@ -208,6 +208,14 @@ def predict_algorithm(user_name, algorithm_name):
         else:
             prediction = meta['Predicted user'] == user_name
     return {"prediction": prediction, 'meta': meta}, status.HTTP_200_OK
+
+
+@app.route("/jobs/<string:jid>", methods=["GET"])
+def job_status_endpoint(jid: str):
+    """
+    GET status of job with id <string:jid>.
+    """
+    return app.config['JOB_STATUS_PROVIDER'].read_job_status(jid), status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])

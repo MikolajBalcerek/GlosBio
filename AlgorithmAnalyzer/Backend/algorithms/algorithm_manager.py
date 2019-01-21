@@ -1,10 +1,12 @@
-import os
 import hashlib
+import os
 from pathlib import Path
 from typing import List, Tuple, Dict
 
+from algorithms.background_jobs import background_task
 
-def algorithm_manager_factory(alg_dict, database_url, database_name, name):
+
+def algorithm_manager_factory(alg_dict, jsp_factory, jsp, name):
     """
     Returns new class deriving after AlgorithmManager.
     :param alg_dict: the new manager will use algorithms from this dict
@@ -16,8 +18,8 @@ def algorithm_manager_factory(alg_dict, database_url, database_name, name):
         {}
     )
     new_class.alg_dict = alg_dict
-    new_class.database_url = database_url
-    new_class.database_name = database_name
+    new_class.jsp_factory = jsp_factory
+    new_class.jsp = jsp
     return new_class
 
 
@@ -43,8 +45,8 @@ class AlgorithmManager:
     """
 
     alg_dict = None
-    database_url = None
-    database_name = None
+    jsp_factory = None
+    jsp = None
 
     def __init__(self, algorithm_name):
         self.models = {}
@@ -107,19 +109,23 @@ class AlgorithmManager:
             parameters[name] = param_dict[name]['type'](parameters[name])
         return parameters
 
-    def _train_models(self, samples: dict, labels: dict, parameters: dict = None):
+    @background_task
+    def _train_models(self, samples: dict, labels: dict, jid: str, parameters: dict = None):
         """
         Trains a model for each user for a given algorithm,
         and then saves the model to `saved_models` directory
         """
+        jsp = self.jsp_factory()
         usernames = list(labels.keys())
         parameters = self._update_parameters(parameters)
-        for username in usernames:
+        for i, username in enumerate(usernames):
             model = self.algorithm(parameters=parameters)
             if samples[username]:
                 model.train(samples[username], labels[username])
                 self.models[username] = model
+            jsp.update_job_status(jid, progress=i/max(len(usernames), 1.))
         self._save_models()
+        jsp.update_job_status(jid, finished=True, progress=1)
 
     def _save_models(self):
         """
@@ -147,14 +153,18 @@ class AlgorithmManager:
         path = base_path + '/model'
         self.models[user] = self.algorithm(path=path)
 
-    def _train_multilabel_model(self, samples: list, labels: list, parameters: dict):
+    @background_task
+    def _train_multilabel_model(self, samples: list, labels: list, parameters: dict, jid: str):
         """
         Trains one multilabeled model for all users.
         """
+        jsp = self.jsp_factory()
         parameters = self._update_parameters(parameters)
         self.model = self.algorithm(parameters=parameters)
         self.model.train(samples, labels)
+        jsp.update(jid, progress=.5)
         self._save_multilabel_model()
+        jsp.update(jid, finished=True)
 
     def _save_multilabel_model(self):
         """
@@ -210,9 +220,9 @@ class AlgorithmManager:
                     {'parameter_name': 'value'},
         where both names and values should agree with get_parameters.
         """
-        # TODO(mikra): add SocketIO and/or Redis communication
-        # TODO(mikra): after ^ make it a background task
+        jid = self.jsp.create_job_status()
         if self.algorithm.multilabel:
-            self._train_multilabel_model(samples, labels, parameters)
+            self._train_multilabel_model(samples, labels, parameters, jid)
         else:
-            self._train_models(samples, labels, parameters)
+            self._train_models(samples, labels, jid, parameters)
+        return jid

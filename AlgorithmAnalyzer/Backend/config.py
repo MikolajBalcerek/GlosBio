@@ -1,6 +1,7 @@
 from algorithms.algorithm_manager import algorithm_manager_factory
 from algorithms.tests.mocks import TEST_ALG_DICT
 from algorithms.algorithms import ALG_DICT
+from algorithms.background_jobs import job_status_provider_factory
 from sample_manager.SampleManager import SampleManager
 
 # this file provides configs for Backend Flask's app (db settings, global singletons)
@@ -51,11 +52,14 @@ class BaseConfig(object):
     # sample manager
     SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
 
+    JOB_STATUS_PROVIDER = job_status_provider_factory(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE)()
+
     ALGORITHM_MANAGER = algorithm_manager_factory(
         ALG_DICT,
-        f"{DATABASE_URL}:{DATABASE_PORT}",
-        JOBS_DATABASE,
-        '__base_algorithm_manager')
+        job_status_provider_factory(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE),
+        JOB_STATUS_PROVIDER,
+        '__base_algorithm_manager'
+    )
 
 
 class ProductionConfig(BaseConfig):
@@ -82,9 +86,14 @@ class TestingConfig(BaseConfig):
     SAMPLE_MANAGER = SampleManager(
         f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False"
     )
+
+    JOB_STATUS_PROVIDER = job_status_provider_factory(
+        f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE
+    )()
+
     ALGORITHM_MANAGER = algorithm_manager_factory(
         TEST_ALG_DICT,
-        f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}",
-        JOBS_DATABASE,
-        '__test_algorithm_manager'
+        job_status_provider_factory(f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE),
+        JOB_STATUS_PROVIDER,
+        '__base_algorithm_manager'
     )
