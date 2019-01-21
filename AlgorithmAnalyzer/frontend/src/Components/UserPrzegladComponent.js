@@ -112,7 +112,7 @@ export default class UserPrzegladComponent extends Component {
                                     indicatorColor="primary"
                                     textColor="primary"
                                     fixed
-                                    style={{backgroundColor: 'black', marginBottom: 10, width: 280}}
+                                    style={{backgroundColor: 'black', marginBottom: 10, width: 320}}
                                     >
                                         <Tab  label='Mfcc' />
                                         <Tab  label='Spektrogram' />
