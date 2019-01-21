@@ -2,7 +2,7 @@
 import unittest
 from pathlib import Path
 
-from plots.mfcc_plot import _plot_mfcc_color_boxes, plot_save_mfcc_color_boxes_BytesIO
+from plots.mfcc_plot import _plot_mfcc_color_boxes, plot_save_mfcc_color_boxes
 
 
 class TestMfccPlotting(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestMfccPlotting(unittest.TestCase):
     # for pdf plot
     def test_plot_save_mfcc_color_boxed_pdf_success(self):
         # create a plot from test audio and save it
-        file_path, plot_bytesIO = plot_save_mfcc_color_boxes_BytesIO(self.AUDIO_1_PATH, self.DIRECTORY_TEST,
+        file_path, plot_bytesIO = plot_save_mfcc_color_boxes(self.AUDIO_1_PATH, self.DIRECTORY_TEST,
                                    "test_plot_mfcc_pdf", "pdf")
 
         test_plot_path = f"{self.DIRECTORY_TEST}/test_plot_mfcc_pdf.pdf"
@@ -50,7 +50,7 @@ class TestMfccPlotting(unittest.TestCase):
     # for png plot
     def test_plot_save_mfcc_color_boxed_success_png(self):
         # create a plot from test audio and save it
-        file_path, plot_bytesIO = plot_save_mfcc_color_boxes_BytesIO(self.AUDIO_1_PATH, self.DIRECTORY_TEST,
+        file_path, plot_bytesIO = plot_save_mfcc_color_boxes(self.AUDIO_1_PATH, self.DIRECTORY_TEST,
                                    "test_plot_mfcc_png", "png")
 
         test_plot_path = f"{self.DIRECTORY_TEST}/test_plot_mfcc_png.png"
@@ -85,7 +85,7 @@ class TestMfccPlotting(unittest.TestCase):
         # check if the exception was thrown
         with self.assertRaises(ValueError, msg="No or bad exception thrown"
                                                "for .wav output for a mfcc plot"):
-            file_path = plot_save_mfcc_color_boxes_BytesIO(self.AUDIO_1_PATH, self.DIRECTORY_TEST,
+            file_path = plot_save_mfcc_color_boxes(self.AUDIO_1_PATH, self.DIRECTORY_TEST,
                                    "test_plot_mfcc_wav", "wav")
 
     def test_plot_save_mfcc_color_boxed_fail_wrong_extension_file_exists(self):
@@ -93,8 +93,8 @@ class TestMfccPlotting(unittest.TestCase):
         file_path = None
         file_bytesIO = None
         try:
-            file_path, file_bytesIO = plot_save_mfcc_color_boxes_BytesIO(self.AUDIO_1_PATH,
-                                                                         self.DIRECTORY_TEST,
+            file_path, file_bytesIO = plot_save_mfcc_color_boxes(self.AUDIO_1_PATH,
+                                                   self.DIRECTORY_TEST,
                                                    "test_plot_mfcc_wav", "wav")
         except ValueError:
             pass

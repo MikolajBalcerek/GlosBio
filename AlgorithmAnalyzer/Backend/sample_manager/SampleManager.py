@@ -217,7 +217,7 @@ class SampleManager:
 
         audio_bytes = audio_file_obj.read()
         if plot_type == "mfcc":
-            file_io = mfcc_plot.plot_save_mfcc_color_boxes_BytesIO(
+            file_io = mfcc_plot.plot_save_mfcc_color_boxes(
                 audio_bytes, sample_name, file_extension)
             file_bytes = file_io.getvalue()
         elif plot_type == "spectrogram":
@@ -458,7 +458,7 @@ class SampleManager:
     #     BytesIO containing the requested plot
     #     """
     #     # TODO: Not unit tested!
-    #     file_io = mfcc_plot.plot_save_mfcc_color_boxes_BytesIO(audio_bytes, file_name, file_extension)
+    #     file_io = mfcc_plot.plot_save_mfcc_color_boxes(audio_bytes, file_name, file_extension)
 
     #     return file_path, file_io.getvalue()
 
