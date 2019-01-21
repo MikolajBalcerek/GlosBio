@@ -375,7 +375,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     Available methods: GET
     The request should send a JSON that contains:
     {
-        type: "mfcc",
+        type: "mfcc", or "spectrogram"
         file_extension: "png" or "pdf"
     }
     or send HTTP POST request which contains the same values as DATA
@@ -407,7 +407,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
             status.HTTP_400_BAD_REQUEST
     plot_type = sent_args.get('type')
     if plot_type not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type ('{sent_args.get('type')}') was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"], status.HTTP_400_BAD_REQUEST
+        return [f"Plot of non-existing type ('{sent_args.get('type')}') was requested, supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"], status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
     if sent_args.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:
@@ -428,7 +428,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
             status.HTTP_400_BAD_REQUEST
-    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_args['type'],
+    file_bytes, mimetype, plot_filename = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_args['type'],
                                                                             set_type=sampletype,
                                                                             username=username,
                                                                             sample_name=samplename,
@@ -437,7 +437,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
     return send_file(io.BytesIO(file_bytes),
-                     mimetype=mimetype),\
+                     mimetype=mimetype, as_attachment=True, attachment_filename=plot_filename),\
         status.HTTP_200_OK
 
 

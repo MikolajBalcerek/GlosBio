@@ -119,8 +119,8 @@ class Recorder extends Component {
             let isRecorded = newlist.length > 0 ? true : false
             let self = this;
              return axios
-                .post(`http://127.0.0.1:5000/audio/${this.state.type}`, fd, {
-                    headers: { "Content-Type": "multipart/form-data" },
+                .post(api_config.usePath+`/audio/${this.state.type}`, fd, {
+                    headers: { 'Authorization': api_config.apiKey, "Content-Type": "multipart/form-data" },
                 })
                 .then(function(response) {
                     self.handleClickVariant(`Plik ${value} zapisano poprawnie! ${response.data.text} `, 'success')
