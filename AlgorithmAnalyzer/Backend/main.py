@@ -153,12 +153,16 @@ def train_algorithm(name):
         multilabel=alg_manager.multilabel,
         sample_type='wav'
     )
+
+    data = {'algorithm': name, 'parameters': params}
+    job_id = app.config['JOB_STATUS_PROVIDER'].create_job_status(data=data)
+
     try:
-        jid = app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params)
+        app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params, job_id)
     except AlgorithmException as e:
         # TODO: 503 or 500? Algorithms aren't a path of the app, but are a dependency?
         return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
-    return {'job_id': jid}, status.HTTP_200_OK
+    return {'job_id': job_id}, status.HTTP_200_OK
 
 
 @app.route('/algorithms/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])

@@ -8,7 +8,6 @@ from pymongo import MongoClient, errors
 class DatabaseException(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
-        # self.__str__ = mongo_error.__str__
 
 
 def database_secure(f):
@@ -19,9 +18,9 @@ def database_secure(f):
     def inner(*args, **kwargs):
         try:
             res = f(*args, **kwargs)
-        except errors.ServerSelectionTimeoutError:
+        except (errors.ServerSelectionTimeoutError, errors.PyMongoError) as e:
             raise DatabaseException(
-                f"Could not connect to MongoDB."
+                f"Probem with the database: {str(e)}"
             )
         return res
     return inner
@@ -30,18 +29,23 @@ def database_secure(f):
 def background_task(f):
     @wraps(f)
     def inner(*args, **kwargs):
-        Thread(target=f, args=args, kwargs=kwargs).start()
+        t = Thread(target=f, args=args, kwargs=kwargs)
+        # TODO: change threading to something different because of GIL
+        t.start()
+        return t
     return inner
 
 
-def job_status_provider_factory(db_url, db_name):
+def get_status_updater_factory(db_url, db_name):
     def inner(*args, **kwargs):
-        return JobStatusProvider(db_url, db_name)
+        jsp = JobStatusProvider(db_url, db_name)
+        return StatusUpdater(kwargs['job_id'], jsp)
     return inner
 
 
 class JobStatusProvider:
     """
+    This class serves as a frontend for job statuses.
     """
 
     def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
@@ -55,28 +59,28 @@ class JobStatusProvider:
         self._database = self._db_client[db_name]
         self._jobs = self._database.jobs
         try:
-            if show_logs:
-                print(f" * #INFO: testing db connection: '{db_url}'...")
             self._db_client.server_info()
-        except errors.ServerSelectionTimeoutError:
+            print("jsp connected to mongo")
+        except (errors.ServerSelectionTimeoutError, errors.PyMongoError):
             raise DatabaseException(
                 f"Could not connect to MongoDB at '{db_url}'"
             )
         self.show_logs = show_logs
 
     def _job_status_schema(
-        self, progress: float, finished: bool = False, error: str = None
+        self, progress: float, finished: bool = False, error: str = None, data: dict = None
     ) -> dict:
         return {
             'finished': finished,
             'progress': progress,
-            'error': error
+            'error': error,
+            'data': data
         }
 
     @database_secure
-    def create_job_status(self) -> str:
+    def create_job_status(self, data: dict = None) -> str:
         new_status = self._jobs.insert_one(
-            self._job_status_schema(progress=0)
+            self._job_status_schema(progress=0, data=data)
         )
         return str(new_status.inserted_id)
 
@@ -98,3 +102,12 @@ class JobStatusProvider:
     @database_secure
     def delete_job_status(self, jid: str):
         self._jobs.remove({'_id': jid})
+
+
+class StatusUpdater:
+    def __init__(self, job_id, job_status_provider):
+        self._jid = job_id
+        self._jsp = job_status_provider
+
+    def update(self, progress: float, finished: bool = False, error: str = None):
+        self._jsp.update_job_status(self._jid, progress, finished, error)

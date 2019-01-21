@@ -687,9 +687,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
         for name in self.alg_list:
             r = self._train_algorithm(name)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
-            self.assertEqual(r.data, b'Training ended.',
-                             'Wrong message returned.'
-                             )
+            self.assertIn(b'job_id', r.data)
 
     def test_train_algorithm_bad_name(self):
         name = "______thereisnosuchalgname______"

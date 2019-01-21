@@ -1,12 +1,13 @@
 import hashlib
+from multiprocessing import Pool
 import os
 from pathlib import Path
 from typing import List, Tuple, Dict
 
-from algorithms.background_jobs import background_task
+from algorithms.background import background_task
 
 
-def algorithm_manager_factory(alg_dict, jsp_factory, jsp, name):
+def algorithm_manager_factory(alg_dict, status_updater_factory, name):
     """
     Returns new class deriving after AlgorithmManager.
     :param alg_dict: the new manager will use algorithms from this dict
@@ -18,8 +19,7 @@ def algorithm_manager_factory(alg_dict, jsp_factory, jsp, name):
         {}
     )
     new_class.alg_dict = alg_dict
-    new_class.jsp_factory = jsp_factory
-    new_class.jsp = jsp
+    new_class.status_updater_factory = status_updater_factory
     return new_class
 
 
@@ -45,13 +45,13 @@ class AlgorithmManager:
     """
 
     alg_dict = None
-    jsp_factory = None
-    jsp = None
+    status_updater_factory = None
 
     def __init__(self, algorithm_name):
         self.models = {}
         self.algorithm_name = algorithm_name
         self.algorithm = self.alg_dict[algorithm_name]
+        self.pool = Pool(processes=4)
 
     @property
     def multilabel(self):
@@ -110,12 +110,12 @@ class AlgorithmManager:
         return parameters
 
     @background_task
-    def _train_models(self, samples: dict, labels: dict, jid: str, parameters: dict = None):
+    def _train_models(self, samples: dict, labels: dict, parameters: dict, job_id: str):
         """
         Trains a model for each user for a given algorithm,
         and then saves the model to `saved_models` directory
         """
-        jsp = self.jsp_factory()
+        status_updater = self.status_updater_factory(job_id=job_id)
         usernames = list(labels.keys())
         parameters = self._update_parameters(parameters)
         for i, username in enumerate(usernames):
@@ -123,9 +123,9 @@ class AlgorithmManager:
             if samples[username]:
                 model.train(samples[username], labels[username])
                 self.models[username] = model
-            jsp.update_job_status(jid, progress=i/max(len(usernames), 1.))
+            status_updater.update(progress=i/max(len(usernames), 1.))
         self._save_models()
-        jsp.update_job_status(jid, finished=True, progress=1)
+        status_updater.update(finished=True, progress=1)
 
     def _save_models(self):
         """
@@ -145,7 +145,6 @@ class AlgorithmManager:
         using model's __init__ method with path kwarg.
         :param user: the name of the user for wich the model should be loaded
         """
-        # TODO(mikra): take care of models load returning errors!!!
         md5 = hashlib.md5(user.encode('utf-8'))
         base_path = f'./algorithms/saved_models/{self.algorithm_name}/{md5.hexdigest()}'
         if not os.path.isdir(base_path):
@@ -154,17 +153,16 @@ class AlgorithmManager:
         self.models[user] = self.algorithm(path=path)
 
     @background_task
-    def _train_multilabel_model(self, samples: list, labels: list, parameters: dict, jid: str):
+    def _train_multilabel_model(self, samples: list, labels: list, parameters: dict, job_id: str):
         """
         Trains one multilabeled model for all users.
         """
-        jsp = self.jsp_factory()
         parameters = self._update_parameters(parameters)
         self.model = self.algorithm(parameters=parameters)
+        # self.model.set_jsp()
         self.model.train(samples, labels)
-        jsp.update(jid, progress=.5)
         self._save_multilabel_model()
-        jsp.update(jid, finished=True)
+        # jsp.update_job_status(jid, finished=True, progress=1)
 
     def _save_multilabel_model(self):
         """
@@ -203,7 +201,7 @@ class AlgorithmManager:
             self._load_model(user)
             return self.models[user].predict(file)
 
-    def train(self, samples, labels, parameters):
+    def train(self, samples, labels, parameters, job_id):
         """
         Trains the model(s) depending on algorithm being multilabel,
         then saves it (them).
@@ -220,9 +218,9 @@ class AlgorithmManager:
                     {'parameter_name': 'value'},
         where both names and values should agree with get_parameters.
         """
-        jid = self.jsp.create_job_status()
         if self.algorithm.multilabel:
-            self._train_multilabel_model(samples, labels, parameters, jid)
+                return self._train_multilabel_model(
+                                            samples, labels, parameters, job_id
+                                            )
         else:
-            self._train_models(samples, labels, jid, parameters)
-        return jid
+                return self._train_models(samples, labels, parameters, job_id)

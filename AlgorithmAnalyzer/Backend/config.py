@@ -1,7 +1,7 @@
 from algorithms.algorithm_manager import algorithm_manager_factory
 from algorithms.tests.mocks import TEST_ALG_DICT
 from algorithms.algorithms import ALG_DICT
-from algorithms.background_jobs import job_status_provider_factory
+from algorithms.background import get_status_updater_factory, JobStatusProvider
 from sample_manager.SampleManager import SampleManager
 
 # this file provides configs for Backend Flask's app (db settings, global singletons)
@@ -52,12 +52,11 @@ class BaseConfig(object):
     # sample manager
     SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
 
-    JOB_STATUS_PROVIDER = job_status_provider_factory(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE)()
+    JOB_STATUS_PRIVIDER = JobStatusProvider(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE)
 
     ALGORITHM_MANAGER = algorithm_manager_factory(
         ALG_DICT,
-        job_status_provider_factory(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE),
-        JOB_STATUS_PROVIDER,
+        get_status_updater_factory(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE),
         '__base_algorithm_manager'
     )
 
@@ -87,13 +86,16 @@ class TestingConfig(BaseConfig):
         f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", DATABASE_NAME, show_logs="False"
     )
 
-    JOB_STATUS_PROVIDER = job_status_provider_factory(
+    JOB_STATUS_PROVIDER = JobStatusProvider(
         f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE
-    )()
+    )
+
+    JOB_STATUS_UPDATER_FACTORY = get_status_updater_factory(
+            f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE
+        )
 
     ALGORITHM_MANAGER = algorithm_manager_factory(
         TEST_ALG_DICT,
-        job_status_provider_factory(f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE),
-        JOB_STATUS_PROVIDER,
+        JOB_STATUS_UPDATER_FACTORY,
         '__base_algorithm_manager'
     )
