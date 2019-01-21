@@ -966,3 +966,69 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
         self.assertEqual(r.data, b"There was an exception within the algorithm: load exception",
                          'Wrong message returned.'
                          )
+
+
+class TestJobsEndpoints(BaseAbstractIntegrationTestsClass):
+
+    def test_get_all_running_jobs(self):
+        r = self.client.get('/jobs')
+        self.assertEqual(r.data, b'[]')
+        jid = self.jsp.create_job_status(data={'d': 'somedata'})
+        self.assertIsNotNone(jid)
+        r = self.client.get('/jobs')
+        self.assertEqual(len(r.json), 1)
+        self.assertEqual(
+            r.json[0],
+            {
+                "progress": 0,
+                "error": None,
+                "data": {"d": "somedata"},
+                "job_id": jid
+            }
+        )
+        self.jsp.delete_job_status(jid)
+
+    def test_get_job_status_endpoint_incorrect_id(self):
+        jid = "some_nonexisting_job_id"
+        res = self.client.get(f'/jobs/{jid}')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_job_status_endpoint_incorrect_id(self):
+        jid = "some_nonexisting_job_id"
+        res = self.client.delete(f'/jobs/{jid}')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_job_status_endpoint(self):
+        jid = self.jsp.create_job_status(data={'d': 'somedata'})
+        res = self.client.get(f'/jobs/{jid}')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        print(res.json)
+        self.assertEqual(
+            res.json,
+            {
+                'finished': False, 'progress': 0,
+                'error': None, 'data': {'d': 'somedata'}
+            }
+        )
+        self.jsp.delete_job_status(jid)
+
+    def test_get_job_status_endpoint_on_finished_deletes(self):
+        jid = self.jsp.create_job_status(data={'d': 'somedata'})
+        self.jsp.update_job_status(jid, progress=1, finished=True)
+        res = self.client.get(f'/jobs/{jid}')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            res.json,
+            {
+                'finished': True, 'progress': 1,
+                'error': None, 'data': {'d': 'somedata'}
+            }
+        )
+        res = self.client.get(f'/jobs/{jid}')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_job_status_endpoint(self):
+        jid = self.jsp.create_job_status(data={'d': 'somedata'})
+        self.client.delete(f'/jobs/{jid}')
+        res = self.client.get(f'/jobs/{jid}')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)

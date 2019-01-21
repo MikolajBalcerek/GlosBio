@@ -86,7 +86,12 @@ class JobStatusProvider:
 
     @database_secure
     def read_job_status(self, jid: str) -> dict:
-        job_page = self._jobs.find_one({'_id': ObjectId(jid)})
+        try:
+            job_page = self._jobs.find_one({'_id': ObjectId(jid)})
+        except Exception:
+            # there is no job with this id
+            return None
+
         if job_page is not None:
             job_page.pop('_id', None)
         return job_page
