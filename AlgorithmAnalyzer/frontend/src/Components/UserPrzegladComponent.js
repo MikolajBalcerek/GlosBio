@@ -13,6 +13,8 @@ import Radio from '@material-ui/core/Radio';
 import AudioSpectrum from "react-audio-spectrum"
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
+import IconButton from '@material-ui/core/IconButton';
+import DeleteIcon from '@material-ui/icons/Delete';
 
 export default class UserPrzegladComponent extends Component {
     render(){
@@ -60,6 +62,14 @@ export default class UserPrzegladComponent extends Component {
                             variant="contained">
                             Załaduj próbkę
                         </Button>
+                        <IconButton 
+                            aria-label="Usuń" 
+                            style={{backgroundColor: '#550000'}} 
+                            onClick={()=>this.props.deleteUserSound()}
+                            disabled={this.props.sound === ''}
+                            >
+                            <DeleteIcon />
+                        </IconButton>
                     </Grid>
                     <Grid 
                         item 
