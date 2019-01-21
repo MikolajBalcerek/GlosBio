@@ -318,6 +318,45 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertTrue(len(r.data) > 0,
                         "Generated MFCC plot PNG file from memory is less than 0")
 
+    def test_GET_mfcc_plot_train_json_no_file_extension_specified(self):
+        """ tests for MFCC plot being requested
+        with json
+        without having specified a file extension
+        for an existing user
+        in train category """
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+        request_json = json.dumps({"type": "mfcc"})
+
+        r = self.client.get(request_path, json=request_json)
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path} wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.content_type, 'image/png',
+                         "Wrong content_type was returned"
+                         f"for mfcc plot, should be image/png, is {r.content_type}")
+
+        self.assertTrue(len(r.data) > 0,
+                        "Generated MFCC plot PNG file from memory is less than 0")
+
+    def test_GET_mfcc_plot_train_no_json_no_file_extension_specified(self):
+        """ tests for MFCC plot being requested
+        without json passed (just correct data in request)
+        without having specified a file extension
+        for an existing user
+        in train category """
+        request_path = f"/plot/train/{self.TEST_USERNAMES[0]}/1.wav"
+        r = self.client.get(request_path, data={"type": "mfcc"})
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"request: {request_path} wrong status code, expected 200, got {r.status_code}")
+
+        self.assertEqual(r.content_type, 'image/png',
+                         "Wrong content_type was returned"
+                         f" for mfcc plot, should be image/png, is {r.content_type}")
+        self.assertTrue(len(r.data) > 0,
+                        "Generated MFCC plot PNG file from memory is less than 0")
+
     # TODO: tests for pdf
     # TODO: tests for test endpoint
     def test_failing_lack_of_data_url_specified(self):

@@ -215,7 +215,7 @@ class SampleManager:
         if audio_file_obj is None:
             return None
 
-        audio_bytes = audio_file_obj.read()
+        audio_bytes = BytesIO(audio_file_obj.read())
         if plot_type == "mfcc":
             file_io = mfcc_plot.plot_save_mfcc_color_boxes_BytesIO(
                 audio_bytes, sample_name, file_extension)
