@@ -20,11 +20,6 @@ def save_matplotlib_figure(data: plt.Figure, file_name: str, saved_format: str =
     BytesIO containing the requested plot
     """
     if saved_format == "png" or saved_format == "pdf":
-        # file_path = f'{directory_path}/{file_name}.{saved_format}'
-        # data.savefig(file_path,
-        #              transparent=True, bbox_inches='tight')
-
-        # saving in two ways for future SampleManager
         file_io = BytesIO()
         data.savefig(file_io, transparent=True, bbox_inches='tight',
                      format=saved_format)

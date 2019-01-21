@@ -14,6 +14,7 @@ import Tab from '@material-ui/core/Tab';
 import TagPrzeglad from './TagPrzeglad'
 import TagPrzegladComponent from './TagPrzegladComponent'
 import DeleteUser from './DeleteUser'
+import Spectrogram from './Spectrogram'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -38,7 +39,9 @@ class Przeglad extends Component {
             tag: '',
             tagValuesList: [],
             tagValues: [],
-            deleteOpen: false
+            deleteOpen: false,
+            spectrogram: null,
+            spectrogramOpen: false,
         }
     }
     handleOpenDelete = () =>{
@@ -93,9 +96,16 @@ class Przeglad extends Component {
             isPlay: !this.state.isPlay
                 })  
     }
+
     handleOpenMfcc =()=>{
         this.setState({
             mfccOpen: !this.state.mfccOpen
+        })
+    }
+
+    handleOpenSpectrogram =()=>{
+        this.setState({
+            spectrogramOpen: !this.state.spectrogramOpen
         })
     }
     
@@ -303,10 +313,43 @@ class Przeglad extends Component {
                 self.setState({
                     mfcc: image
                 })
+                self.getSpectrogram()
                 self.handleClickVariant("Wykres mfcc wczytano poprawnie!", 'success')
             })
             .catch(function(error) {
                 self.handleClickVariant("Podczas wczytywania wykresu mfcc wystąpił błąd!", 'error')
+                console.log(error);
+			})
+    }
+    getSpectrogram() {
+        var self = this
+        var data = JSON.stringify({ 
+            "type": "spectrogram"
+        })
+        axios({
+            url: api_config.usePath +`/plot/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`,
+            method: 'GET',
+            params: {"type": "spectrogram"},
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                //'Authorization': api_config.apiKey
+            },
+            responseType: 'arraybuffer'
+          })
+            .then(function(response) {
+                console.log(response)
+                let blob = new Blob(
+                    [response.data], 
+                    { type: response.headers['content-type'] }
+                  )
+                  let image = URL.createObjectURL(blob)
+                self.setState({
+                    spectrogram: image
+                })
+                self.handleClickVariant("Spektrogram wczytano poprawnie!", 'success')
+            })
+            .catch(function(error) {
+                self.handleClickVariant("Podczas wczytywania spektrogramu wystąpił błąd!", 'error')
                 console.log(error);
 			})
     }
@@ -428,6 +471,8 @@ class Przeglad extends Component {
                     mfcc={this.state.mfcc}
                     handleOpenMfcc={()=>this.handleOpenMfcc()}
                     deleteUserSound={()=>this.deleteUserSound()}
+                    handleOpenSpectrogram={()=>this.handleOpenSpectrogram()}
+                    spectrogram={this.state.spectrogram} 
                 />}
                 {this.state.tabPrzeglad === 1 &&
                     <TagPrzegladComponent
@@ -440,6 +485,11 @@ class Przeglad extends Component {
                 mfcc={this.state.mfcc} 
                 mfccOpen={this.state.mfccOpen}
                 handleOpenMfcc={()=>this.handleOpenMfcc}
+                />
+            <Spectrogram 
+                spectrogram={this.state.spectrogram} 
+                spectrogramOpen={this.state.spectrogramOpen}
+                handleOpenScectrogram={()=>this.handleOpenSpectrogram}
                 />
                 <Tags 
                     tags={this.state.userTags}
