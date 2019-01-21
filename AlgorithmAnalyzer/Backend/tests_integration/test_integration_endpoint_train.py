@@ -610,6 +610,8 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
     def setUp(self):
         self.am = self.app.config['ALGORITHM_MANAGER']
         self.alg_list = self.am.get_algorithms()
+        self.valid_algs = self.alg_list[:-1]
+        self.exception_raiser = self.alg_list[-1]
 
     def tearDown(self):
         for alg_name in self.alg_list:
@@ -638,7 +640,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             })
 
     def test_get_algorithm_description(self):
-        for name in self.alg_list:
+        for name in self.valid_algs:
             self.assertEqual(
                 self.client.get(f'/algorithms/description/{name}').data,
                 TEST_ALG_DICT[name].__doc__.encode() if TEST_ALG_DICT[name].__doc__ else b"",
@@ -684,7 +686,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             )
 
     def test_train_algorithm(self):
-        for name in self.alg_list:
+        for name in self.alg_list[:-1]:
             r = self._train_algorithm(name)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertIn(b'job_id', r.data)
@@ -782,7 +784,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_predict_algorithm(self):
         username = self.TEST_USERNAMES[0]
-        for name in self.alg_list:
+        for name in self.valid_algs:
             self._train_algorithm(name)
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
@@ -834,3 +836,25 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())
+
+    def test_train_algorithm_raising_algorithmexception(self):
+        r = self._train_algorithm(self.exception_raiser)
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(r.data, b"There was an exception within the algorithm: train exception",
+                         'Wrong message returned.'
+                         )
+
+    def test_predict_algorithm_raising_algorithmexception(self):
+
+        # make alg_manager think that the model for raise_alg is trained
+        base_path = f'./algorithms/saved_models/{self.exception_raiser}/'
+        username = self.TEST_USERNAMES[0]
+        Path(base_path).mkdir(parents=True)
+
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                data = {'file': f}
+                r = self.client.post(f'/algorithms/test/{username}/{self.exception_raiser}', data=data)
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(r.data, b"There was an exception within the algorithm: load exception",
+                         'Wrong message returned.'
+                         )
