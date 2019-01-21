@@ -95,9 +95,18 @@ class JobStatusProvider:
     def update_job_status(
         self, jid: str, progress: float, finished: bool = False, error: str = None
     ):
+        old = self.read_job_status(jid)
+        if not old:
+            return
         self._jobs.update_one(
-            {'_id': ObjectId(jid)},
-            {'progress': progress, 'finished': finished, 'error': error}
+            {'_id': ObjectId(jid)}, {
+                '$set': {
+                    'progress': progress,
+                    'finished': finished,
+                    'error': error,
+                    'data': old['data']
+                }
+            }
         )
 
     @database_secure
@@ -113,21 +122,23 @@ class JobStatusProvider:
                 'error': None
             }
         )
+        if docs is None:
+            return False
+
         for doc in docs:
-            if doc['data']['algorithm'] == data['algorithm']:
-                return str(doc['_id'])
+            if doc and 'data' in doc and doc['data'] and 'algorithm' in doc['data']:
+                if doc['data']['algorithm'] == data['algorithm']:
+                    return str(doc['_id'])
         return False
 
     @database_secure
     def get_all_running_jobs(self):
-        jobs_cursor = self._jobs.find({'finished': False}, {'data': 1})
+        jobs_cursor = self._jobs.find({'finished': False}, {'data': 1, 'progress': 1, 'error': 1})
         jobs = []
         for job in jobs_cursor:
-            print(job)
             jid = job['_id']
             job.pop('_id', None)
             job['job_id'] = str(jid)
-            job['data'] = job['data']
             jobs.append(job)
         return jobs
 
@@ -148,4 +159,5 @@ class StatusUpdater:
                 jid=self._jid, progress=progress, finished=finished, error=error
             )
         except Exception as e:
+            print(str(e))
             return str(e)

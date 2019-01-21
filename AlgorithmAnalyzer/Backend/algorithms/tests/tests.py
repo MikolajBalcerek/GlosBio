@@ -262,6 +262,10 @@ class TestAlgorithmManager(unittest.TestCase):
         thread.join()
         status = self.jsp.read_job_status(jid)
         self.assertIn('error', status)
+        self.assertEqual(
+            status['error'],
+            "There was a problem with algorithm: train exception"
+        )
 
     def test_load_with_raise_mock(self):
         am = self.am(self.raise_alg)

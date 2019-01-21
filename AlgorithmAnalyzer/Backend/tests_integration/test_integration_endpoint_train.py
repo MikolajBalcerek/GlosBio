@@ -2,6 +2,7 @@ import glob
 import unittest
 import json
 import abc
+from time import sleep
 from pathlib import Path
 
 import gridfs
@@ -628,10 +629,13 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             for param in params.keys()
         }
         data = {'parameters': some_params}
-        return self.client.post(f'/algorithms/train/{name}',
-                                data=json.dumps(data),
-                                content_type='application/json'
-                                )
+        r = self.client.post(
+            f'/algorithms/train/{name}',
+            data=json.dumps(data),
+            content_type='application/json'
+        )
+        sleep(.1)
+        return r
 
     def test_get_algorithms_names(self):
         self.assertEqual(
@@ -783,12 +787,16 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_predict_algorithm(self):
-        username = self.TEST_USERNAMES[0]
+        username = self.TEST_USERNAMES[1]
         for name in self.valid_algs:
-            self._train_algorithm(name)
+            resp = self._train_algorithm(name)
+            # a dirty trick to let the background task finish
+            print(resp.data)
+            sleep(1)
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
                 r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
+            print(r.data)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertIn('prediction', r.json)
             if name == 'second_mock':
