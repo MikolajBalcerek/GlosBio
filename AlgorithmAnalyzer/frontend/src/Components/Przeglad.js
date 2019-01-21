@@ -14,7 +14,10 @@ import Tab from '@material-ui/core/Tab';
 import TagPrzeglad from './TagPrzeglad'
 import TagPrzegladComponent from './TagPrzegladComponent'
 import DeleteUser from './DeleteUser'
+<<<<<<< HEAD
 import Spectrogram from './Spectrogram'
+=======
+>>>>>>> 2489ea1632680d6275908b3855c72bf27503f652
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -39,9 +42,13 @@ class Przeglad extends Component {
             tag: '',
             tagValuesList: [],
             tagValues: [],
+<<<<<<< HEAD
             deleteOpen: false,
             spectrogram: null,
             spectrogramOpen: false,
+=======
+            deleteOpen: false
+>>>>>>> 2489ea1632680d6275908b3855c72bf27503f652
         }
     }
     handleOpenDelete = () =>{
@@ -471,8 +478,11 @@ class Przeglad extends Component {
                     mfcc={this.state.mfcc}
                     handleOpenMfcc={()=>this.handleOpenMfcc()}
                     deleteUserSound={()=>this.deleteUserSound()}
+<<<<<<< HEAD
                     handleOpenSpectrogram={()=>this.handleOpenSpectrogram()}
                     spectrogram={this.state.spectrogram} 
+=======
+>>>>>>> 2489ea1632680d6275908b3855c72bf27503f652
                 />}
                 {this.state.tabPrzeglad === 1 &&
                     <TagPrzegladComponent
