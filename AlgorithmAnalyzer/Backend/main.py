@@ -375,7 +375,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     Available methods: GET
     The request should send a JSON that contains:
     {
-        type: "mfcc",
+        type: "mfcc", or "spectrogram"
         file_extension: "png" or "pdf"
     }
     or send HTTP POST request which contains the same values as DATA
@@ -407,7 +407,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
             status.HTTP_400_BAD_REQUEST
     plot_type = sent_args.get('type')
     if plot_type not in SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES:
-        return [f"Plot of non-existing type ('{sent_args.get('type')}') was requested,supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"], status.HTTP_400_BAD_REQUEST
+        return [f"Plot of non-existing type ('{sent_args.get('type')}') was requested, supported plots {SampleManager.ALLOWED_PLOT_TYPES_FROM_SAMPLES}"], status.HTTP_400_BAD_REQUEST
 
     # check for file_extension
     if sent_args.get('file_extension') not in SampleManager.ALLOWED_PLOT_FILE_EXTENSIONS:

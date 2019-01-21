@@ -14,7 +14,7 @@ from gridfs import GridOut
 
 from utils import convert_audio
 from utils.speech_recognition_wrapper import speech_to_text_wrapper
-from plots import mfcc_plot
+from plots import mfcc_plot, spectrogram_plot
 
 ''''''''''''''''
 example of single MongoDB document representing single 'user'
@@ -41,7 +41,7 @@ example of single MongoDB document representing single 'user'
 class SampleManager:
     # allowed plots' file extensions
     ALLOWED_PLOT_FILE_EXTENSIONS = ['pdf', 'png']
-    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc']
+    ALLOWED_PLOT_TYPES_FROM_SAMPLES = ['mfcc', 'spectrogram']
     ALLOWED_SAMPLE_CONTENT_TYPE = ['audio/wav', 'audio/x-wav']
 
     def __init__(self, db_url: str, db_name: str, show_logs: bool = True):
@@ -197,11 +197,11 @@ class SampleManager:
                             username: str, sample_name: str,
                             file_extension: str="png", **parameters) -> Tuple[Optional[BytesIO], str]:
         """
-        Master method that creates a plot of given plot_type (e.g. "mfcc")
+        Master method that creates a plot of given plot_type (e.g. "mfcc", "spectrogram")
         for a given set_type (train, test), username and specific sample
         file_extension can be specified (png or pdf)
 
-        :param plot_type: str type of plot, e.g. "mfcc"
+        :param plot_type: str type of plot, e.g. "mfcc", "spectrogram"
         :param set_type: set of users' sample, test or train
         :param username: str normalized username of the user
         :param sample_name: str name of the sample, e.g. "1.wav"
@@ -215,10 +215,13 @@ class SampleManager:
         if audio_file_obj is None:
             return None
 
-        audio_bytes = audio_file_obj.read()
+        audio_bytes = BytesIO(audio_file_obj.read())
         if plot_type == "mfcc":
-            file_io = mfcc_plot.plot_save_mfcc_color_boxes(
+            file_io = mfcc_plot.plot_save_mfcc_color_boxes_BytesIO(
                 audio_bytes, sample_name, file_extension)
+            file_bytes = file_io.getvalue()
+        elif plot_type == "spectrogram":
+            file_io = spectrogram_plot.plot_save_spectrogram_BytesIO(audio_bytes, sample_name, file_extension)
             file_bytes = file_io.getvalue()
         else:
             raise ValueError("plot_type should be of type str, of value one of"
@@ -542,7 +545,7 @@ class SampleManager:
     #     BytesIO containing the requested plot
     #     """
     #     # TODO: Not unit tested!
-    #     file_io = mfcc_plot.plot_save_mfcc_color_boxes(audio_bytes, file_name, file_extension)
+    #     file_io = mfcc_plot.plot_save_mfcc_color_boxes_BytesIO(audio_bytes, file_name, file_extension)
 
     #     return file_path, file_io.getvalue()
 
