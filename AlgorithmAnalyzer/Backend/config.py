@@ -44,7 +44,7 @@ class BaseConfig(object):
                             'json': ['json']}
 
     # MongoDB database settings
-    DATABASE_URL = "192.168.56.101"
+    DATABASE_URL = "127.0.0.1"
     DATABASE_PORT = "27018"
     DATABASE_NAME = "samplebase"
     JOBS_DATABASE = "jobsbase"
@@ -52,7 +52,7 @@ class BaseConfig(object):
     # sample manager
     SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
 
-    JOB_STATUS_PRIVIDER = JobStatusProvider(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE)
+    JOB_STATUS_PROVIDER = JobStatusProvider(f"{DATABASE_URL}:{DATABASE_PORT}", JOBS_DATABASE)
 
     ALGORITHM_MANAGER = algorithm_manager_factory(
         ALG_DICT,

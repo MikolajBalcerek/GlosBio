@@ -132,7 +132,10 @@ class Algorithm(metaclass=ABCMeta):
                     self.status_updater.update(progress=batches_done)
 
         Object `updater` has only one method:
-            updater.update(progress: float, finished: bool = False, error: str = None)
+            ok = updater.update(progress: float, finished: bool = False, error: str = None)
+            if ok is not None:
+                # there was an error with updating
+                print("Error message: " + str(ok))
 
         For not multilabel models updates are done authomatically based on number of users.
         """

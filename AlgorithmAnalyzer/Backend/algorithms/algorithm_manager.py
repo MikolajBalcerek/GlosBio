@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 
 from algorithms.background import background_task
+from algorithms.base_algorithm import AlgorithmException
 
 
 def algorithm_manager_factory(alg_dict, status_updater_factory, name):
@@ -115,17 +116,24 @@ class AlgorithmManager:
         Trains a model for each user for a given algorithm,
         and then saves the model to `saved_models` directory
         """
-        status_updater = self.status_updater_factory(job_id=job_id)
-        usernames = list(labels.keys())
-        parameters = self._update_parameters(parameters)
-        for i, username in enumerate(usernames):
-            model = self.algorithm(parameters=parameters)
-            if samples[username]:
-                model.train(samples[username], labels[username])
-                self.models[username] = model
-            status_updater.update(progress=i/max(len(usernames), 1.))
-        self._save_models()
-        status_updater.update(finished=True, progress=1)
+        try:
+            status_updater = self.status_updater_factory(job_id=job_id)
+            usernames = list(labels.keys())
+            parameters = self._update_parameters(parameters)
+            for i, username in enumerate(usernames):
+                model = self.algorithm(parameters=parameters)
+                if samples[username]:
+                    model.train(samples[username], labels[username])
+                    self.models[username] = model
+                status_updater.update(progress=i/max(len(usernames), 1.))
+            self._save_models()
+        except AlgorithmException as e:
+            status_updater.update(
+                progress=0, finished=True,
+                error=f"There was an error with the algorithm: {str(e)}"
+            )
+        else:
+            status_updater.update(finished=True, progress=1)
 
     def _save_models(self):
         """
@@ -157,13 +165,20 @@ class AlgorithmManager:
         """
         Trains one multilabeled model for all users.
         """
-        parameters = self._update_parameters(parameters)
-        self.model = self.algorithm(parameters=parameters)
-        self.updater = self.status_updater_factory(job_id=job_id)
-        self.model.set_status_updater(self.updater)
-        self.model.train(samples, labels)
-        self._save_multilabel_model()
-        self.updater.update(finished=True, progress=1)
+        try:
+            parameters = self._update_parameters(parameters)
+            self.model = self.algorithm(parameters=parameters)
+            self.updater = self.status_updater_factory(job_id=job_id)
+            self.model.set_status_updater(self.updater)
+            self.model.train(samples, labels)
+            self._save_multilabel_model()
+        except AlgorithmException as e:
+            self.updater.update(
+                finished=True, progress=0,
+                error=f"There was a problem with algorithm: {str(e)}"
+            )
+        else:
+            self.updater.update(finished=True, progress=1)
 
     def _save_multilabel_model(self):
         """

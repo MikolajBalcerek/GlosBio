@@ -1,7 +1,6 @@
 import hashlib
 import unittest
 from pathlib import Path
-from time import sleep
 
 from algorithms.algorithm_manager import (
     algorithm_manager_factory,

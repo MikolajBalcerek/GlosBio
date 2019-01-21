@@ -214,12 +214,46 @@ def predict_algorithm(user_name, algorithm_name):
     return {"prediction": prediction, 'meta': meta}, status.HTTP_200_OK
 
 
-@app.route("/jobs/<string:jid>", methods=["GET"])
+@app.route("/jobs", methods=["GET"])
+def get_all_running_jobs():
+    """
+    Return all jobs with field finisked: False.
+    Returns:
+        [list of {
+            "job_id": job_id,
+            "error": error,
+            "data": {
+                # some data, for example
+                "algorithm": name_of_algorithm,
+                "parameters": algorithm_parameters
+            }
+        }]
+    """
+    return \
+        app.config["JOB_STATUS_PROVIDER"].get_all_running_jobs()
+
+
+@app.route("/jobs/<string:jid>", methods=["GET", "DELETE"])
 def job_status_endpoint(jid: str):
     """
     GET status of job with id <string:jid>.
+    If the job is finished, deletes it's status entry.
     """
-    return app.config['JOB_STATUS_PROVIDER'].read_job_status(jid), status.HTTP_200_OK
+    if request.method == 'DELETE':
+        try:
+            app.config['JOB_STATUS_PROVIDER'].delete_job_status(jid)
+            return "Job deleted.", status.HTTP_200_OK
+        except Exception:
+            return "There is no job with this job_id.", status.HTTP_404_NOT_FOUND
+    else:
+        job_status = app.config['JOB_STATUS_PROVIDER'].read_job_status(jid)
+        if job_status is None:
+            return "There is no job with this job_id.", status.HTTP_404_NOT_FOUND
+
+        if job_status['finished']:
+            app.config['JOB_STATUS_PROVIDER'].delete_job_status(jid)
+
+        return job_status, status.HTTP_200_OK
 
 
 @app.route("/audio/<string:type>", methods=['POST'])

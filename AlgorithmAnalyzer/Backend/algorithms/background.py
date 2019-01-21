@@ -66,7 +66,7 @@ class JobStatusProvider:
             raise DatabaseException(
                 f"Could not connect to MongoDB at '{db_url}'"
             )
-        self.show_logs = show_logs
+        self._show_logs = show_logs
 
     def _job_status_schema(
         self, progress: float, finished: bool = False, error: str = None, data: dict = None
@@ -80,29 +80,49 @@ class JobStatusProvider:
 
     @database_secure
     def create_job_status(self, data: dict = None) -> str:
-        new_status = self._jobs.insert_one(
-            self._job_status_schema(progress=0, data=data)
-        )
+        schema = self._job_status_schema(progress=0, data=data)
+        new_status = self._jobs.insert_one(schema)
         return str(new_status.inserted_id)
 
     @database_secure
     def read_job_status(self, jid: str) -> dict:
         job_page = self._jobs.find_one({'_id': ObjectId(jid)})
-        job_page.pop('_id', None)
+        if job_page is not None:
+            job_page.pop('_id', None)
         return job_page
 
     @database_secure
     def update_job_status(
         self, jid: str, progress: float, finished: bool = False, error: str = None
     ):
-        self._jobs.replace_one(
+        self._jobs.update_one(
             {'_id': ObjectId(jid)},
-            self._job_status_schema(progress, finished, error)
+            {'progress': progress, 'finished': finished, 'error': error}
         )
 
     @database_secure
     def delete_job_status(self, jid: str):
-        self._jobs.remove({'_id': jid})
+        self._jobs.remove({'_id': ObjectId(jid)})
+
+    @database_secure
+    def job_with_data_is_running(self, job_data: dict) -> bool:
+        # TODO: should we check with full data or only algorithm?
+        res = self._job.find({'data.algoritm': job_data['algorithm']})
+        print(res)
+        return res
+
+    @database_secure
+    def get_all_running_jobs(self):
+        jobs_cursor = self._jobs.find({'finished': False}, {'data': 1})
+        jobs = []
+        for job in jobs_cursor:
+            print(job)
+            jid = job['_id']
+            job.pop('_id', None)
+            job['job_id'] = str(jid)
+            job['data'] = job['data']
+            jobs.append(job)
+        return jobs
 
 
 class StatusUpdater:
@@ -111,4 +131,9 @@ class StatusUpdater:
         self._jsp = job_status_provider
 
     def update(self, progress: float, finished: bool = False, error: str = None):
-        self._jsp.update_job_status(self._jid, progress, finished, error)
+        try:
+            self._jsp.update_job_status(
+                jid=self._jid, progress=progress, finished=finished, error=error
+            )
+        except Exception as e:
+            return str(e)
