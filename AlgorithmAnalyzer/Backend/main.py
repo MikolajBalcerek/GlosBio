@@ -431,16 +431,28 @@ def handle_tag_entdpoint():
         return [f"Added tag '{name}'"], status.HTTP_201_CREATED
 
 
-@app.route("/tag/<string:name>", methods=['GET'])
+@app.route("/tag/<string:tag>", methods=['GET', 'DELETE'])
 @requires_db_connection
-def handle_tag_value_entdpoint(name):
+def handle_tag_value_entdpoint(tag):
     """
+    GET
     will list tag possible values
-    """
-    if not app.config['SAMPLE_MANAGER'].tag_exists(name):
-        return [f"Tag '{name}' does not exist in tag base"], status.HTTP_400_BAD_REQUEST
 
-    return app.config['SAMPLE_MANAGER'].get_tag_values(name), status.HTTP_200_OK
+    DELETE
+    will delete tag (if it's not in use)
+    """
+    if not app.config['SAMPLE_MANAGER'].tag_exists(tag):
+        return [f"Tag '{tag}' does not exist in tag base"], status.HTTP_400_BAD_REQUEST
+
+    if request.method == 'GET':
+        return app.config['SAMPLE_MANAGER'].get_tag_values(tag), status.HTTP_200_OK
+
+    if request.method == 'DELETE':
+        try:
+            app.config['SAMPLE_MANAGER'].delete_tag(tag)
+            return "", status.HTTP_204_NO_CONTENT
+        except ValueError as e:
+            return [str(e)], status.HTTP_400_BAD_REQUEST
 
 
 @app.route("/users/<string:username>/tags", methods=['GET', 'POST'])
@@ -495,6 +507,19 @@ def handle_user_tags_endpoint(username):
             username, tag_name, tag_value)
 
         return [f"Added tag '{tag_name}' to user '{username}'"], status.HTTP_201_CREATED
+
+
+@app.route("/users/<string:username>/tags/<string:tag>", methods=['DELETE'])
+@requires_db_connection
+def handle_delete_user_tag_endpoint(username, tag):
+    """
+    delete tag fron users tags
+    """
+    try:
+        app.config['SAMPLE_MANAGER'].delete_user_tag(username, tag)
+        return "", status.HTTP_204_NO_CONTENT
+    except ValueError as e:
+        return [str(e)], status.HTTP_400_BAD_REQUEST
 
 
 @app.route("/users/<string:username>", methods=['GET', 'DELETE'])

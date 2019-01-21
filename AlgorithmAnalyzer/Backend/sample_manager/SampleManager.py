@@ -488,6 +488,45 @@ class SampleManager:
         except errors.PyMongoError as e:
             raise DatabaseException(e)
 
+    def delete_tag(self, tag: str):
+        '''
+        removes specified tag from tagbase
+        :params tag: str
+        '''
+        if not self.tag_exists(tag):
+            raise ValueError(f"Tag {tag} does not exist")
+        try:
+            # check if tag is in use
+            db_out = self.db_collection.find_one({'tags': {'$elemMatch': {"name": tag}}})
+            if db_out:
+                username = db_out['name']
+                raise ValueError(f"Could delete tag which is in use, tag '{tag}' is present in user '{username}' tags")
+            # delete tag
+            self.db_tags.delete_one({'name': tag})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+    def delete_user_tag(self, username: str, tag: str):
+        '''
+        removes specified tag from users' tags
+        :params username: str
+        :params tag: str
+        '''
+        if not self.tag_exists(tag):
+            raise ValueError(f"Tag {tag} does not exist")
+
+        if not self.user_exists(username):
+            raise ValueError(f"User {username} does not exist")
+
+        if not self.user_has_tag(username, tag):
+            raise ValueError(f"User '{username}' has not tag '{tag}'")
+
+        user_id = self._get_user_mongo_id(username)
+        try:
+            self.db_collection.update_one({'_id': user_id}, {'$pull': {'tags': {'name': tag}}})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
     # def _create_plot_mfcc_for_sample(self, audio_bytes,
     #                                  file_extension: str = "png") -> bytes:
     #     """
