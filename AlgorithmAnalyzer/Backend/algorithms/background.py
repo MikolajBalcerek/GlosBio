@@ -88,7 +88,8 @@ class JobStatusProvider:
     def read_job_status(self, jid: str) -> dict:
         try:
             job_page = self._jobs.find_one({'_id': ObjectId(jid)})
-        except Exception:
+        except Exception as e:
+            print("Read job status exception: " + str(e))
             # there is no job with this id
             return None
 
@@ -164,5 +165,5 @@ class StatusUpdater:
                 jid=self._jid, progress=progress, finished=finished, error=error
             )
         except Exception as e:
-            print(str(e))
+            print("Update job status exception: " + str(e))
             return str(e)

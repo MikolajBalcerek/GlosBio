@@ -201,6 +201,7 @@ def predict_algorithm(user_name, algorithm_name):
     try:
         prediction, meta = alg_manager.predict(user_name, file)
     except AlgorithmException as e:
+            print(str(e))
             return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
     except NotTrainedException as e:
             return str(e), 422
@@ -256,7 +257,8 @@ def job_status_endpoint(jid: str):
         try:
             app.config['JOB_STATUS_PROVIDER'].delete_job_status(jid)
             return "Job deleted.", status.HTTP_200_OK
-        except Exception:
+        except Exception as e:
+            print(str(e))
             return "There is no job with this job_id.", status.HTTP_404_NOT_FOUND
     else:
         job_status = app.config['JOB_STATUS_PROVIDER'].read_job_status(jid)
