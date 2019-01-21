@@ -16,13 +16,13 @@ def _plot_spectrogram_from_bytes(audio_bytes: bytes) -> plt.Figure:
     :param audio_bytes: bytes containing wav file audio
     :return: plt.Figure containing the spectogram
     """
-
     (rate, signal) = wav.read(audio_bytes)
     plt.specgram(signal, Fs=rate)
+    plt.autoscale()
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
     plt.title("Spectrogram")
-    figure = plt.figure(plt.get_fignums()[0])
+    figure = plt.figure(plt.get_fignums()[0], aspect='auto')
     return figure
 
 
