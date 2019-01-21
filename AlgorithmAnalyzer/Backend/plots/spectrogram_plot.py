@@ -25,8 +25,8 @@ def _plot_spectrogram_from_bytes(audio_bytes: bytes) -> plt.Figure:
     return figure
 
 
-def plot_save_spectrogram(file_bytes: bytes,
-                               file_name: str, saved_format: str = "pdf") -> BytesIO:
+def plot_save_spectrogram_BytesIO(file_bytes: bytes,
+                                  file_name: str, saved_format: str = "pdf") -> BytesIO:
     """
     Creates a spectrogram and saves it to a BytesIO object
     with the given name and format (pdf or png)
