@@ -17,6 +17,7 @@ import micro from '../img/micro.png'
 import AudioSpectrum from "react-audio-spectrum"
 import api_config from '../api_config.json'
 import Fade from '@material-ui/core/Fade';
+import TestModal from './TestModal'
 
 class RecordTester extends Component {
     constructor(props) {
@@ -43,7 +44,8 @@ class RecordTester extends Component {
 
             fileErr: false,
             status: "",
-            predictions: []
+            predictions: [],
+            testModalOpen: false
         };
         this.onPressButtonRecord = this.onPressButtonRecord.bind(this);
         this.onPressButtonStop = this.onPressButtonStop.bind(this);
@@ -83,6 +85,12 @@ class RecordTester extends Component {
         this.setState({ openErrorNoAudio: false, openSuccess: false, openErrorNoUser: false, openErrorSave: false });
       };
 
+    handleTestChange=()=>{
+        this.setState({
+            testModalOpen: !this.state.testModalOpen
+        })
+    }
+
     onPressButtonUpload = () => {
         console.log(this.state.username);
         if (this.state.recorded && this.state.username && this.state.algorithm) {
@@ -98,7 +106,8 @@ class RecordTester extends Component {
                     headers: { "Content-Type": "multipart/form-data" },
                 })
                 .then(function(response) {
-                    console.log(response);
+                    console.log(response.data.prediction);
+                    self.handleTestChange()
                     self.setState({
                         openSuccess: true,
                         isRecording: false,
@@ -227,6 +236,7 @@ class RecordTester extends Component {
                     <Button
                         variant="contained"
                         color="default"
+                        disabled={this.state.username === '' || this.state.algorithm === '' || !this.state.recorded}
                         style={{ display: "block"}}
                         onClick={this.onPressButtonUpload}
                     >
@@ -368,6 +378,11 @@ class RecordTester extends Component {
                 </div>
             )}
             </div>
+            <TestModal 
+                testModalOpen={this.state.testModalOpen}
+                handleTestChange={()=>this.handleTestChange()}
+                prodictions={this.state.predictions}
+                />
             </div>
             </Paper>
             </Fade>

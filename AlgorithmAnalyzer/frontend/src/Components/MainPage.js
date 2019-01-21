@@ -43,6 +43,8 @@ class MainPage extends Component {
 	};
 	handleChange5 = ()=> {
 		this.setState({ value: 5 });
+		this.getUsers()
+		this.getAlgorithms()
 	};
 	setData (array)  {
 		this.setState({
@@ -132,7 +134,8 @@ class MainPage extends Component {
             .catch(function(error) {
                 console.log(error);
 			})
-    }
+	}
+	
 	getExtraTagList() {
 		var self = this
 		this.setState({

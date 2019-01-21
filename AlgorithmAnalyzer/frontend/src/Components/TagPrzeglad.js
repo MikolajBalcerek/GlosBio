@@ -6,8 +6,6 @@ import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import Button from '@material-ui/core/Button';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -32,7 +30,12 @@ export default class TagPrzeglad extends Component {
                             </MenuItem>
                             {this.props.tagNameList && this.props.tagNameList.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
                         </Select>
-                        <IconButton aria-label="Usuń" style={{backgroundColor: '#550000'}}>
+                        <IconButton 
+                            aria-label="Usuń" 
+                            style={{backgroundColor: '#550000'}}
+                            onClick={()=>this.props.deleteTag()}
+                            disabled={this.props.tag === ''}
+                            >
                             <DeleteIcon />
                         </IconButton>
                     </div>
