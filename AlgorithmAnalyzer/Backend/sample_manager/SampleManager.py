@@ -227,7 +227,8 @@ class SampleManager:
             raise ValueError("plot_type should be of type str, of value one of"
                              f"{self.ALLOWED_PLOT_TYPES_FROM_SAMPLES}")
         content_type, _ = guess_type(f"file.{file_extension}")
-        return file_bytes, content_type
+        plot_filename = f"{username}-{set_type}-{sample_name}-{plot_type}.{file_extension}"
+        return file_bytes, content_type, plot_filename
 
     def get_samplefile(self, username: str, set_type: str, samplename: str) -> GridOut:
         """

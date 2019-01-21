@@ -428,7 +428,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     if not app.config['SAMPLE_MANAGER'].sample_exists(username, sampletype, samplename):
         return [f"There is no such sample '{samplename}' in users '{username}' {sampletype} samplebase"],\
             status.HTTP_400_BAD_REQUEST
-    file_bytes, mimetype = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_args['type'],
+    file_bytes, mimetype, plot_filename = app.config['SAMPLE_MANAGER'].get_plot_for_sample(plot_type=sent_args['type'],
                                                                             set_type=sampletype,
                                                                             username=username,
                                                                             sample_name=samplename,
@@ -437,7 +437,7 @@ def handle_plot_endpoint(sampletype, username, samplename):
     # TODO: if a SM rework fails, sending file with the attachment_filename
     #  can be replaced with just plot_path instead of file
     return send_file(io.BytesIO(file_bytes),
-                     mimetype=mimetype),\
+                     mimetype=mimetype, as_attachment=True, attachment_filename=plot_filename),\
         status.HTTP_200_OK
 
 
