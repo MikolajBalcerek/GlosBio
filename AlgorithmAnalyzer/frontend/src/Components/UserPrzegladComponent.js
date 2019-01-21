@@ -115,10 +115,19 @@ export default class UserPrzegladComponent extends Component {
                                     style={{backgroundColor: 'black', marginBottom: 10, width: 280}}
                                     >
                                         <Tab  label='Mfcc' />
+                                        <Tab  label='Spektrogram' />
                                     </Tabs>
                                 {(this.props.mfcc && this.props.value === 0) &&<Button onClick={()=>this.props.handleOpenMfcc()}>
                                 <img 
                                     src={this.props.mfcc} 
+                                    style={{
+                                        width:250, backgroundColor: 'white', borderRadius: 10
+                                        }} 
+                                        />
+                                </Button>}
+                                {(this.props.spectrogram && this.props.value === 1) &&<Button onClick={()=>this.props.handleOpenSpectrogram()}>
+                                <img 
+                                    src={this.props.spectrogram} 
                                     style={{
                                         width:250, backgroundColor: 'white', borderRadius: 10
                                         }} 
