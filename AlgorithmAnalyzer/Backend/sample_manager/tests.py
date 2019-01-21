@@ -582,6 +582,36 @@ class TestDeleteFromDatabaseFunctions(BaseAbstractSampleManagerTestsClass):
         self.assertRaises(ValueError, self.sm.delete_user, user_1)
         self.assertRaises(ValueError, self.sm.delete_user, user_2)
 
+    def test_fnc_delete_tag(self):
+        user = "Delete Tag User"
+        tag_1_name = "tag-1"
+        tag_2_name = "tag-2"
+        tag_values = ["value_1", "value_2"]
+        self.sm.add_tag(tag_1_name, tag_values)
+        self.sm.add_tag(tag_2_name, tag_values)
+        self.sm.create_user(user)
+        self.sm.add_tag_to_user(user, tag_1_name, tag_values[0])
+
+        self.assertRaises(ValueError, self.sm.delete_tag, tag_1_name)
+        self.sm.delete_tag(tag_2_name)
+        self.assertRaises(ValueError, self.sm.delete_tag, "unknown_tag")
+
+    def test_fnc_delete_user_tag(self):
+        user = "Delete Tag User"
+        tag_name = "tag-1"
+        tag_values = ["value_1", "value_2"]
+        self.sm.add_tag(tag_name, tag_values)
+        self.sm.create_user(user)
+        self.sm.add_tag_to_user(user, tag_name, tag_values[0])
+
+        args = ['Mr Nobody', tag_name]
+        self.assertRaises(ValueError, self.sm.delete_user_tag, *args)
+
+        args = [user, "unknown_tag"]
+        self.assertRaises(ValueError, self.sm.delete_user_tag, *args)
+
+        self.sm.delete_user_tag(user, tag_name)
+
 
 class TestSampleManager(BaseAbstractSampleManagerTestsClass):
     """ tests for functions which do not operate on database """

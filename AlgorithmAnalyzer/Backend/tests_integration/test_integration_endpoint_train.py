@@ -129,7 +129,7 @@ class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
                              "wrong string")
 
 
-class AudioDeleteTests(BaseAbstractIntegrationTestsClass):
+class DeleteTests(BaseAbstractIntegrationTestsClass):
 
     def test_delete_sample(self):
         set_type = "train"
@@ -147,9 +147,10 @@ class AudioDeleteTests(BaseAbstractIntegrationTestsClass):
                          "wrong status code expected 400 but got {r.status_code}")
 
     def test_delete_user(self):
+        set_type = "train"
         user = self.TEST_USERNAMES[0]
         with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
-            self.client.post(f'/users/{user}',
+            self.client.post(f'/audio/{set_type}',
                              data={"username": user,
                                    "file": f})
         r1 = self.client.delete(f'/users/{user}')
@@ -157,6 +158,37 @@ class AudioDeleteTests(BaseAbstractIntegrationTestsClass):
                          "wrong status code expected 204 but got {r.status_code}")
 
         r2 = self.client.delete(f'/users/{user}')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
+
+    def test_delete_tag(self):
+        tag_name = "test_tag"
+        values = ["v1", "v2"]
+        self.client.post('/tag', data={"name": tag_name, "values": values})
+        r1 = self.client.delete(f'/tag/{tag_name}')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+
+        r2 = self.client.delete('/tag/unknown_tag')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
+
+    def test_delete_users_tag(self):
+        user_name = "delete_tag_user"
+        tag_name = "test_tag"
+        values = ["v1", "v2"]
+        self.client.post('/tag', data={"name": tag_name, "values": values})
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            self.client.post(f'/audio/train',
+                             data={"username": user_name,
+                                   "file": f})
+        data = {"name": tag_name, "value": values[0]}
+        self.client.post(f'/users/{user_name}/tags', data=data)
+
+        r1 = self.client.delete(f'/users/{user_name}/tags/{tag_name}')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+        r2 = self.client.delete(f'/users/mr_nobod/tags/{tag_name}')
         self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
                          "wrong status code expected 400 but got {r.status_code}")
 
