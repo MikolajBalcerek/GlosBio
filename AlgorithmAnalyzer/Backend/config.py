@@ -87,11 +87,11 @@ class TestingConfig(BaseConfig):
     )
 
     JOB_STATUS_PROVIDER = JobStatusProvider(
-        f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE
+        f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE, show_logs=False
     )
 
     JOB_STATUS_UPDATER_FACTORY = get_status_updater_factory(
-            f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE
+            f"{BaseConfig.DATABASE_URL}:{BaseConfig.DATABASE_PORT}", JOBS_DATABASE, show_logs=False
         )
 
     ALGORITHM_MANAGER = algorithm_manager_factory(

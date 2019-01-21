@@ -36,9 +36,9 @@ def background_task(f):
     return inner
 
 
-def get_status_updater_factory(db_url, db_name):
+def get_status_updater_factory(db_url, db_name, show_logs=True):
     def inner(*args, **kwargs):
-        jsp = JobStatusProvider(db_url, db_name)
+        jsp = JobStatusProvider(db_url, db_name, show_logs)
         return StatusUpdater(kwargs['job_id'], jsp)
     return inner
 
@@ -60,7 +60,8 @@ class JobStatusProvider:
         self._jobs = self._database.jobs
         try:
             self._db_client.server_info()
-            print("jsp connected to mongo")
+            if show_logs:
+                print("jsp connected to mongo")
         except (errors.ServerSelectionTimeoutError, errors.PyMongoError):
             raise DatabaseException(
                 f"Could not connect to MongoDB at '{db_url}'"

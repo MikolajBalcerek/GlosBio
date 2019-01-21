@@ -159,10 +159,11 @@ class AlgorithmManager:
         """
         parameters = self._update_parameters(parameters)
         self.model = self.algorithm(parameters=parameters)
-        # self.model.set_jsp()
+        self.updater = self.status_updater_factory(job_id=job_id)
+        self.model.set_status_updater(self.updater)
         self.model.train(samples, labels)
         self._save_multilabel_model()
-        # jsp.update_job_status(jid, finished=True, progress=1)
+        self.updater.update(finished=True, progress=1)
 
     def _save_multilabel_model(self):
         """

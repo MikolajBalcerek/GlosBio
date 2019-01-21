@@ -108,3 +108,32 @@ class Algorithm(metaclass=ABCMeta):
         but can by anything else and will be displayed to the end user.
         If such probabilities cannot be given, just return an empty dictionary instead.
         """
+
+    def set_status_updater(self, updater):
+        """
+        If model is multilabel, this method will be called before training.
+        It will pass `updater` - an object, that can be used to
+        pass the status of training to the user.
+        Always training is done in the background and each training 'session' has
+        it's own id, by wich user can check the status at any tme.
+
+        Example implementation:
+
+            def set_status_updater(self, updater):
+                self.status_updater = updater
+
+        Then use inside of train:
+
+            def train(self, samples, labels):
+                # prepare model
+                for num, batch in enumerate(data_batches):
+                    # train(bach) code here
+                    batches_done = num / len(data_batches)
+                    self.status_updater.update(progress=batches_done)
+
+        Object `updater` has only one method:
+            updater.update(progress: float, finished: bool = False, error: str = None)
+
+        For not multilabel models updates are done authomatically based on number of users.
+        """
+        pass
