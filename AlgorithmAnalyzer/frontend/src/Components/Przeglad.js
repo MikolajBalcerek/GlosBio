@@ -13,6 +13,7 @@ import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import TagPrzeglad from './TagPrzeglad'
 import TagPrzegladComponent from './TagPrzegladComponent'
+import DeleteUser from './DeleteUser'
 
 class Przeglad extends Component { 
     constructor(props) {
@@ -36,10 +37,15 @@ class Przeglad extends Component {
             tabPrzeglad: 0,
             tag: '',
             tagValuesList: [],
-            tagValues: []
+            tagValues: [],
+            deleteOpen: false
         }
     }
-
+    handleOpenDelete = () =>{
+        this.setState({
+            deleteOpen: !this.state.deleteOpen
+        })
+    }
     handleChangeName = event => {
         this.setState({ [event.target.name]: event.target.value }, ()=>this.getUserTagValues());
       };
@@ -111,6 +117,69 @@ class Przeglad extends Component {
         
       };
 
+      deleteUser(user){
+        var self = this
+        axios
+            .delete(api_config.usePath + `/users/${user}`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+                self.handleClickVariant(`Poprawnie usunięto użytkownika ${user}!`, 'success')   
+                self.handleOpenDelete()
+                self.props.getUsers()
+                self.setState({
+                    user: ''
+                })
+            })
+            .catch(function(error) {
+                self.handleClickVariant(`Poczas usuwania użytkownika nastąpił błąd!`, 'error')
+			})
+      }
+
+      deleteTag(){
+        var self = this
+        axios
+            .delete(api_config.usePath + `/tag/${this.props.tagNameList[this.state.tag]}`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+                self.handleClickVariant(`Poprawnie usunięto tag ${self.props.tagNameList[self.state.tag]}!`, 'success')   
+                self.setState({
+                    tag: '',
+                    tagValues: []
+                })
+            })
+            .catch(function(error) {
+                console.log(error)
+                self.handleClickVariant(`Poczas usuwania taga nastąpił błąd!`+error.response&&error.response.data, 'error')
+			})
+      }
+      deleteUserTag(tag){
+        var self = this
+        axios
+            .delete(api_config.usePath + `/users/${this.props.userList[this.state.user]}/tags/${tag}`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+                self.handleClickVariant(`Poprawnie usunięto tag ${tag} użytkownika ${self.props.userList[self.state.user]}!`, 'success')   
+                self.getUserTags()
+            })
+            .catch(function(error) {
+                console.log(error)
+                self.handleClickVariant(`Poczas usuwania taga nastąpił błąd!`, 'error')
+			})
+      }
+      deleteUserSound(){
+		var self = this
+        axios
+            .delete(api_config.usePath +`/audio/${this.state.type}/${this.props.userList[this.state.user]}/${this.state.userSounds[this.state.sound]}`, {}, { 'Authorization': api_config.apiKey })
+            .then(function(response) {
+                self.handleClickVariant(`Poprawnie usunięto próbkę ${self.state.userSounds[self.state.sound]}!`, 'success')   
+                self.getAllUserSounds(self.props.userList[self.state.user])
+                self.setState({
+                    sound: ''
+                })
+            })
+            .catch(function(error) {
+                console.log(error)
+                self.handleClickVariant(`Poczas usuwania próbki nastąpił błąd!`, 'error')
+			})
+    }
+    
     handleChangeTag = event => {
         this.setState({ [event.target.name]: event.target.value }, ()=>this.getTagValues(this.props.tagNameList[event.target.value]))
         
@@ -276,7 +345,7 @@ class Przeglad extends Component {
                     <div 
                         style={{
                             backgroundColor: 'rgba(0, 0, 0, .8)',
-                            width: 280,
+                            width: 360,
                             margin: 20,
                             borderRadius: 5,
                             textAlign: 'center',
@@ -316,6 +385,8 @@ class Przeglad extends Component {
                     handleChangeTagValue={(e)=>this.handleChangeTagValue(e)}
                     tagValuesList={this.state.tagValuesList}
                     addTagToUser={()=>this.addTagToUser()}
+                    handleOpenDelete={()=>this.handleOpenDelete()}
+                    deleteUserTag={(tag)=>this.deleteUserTag(tag)}
                 />}
                 {this.state.tabPrzeglad === 1 &&<TagPrzeglad
                     tagNameList={this.props.tagNameList}
@@ -323,6 +394,7 @@ class Przeglad extends Component {
                     tag={this.state.tag}
                     tagValuesList={this.state.tagValues}
                     handleChangeTag={(e,v)=>this.handleChangeTag(e,v)}
+                    deleteTag={()=>this.deleteTag()}
                 />}
                 </div>
                 <div
@@ -355,6 +427,7 @@ class Przeglad extends Component {
                     handleChange={(e, v)=>this.handleChange(e,v)}
                     mfcc={this.state.mfcc}
                     handleOpenMfcc={()=>this.handleOpenMfcc()}
+                    deleteUserSound={()=>this.deleteUserSound()}
                 />}
                 {this.state.tabPrzeglad === 1 &&
                     <TagPrzegladComponent
@@ -377,6 +450,12 @@ class Przeglad extends Component {
                     getUserTags={()=>this.getUserTags()}
                     getTagList={()=>this.props.getTagList()}
                     tagNameList={this.props.tagNameList}
+                />
+                <DeleteUser 
+                    deleteOpen={this.state.deleteOpen}
+                    user={this.props.userList[this.state.user]}
+                    handleOpenDelete={()=>this.handleOpenDelete()}
+                    deleteUser={()=>this.deleteUser(this.props.userList[this.state.user])}
                 />
             </Paper>
             </Fade>

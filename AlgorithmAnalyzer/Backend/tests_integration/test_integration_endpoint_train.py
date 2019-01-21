@@ -26,9 +26,14 @@ class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
         cls.app = app
         cls.app.config.from_object('config.TestingConfig')
         cls.sm = cls.app.config['SAMPLE_MANAGER']
+        cls.jsp = cls.app.config['JOB_STATUS_PROVIDER']
         cls.db_name = cls.app.config['DATABASE_NAME']
+        cls.jobs_db = cls.app.config['JOBS_DATABASE']
         cls.db_url = cls.sm.db_url
         cls.client = cls.app.test_client()
+
+        cls.jsp._database.drop_collection('jobs')
+        cls.jsp._jobs = cls.jsp._database.jobs
 
     @classmethod
     def tearDownClass(cls):
@@ -128,6 +133,70 @@ class AudioAddSampleTests(BaseAbstractIntegrationTestsClass):
                              "wrong status code for no username file upload")
             self.assertEqual(r.data, b'["Provided username contains special characters"]',
                              "wrong string")
+
+
+class DeleteTests(BaseAbstractIntegrationTestsClass):
+
+    def test_delete_sample(self):
+        set_type = "train"
+        user = self.TEST_USERNAMES[0]
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            self.client.post(f'/audio/{set_type}',
+                             data={"username": user,
+                                   "file": f})
+        r1 = self.client.delete(f'/audio/{set_type}/{user}/1.wav')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+
+        r2 = self.client.delete(f'/audio/{set_type}/{user}/1.wav')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
+
+    def test_delete_user(self):
+        set_type = "train"
+        user = self.TEST_USERNAMES[0]
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            self.client.post(f'/audio/{set_type}',
+                             data={"username": user,
+                                   "file": f})
+        r1 = self.client.delete(f'/users/{user}')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+
+        r2 = self.client.delete(f'/users/{user}')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
+
+    def test_delete_tag(self):
+        tag_name = "test_tag"
+        values = ["v1", "v2"]
+        self.client.post('/tag', data={"name": tag_name, "values": values})
+        r1 = self.client.delete(f'/tag/{tag_name}')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+
+        r2 = self.client.delete('/tag/unknown_tag')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
+
+    def test_delete_users_tag(self):
+        user_name = "delete_tag_user"
+        tag_name = "test_tag"
+        values = ["v1", "v2"]
+        self.client.post('/tag', data={"name": tag_name, "values": values})
+        with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+            self.client.post(f'/audio/train',
+                             data={"username": user_name,
+                                   "file": f})
+        data = {"name": tag_name, "value": values[0]}
+        self.client.post(f'/users/{user_name}/tags', data=data)
+
+        r1 = self.client.delete(f'/users/{user_name}/tags/{tag_name}')
+        self.assertEqual(r1.status_code, status.HTTP_204_NO_CONTENT,
+                         "wrong status code expected 204 but got {r.status_code}")
+        r2 = self.client.delete(f'/users/mr_nobod/tags/{tag_name}')
+        self.assertEqual(r2.status_code, status.HTTP_400_BAD_REQUEST,
+                         "wrong status code expected 400 but got {r.status_code}")
 
 
 class AudioGetSampleTests(BaseAbstractIntegrationTestsClass):
@@ -593,20 +662,20 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
     def setUpClass(cls):
         """ setup before tests_integration for this class """
         super().setUpClass()
-        with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
-            r = cls.client.post('/audio/train',
-                                data={"username": cls.TEST_USERNAMES[0],
-                                      "file": f})
-            assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
-                                                             " for file upload during class setup"
-            f.close()
+        for uname in cls.TEST_USERNAMES:
+            with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
+                r = cls.client.post('/audio/train',
+                                    data={"username": uname,
+                                          "file": f})
+                assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
+                                                                 " for file upload during class setup"
+
         with open(cls.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
             r = cls.client.post('/audio/test',
                                 data={"username": cls.TEST_USERNAMES[1],
                                       "file": f})
             assert r.status_code == status.HTTP_201_CREATED, "wrong status code" \
                                                              " for file upload during class setup"
-            f.close()
 
     def setUp(self):
         self.am = self.app.config['ALGORITHM_MANAGER']
@@ -791,12 +860,10 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
         for name in self.valid_algs:
             resp = self._train_algorithm(name)
             # a dirty trick to let the background task finish
-            print(resp.data)
             sleep(1)
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
                 r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
-            print(r.data)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
             self.assertIn('prediction', r.json)
             if name == 'second_mock':
@@ -836,7 +903,7 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
             self.assertEqual(r.data, b"Such user doesn't exist")
 
-    def test_predict_algorithm_bad_algorithm_ame(self):
+    def test_predict_algorithm_bad_algorithm_name(self):
         username = self.TEST_USERNAMES[0]
         name = "______thereisnosuchalgname______"
         with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
@@ -844,6 +911,42 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())
+
+    def test_test_algorithm_bad_algorithm_name(self):
+        name = "______thereisnosuchalgname______"
+        r = self.client.post(f'/algorithms/test_all/{name}')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data, f"Bad algorithm name. Valid are {self.alg_list}.".encode())
+
+    def test_test_algorithm_bad_username(self):
+        username = "______thereisnosuchalgname______"
+        for name in self.alg_list:
+            r = self.client.post(f'/algorithms/test_all/{name}',
+                                 data={'users': [username]}
+                                 )
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(r.data, b"Incorrect username!")
+
+    def test_test_algorithm_not_trained_model(self):
+        for name in self.alg_list:
+            r = self.client.post(f'/algorithms/test_all/{name}')
+            self.assertEqual(r.status_code, 422)
+
+    def test_test_algorithm(self):
+        users = self.TEST_USERNAMES[:1]
+        for name in self.valid_algs:
+            r = self._train_algorithm(name)
+            data = {'users': users}
+            r = self.client.post(
+                f'/algorithms/test_all/{name}',
+                json=data
+            )
+            self.assertEqual(r.status_code, status.HTTP_200_OK)
+            if name == 'second_mock':
+                self.assertIn('matrix', r.json)
+                self.assertEqual(r.json['users'], users)
+            else:
+                self.assertNotIn('matrix', r.json)
 
     def test_train_algorithm_raising_algorithmexception(self):
         r = self._train_algorithm(self.exception_raiser)

@@ -36,7 +36,7 @@ export default class UserPrzeglad extends Component {
                         <Select
                             value={this.props.user}
                             onChange={(e)=>this.props.handleChangeUser(e)}
-                            style={{width: 200}}
+                            style={{width: 270}}
                             inputProps={{
                             name: 'user',
                             }}
@@ -46,7 +46,12 @@ export default class UserPrzeglad extends Component {
                             </MenuItem>
                             {this.props.userList && this.props.userList.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
                         </Select>
-                        <IconButton aria-label="Usuń" style={{backgroundColor: '#550000'}}>
+                        <IconButton 
+                            aria-label="Usuń" 
+                            style={{backgroundColor: '#550000'}} 
+                            onClick={()=>this.props.handleOpenDelete()}
+                            disabled={this.props.user === ''}
+                            >
                             <DeleteIcon />
                         </IconButton>
                     </div>
@@ -79,7 +84,7 @@ export default class UserPrzeglad extends Component {
                                         }
                                         </Bar>
                                     </BarChart>}
-                        {(this.props.userValue === 1 && this.props.userList[this.props.user]) && <div style={{ margin: 20, padding: 10, height: 190, 
+                        {(this.props.userValue === 1 && this.props.userList[this.props.user]) && <div style={{ height: 190, 
                                     overflow: 'auto'}}>
                         <div style={{
                                     
@@ -89,6 +94,7 @@ export default class UserPrzeglad extends Component {
                                 <TableRow>
                                     <TableCell>Nazwa</TableCell>
                                     <TableCell align="right">Wartość</TableCell>
+                                    <TableCell align="right" style={{maxWidth: 20}}>Usuń</TableCell>
                                 </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -100,6 +106,15 @@ export default class UserPrzeglad extends Component {
                                         </TableCell>
                                         <TableCell align="right">
                                         {this.props.userTags[tag]}
+                                        </TableCell>
+                                        <TableCell style={{maxWidth: 20}}>
+                                        <IconButton 
+                                            aria-label="Usuń" 
+                                            style={{backgroundColor: '#550000'}}
+                                            onClick={()=>this.props.deleteUserTag(tag)}
+                                            >
+                                            <DeleteIcon fontSize="small"/>
+                                        </IconButton>
                                         </TableCell>
                                     </TableRow>
                                     );

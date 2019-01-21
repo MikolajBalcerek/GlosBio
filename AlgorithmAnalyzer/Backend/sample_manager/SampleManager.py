@@ -440,6 +440,93 @@ class SampleManager:
         """
         return file_type in self.ALLOWED_SAMPLE_CONTENT_TYPE
 
+    def delete_user(self, username: str):
+        '''
+        delete user from samplebase with all samples
+        :params username: eg. 'Hugo Kołątaj'
+        '''
+        if not self.user_exists(username):
+            raise ValueError(f"User '{username}' does not exist")
+
+        # delete users' sample files
+        for set_type in ['test', 'train']:
+            for samplename in self.get_user_sample_list(username, set_type):
+                try:
+                    self.delete_sample(username, set_type, samplename)
+                except ValueError as e:
+                    print(str(e))
+                    continue
+
+        # delete users' document
+        try:
+            self.db_collection.delete_one({'_id': self._get_user_mongo_id(username)})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+    def delete_sample(self, username: str, set_type: str, samplename: str):
+        '''
+        delete single sample
+        :params username: str - eg. 'Hugo Kołątaj'
+        :params set_type: str -'train' or 'test'
+        :params samplename: str - eg. '1.wav'
+        '''
+        user_id = self._get_user_mongo_id(username)
+        aggregation_pipeline = [
+                {'$match': {'_id': user_id}},
+                {'$project': {'samples': f'$samples.{set_type}', '_id': 0}},
+                {'$unwind': '$samples'},
+                {'$match': {'samples.filename': samplename}},
+                {'$project': {'id': '$samples.id'}}
+            ]
+        try:
+            out = list(self.db_collection.aggregate(aggregation_pipeline))
+            if not out:
+                raise ValueError(f"Could not find sample '{samplename}' from set '{set_type}' in user '{username}' samplebase")
+            file_id = out[0]['id']
+            self.db_collection.update_one({'_id': user_id}, {'$pull': {f'samples.{set_type}': {'id': file_id}}})
+            self.db_file_storage.delete(file_id)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+    def delete_tag(self, tag: str):
+        '''
+        removes specified tag from tagbase
+        :params tag: str
+        '''
+        if not self.tag_exists(tag):
+            raise ValueError(f"Tag {tag} does not exist")
+        try:
+            # check if tag is in use
+            db_out = self.db_collection.find_one({'tags': {'$elemMatch': {"name": tag}}})
+            if db_out:
+                username = db_out['name']
+                raise ValueError(f"Could delete tag which is in use, tag '{tag}' is present in user '{username}' tags")
+            # delete tag
+            self.db_tags.delete_one({'name': tag})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+    def delete_user_tag(self, username: str, tag: str):
+        '''
+        removes specified tag from users' tags
+        :params username: str
+        :params tag: str
+        '''
+        if not self.tag_exists(tag):
+            raise ValueError(f"Tag {tag} does not exist")
+
+        if not self.user_exists(username):
+            raise ValueError(f"User {username} does not exist")
+
+        if not self.user_has_tag(username, tag):
+            raise ValueError(f"User '{username}' has not tag '{tag}'")
+
+        user_id = self._get_user_mongo_id(username)
+        try:
+            self.db_collection.update_one({'_id': user_id}, {'$pull': {'tags': {'name': tag}}})
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
     # def _create_plot_mfcc_for_sample(self, audio_bytes,
     #                                  file_extension: str = "png") -> bytes:
     #     """
@@ -682,6 +769,20 @@ class SampleManager:
         except errors.PyMongoError as e:
             raise DatabaseException(e)
         return [usernames[num]['name'] for num in numbers]
+
+    def usernames_to_user_numbers(self, usernames: List[str]) -> List[int]:
+        """
+        Returns list of positions in the list of all users,
+        for users sorted by time created.
+        :param usernames: list of usernames to convert.
+        """
+        try:
+            all_usernames = self.db_collection.find({}, ['name']).sort('id', 1)
+        except errors.PyMongoError as e:
+            raise DatabaseException(e)
+
+        all_usernames = [username['name'] for username in all_usernames]
+        return [all_usernames.index(user) for user in usernames]
 
 
 class UsernameException(Exception):

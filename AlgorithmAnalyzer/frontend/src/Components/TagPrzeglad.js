@@ -30,7 +30,12 @@ export default class TagPrzeglad extends Component {
                             </MenuItem>
                             {this.props.tagNameList && this.props.tagNameList.map((user, id) => <MenuItem key={id} value={id}>{user}</MenuItem>)}
                         </Select>
-                        <IconButton aria-label="Usuń" style={{backgroundColor: '#550000'}}>
+                        <IconButton 
+                            aria-label="Usuń" 
+                            style={{backgroundColor: '#550000'}}
+                            onClick={()=>this.props.deleteTag()}
+                            disabled={this.props.tag === ''}
+                            >
                             <DeleteIcon />
                         </IconButton>
                     </div>
