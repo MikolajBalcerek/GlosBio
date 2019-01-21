@@ -315,17 +315,27 @@ def handle_list_samples_for_user(type, username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
 
-@app.route("/audio/<string:sampletype>/<string:username>/<string:samplename>", methods=['GET'])
+@app.route("/audio/<string:sampletype>/<string:username>/<string:samplename>", methods=['GET', 'DELETE'])
 @requires_db_connection
 def handle_get_file(sampletype, username, samplename):
     """
+    GET
     serve audio sample audio file
+
+    DELETE
+    remove audio file from samplebase
 
     :param sampletype: sample set type 'train' or 'test'
     :param username: full or normalized username eg. 'Hugo Kołątaj', 'Stanisław', 'hugo_kolataj'
     :param samplename: full name of requested sample eg. '1.wav', '150.wav'
     """
-
+    if request.method == 'DELETE':
+        try:
+            app.config['SAMPLE_MANAGER'].delete_sample(username, sampletype, samplename)
+            return "", status.HTTP_204_NO_CONTENT
+        except ValueError as e:
+            return [str(e)], status.HTTP_400_BAD_REQUEST
+            
     # check for proper sample set type
     if sampletype not in app.config['ALLOWED_SAMPLE_TYPES']:
         return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {app.config['ALLOWED_SAMPLE_TYPES']}"], \
@@ -465,16 +475,28 @@ def handle_tag_entdpoint():
         return [f"Added tag '{name}'"], status.HTTP_201_CREATED
 
 
-@app.route("/tag/<string:name>", methods=['GET'])
+@app.route("/tag/<string:tag>", methods=['GET', 'DELETE'])
 @requires_db_connection
-def handle_tag_value_entdpoint(name):
+def handle_tag_value_entdpoint(tag):
     """
+    GET
     will list tag possible values
-    """
-    if not app.config['SAMPLE_MANAGER'].tag_exists(name):
-        return [f"Tag '{name}' does not exist in tag base"], status.HTTP_400_BAD_REQUEST
 
-    return app.config['SAMPLE_MANAGER'].get_tag_values(name), status.HTTP_200_OK
+    DELETE
+    will delete tag (if it's not in use)
+    """
+    if not app.config['SAMPLE_MANAGER'].tag_exists(tag):
+        return [f"Tag '{tag}' does not exist in tag base"], status.HTTP_400_BAD_REQUEST
+
+    if request.method == 'GET':
+        return app.config['SAMPLE_MANAGER'].get_tag_values(tag), status.HTTP_200_OK
+
+    if request.method == 'DELETE':
+        try:
+            app.config['SAMPLE_MANAGER'].delete_tag(tag)
+            return "", status.HTTP_204_NO_CONTENT
+        except ValueError as e:
+            return [str(e)], status.HTTP_400_BAD_REQUEST
 
 
 @app.route("/users/<string:username>/tags", methods=['GET', 'POST'])
@@ -531,22 +553,48 @@ def handle_user_tags_endpoint(username):
         return [f"Added tag '{tag_name}' to user '{username}'"], status.HTTP_201_CREATED
 
 
-@app.route("/users/<string:username>", methods=['GET'])
+@app.route("/users/<string:username>/tags/<string:tag>", methods=['DELETE'])
+@requires_db_connection
+def handle_delete_user_tag_endpoint(username, tag):
+    """
+    delete tag fron users tags
+    """
+    try:
+        app.config['SAMPLE_MANAGER'].delete_user_tag(username, tag)
+        return "", status.HTTP_204_NO_CONTENT
+    except ValueError as e:
+        return [str(e)], status.HTTP_400_BAD_REQUEST
+
+
+@app.route("/users/<string:username>", methods=['GET', 'DELETE'])
 @requires_db_connection
 def handle_user_summary_endpoint(username):
     """
+    GET
     will return user samplebase summary:
       - name
       - normalized name
       - date of creation
       - tags
       - count of samples from test and train sets
+
+    DELETE
+    will remove user from samplebase along with all samples
     """
     # check if user exists
     if not app.config['SAMPLE_MANAGER'].user_exists(username):
         return [f"There is no such user '{username}' in sample base"], status.HTTP_400_BAD_REQUEST
 
-    return app.config['SAMPLE_MANAGER'].get_user_summary(username)
+    if request.method == 'GET':
+        return app.config['SAMPLE_MANAGER'].get_user_summary(username)
+
+    if request.method == 'DELETE':
+        try:
+            app.config['SAMPLE_MANAGER'].delete_user(username)
+            return "", status.HTTP_204_NO_CONTENT
+        except ValueError as e:
+            return [str(e)], status.HTTP_400_BAD_REQUEST
+
 
 
 @app.route("/summary/tags", methods=['GET'])
@@ -557,6 +605,7 @@ def handle_tags_summary():
     """
     summary = app.config['SAMPLE_MANAGER'].get_tags_summary()
     return summary, status.HTTP_200_OK
+
 
 
 if __name__ == "__main__":
