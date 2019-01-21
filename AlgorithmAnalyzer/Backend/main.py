@@ -239,7 +239,17 @@ def get_all_running_jobs():
 @app.route("/jobs/<string:jid>", methods=["GET", "DELETE"])
 def job_status_endpoint(jid: str):
     """
-    GET status of job with id <string:jid>.
+    GET status of job with id <string:jid>. The status is:
+        {
+            'finished': true/false,
+            'progress': between 0 and 1,
+            'error': error message if job failed,
+            'data': {
+                'algorithm': the name of the algorithm,
+                'parameters': it's parameters dict, of form
+                    { 'param name': param value }
+            }
+        }
     If the job is finished, deletes it's status entry.
     """
     if request.method == 'DELETE':
