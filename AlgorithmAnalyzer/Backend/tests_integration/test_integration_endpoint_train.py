@@ -301,7 +301,7 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertTrue(len(r.data) > 0,
                         "Generated MFCC plot PNG file from memory is less than 0")
 
-        self.assertEqual('mfcc.png', r.headers.get('Content-Disposition').split("filename=")[1],
+        self.assertIn('mfcc.png', r.headers.get('Content-Disposition').split("filename=")[1],
                       "mfcc.png filetype not indicated in attachment's filename")
 
     def test_GET_mfcc_plot_train_no_json_no_file_extension_specified(self):
@@ -322,7 +322,7 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertTrue(len(r.data) > 0,
                         "Generated MFCC plot PNG file from memory is less than 0")
 
-        self.assertEqual('mfcc.png', r.headers.get('Content-Disposition').split("filename=")[1],
+        self.assertIn('mfcc.png', r.headers.get('Content-Disposition').split("filename=")[1],
                       "mfcc.png filetype not indicated in attachment's filename")
 
     def test_GET_spectrogram_plot_train_json_no_file_extension_specified(self):
@@ -346,7 +346,7 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
         self.assertTrue(len(r.data) > 0,
                         "Generated spectrogram plot PNG file from memory is less than 0")
 
-        self.assertEqual('spectrogram.png', r.headers.get('Content-Disposition').split("filename=")[1],
+        self.assertIn('spectrogram.png', r.headers.get('Content-Disposition').split("filename=")[1],
                      "spectrogram.png filetype not indicated in attachment's filename")
 
     def test_GET_spectrogram_plot_train_no_json_no_file_extension_specified(self):
@@ -366,7 +366,7 @@ class PlotEndpointForSampleTests(BaseAbstractIntegrationTestsClass):
                          f" for spectrogram plot, should be image/png, is {r.content_type}")
         self.assertTrue(len(r.data) > 0,
                         "Generated spectrogram plot PNG file from memory is less than 0")
-        self.assertEqual('spectrogram.png', r.headers.get('Content-Disposition').split("filename=")[1],
+        self.assertIn('spectrogram.png', r.headers.get('Content-Disposition').split("filename=")[1],
                      "spectrogram.png filetype not indicated in attachment's filename")
 
     # TODO: tests for pdf MFCC, spectrogram
