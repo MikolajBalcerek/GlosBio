@@ -17,6 +17,9 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Fade from '@material-ui/core/Fade';
 import { withSnackbar } from 'notistack'
+import LinearProgress from '@material-ui/core/LinearProgress';
+import IconButton from '@material-ui/core/IconButton';
+import DeleteIcon from '@material-ui/icons/Delete';
 
 class Train extends Component {
     constructor(props) {
@@ -27,7 +30,7 @@ class Train extends Component {
             parameters: {}, // the parameter name.{descriptions,values}
             parameter_values: {}, //values of parameters sent to server, name.{value} object
             status: "", // the status of train tesponse, if the training started or an error occured
-            // TODO(mikra): add server events informing about training status
+            modelTable: []
         }
     }
 
@@ -35,7 +38,6 @@ class Train extends Component {
         // variant could be success, error, warning or info
         this.props.enqueueSnackbar(text, { variant });
       }
-
     handleChangeAlgorithm = event => {
         this.setState({
             [event.target.name]: event.target.value,
@@ -94,21 +96,34 @@ class Train extends Component {
 			})
     };
     trainButtonClick = () => {
-        this.setState({status: ""});
         if(this.state.algorithm === "") return;
-        this.setState({status: "Trenowanie..."})
         axios.post(api_config.usePath + `/algorithms/train/${this.state.algorithm}`, {
             parameters: this.state.parameter_values
         }).then(res => {
-            this.setState({
-                status: res.data
-            })
-            console.log(res)
+            this.handleClickVariant(res.data.message, 'success')
         }).catch(err => {
-            this.handleClickVariant(err.response.data, 'error')
+            this.handleClickVariant(err, 'error')
 
         })
     };
+    getJobs(){
+        var self = this;
+        axios
+            .get(api_config.usePath + `/jobs`)
+            .then(function(response) {
+                let params = response.data.parameters;
+                let param_vals = {}
+                Object.keys(params).map((key, i) => {
+                    param_vals[key] = params[key].values[0];
+                    return params[key]; // return is needed to omit worning with map
+                });
+				self.setState({parameters: params, parameter_values: param_vals});
+                console.log(self.state.parameters);
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
+    }
     renderParameter  = name => {
         console.log(name);
         let params = this.state.parameters[name];
@@ -143,7 +158,6 @@ class Train extends Component {
                         style={{
                             backgroundColor: 'rgba(0, 0, 0, .8)',
                             width: '100%',
-                            margin: 20,
                             borderRadius: 5,
                             textAlign: 'center',
                             display: 'flex',
@@ -182,21 +196,60 @@ class Train extends Component {
                         }
                         {this.state.algorithm !== "" && Object.keys(this.state.parameters).length !== 0 && (
                             <div>
-                                <Typography variant="title" style={{color: "#fff"}} gutterBottom>
-                                    Parametry algorytmu
-                                </Typography>
-                                <Table style={{width: '100%'}}>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Nazwa</TableCell>
-                                            <TableCell>Opis</TableCell>
-                                            <TableCell>Wartość</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {Object.keys(this.state.parameters).map( this.renderParameter )}
-                                    </TableBody>
-                                </Table>
+                                <div style={{display: 'flex'}}>
+                                    <div style={{width: '50%'}}>
+                                        <Typography variant="title" style={{color: "#fff"}} gutterBottom>
+                                            Parametry algorytmu
+                                        </Typography>
+                                        <Table style={{width: '100%'}}>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Nazwa</TableCell>
+                                                    <TableCell>Opis</TableCell>
+                                                    <TableCell>Wartość</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {Object.keys(this.state.parameters).map( this.renderParameter )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    <div style={{width: '50%'}}>
+                                        <Typography variant="title" style={{color: "#fff"}} gutterBottom>
+                                                Statusy modeli
+                                        </Typography>
+                                        <Table style={{width: '100%'}}>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Nazwa algorytmu</TableCell>
+                                                    <TableCell>Status</TableCell>
+                                                    <TableCell>Przerwij</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {this.state.modelTable.map(model=>
+                                                    <TableRow>
+                                                        <TableCell>
+                                                            {model.name}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <LinearProgress color="secondary" variant="determinate" value={model.progress} />{model.progress*100+'%'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <IconButton 
+                                                                aria-label="Usuń" 
+                                                                style={{backgroundColor: '#550000'}}
+                                                                >
+                                                                <DeleteIcon />
+                                                            </IconButton>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                
+                                                    )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
                             </div>
                         )}
                 </Grid>

@@ -1,5 +1,5 @@
 {
     "schema_of_usePath": "http(s)://<endpoint>",
-    "usePath": "http://localhost:5000",
+    "usePath": "https://glosbio.sealcode.org/api/v1",
     "apiKey": ""
 } 
