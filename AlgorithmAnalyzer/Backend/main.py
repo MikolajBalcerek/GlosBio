@@ -612,11 +612,11 @@ def handle_text_endpoint():
     """
     optional query param:
     {
-        "words": <no_words> (defaul value: 40)
+        "words": <no_words> (default value: 40)
     }
     
     will return generated <no_words> words
-    oryginally used as helper during sample recording
+    originally used as helper during sample recording
     """
     query_param = request.args.get('words')
     if query_param:
