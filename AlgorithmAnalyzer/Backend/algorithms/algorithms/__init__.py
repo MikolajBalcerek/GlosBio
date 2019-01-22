@@ -1,6 +1,6 @@
-from .simple_nn import SimpleNN
-from .easy_example import EasyExample
-from .multilabel_example import MultilabelExample
+from .examples.simple_nn import SimpleNN
+from .examples.easy_example import EasyExample
+from .examples.multilabel_example import MultilabelExample
 
 ALG_DICT = {
     'Simple Neural Net': SimpleNN,
