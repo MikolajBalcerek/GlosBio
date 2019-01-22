@@ -44,7 +44,7 @@ class BaseConfig(object):
 
     # MongoDB database settings
     DATABASE_URL = "127.0.0.1"
-    DATABASE_PORT = "27018"
+    DATABASE_PORT = "27017"
     DATABASE_NAME = "samplebase"
 
     # sample manager
