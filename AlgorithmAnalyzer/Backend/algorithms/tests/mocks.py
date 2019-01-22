@@ -70,8 +70,6 @@ class RaisingAlgorithmExceptionMock(BaseAlgorithmMock):
 
     multilabel = True
 
-    error_msg = 'error message'
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'path' in kwargs:
@@ -83,7 +81,6 @@ class RaisingAlgorithmExceptionMock(BaseAlgorithmMock):
 
     def train(self, samples, labels):
         super().train(samples, labels)
-        self.su.update(error=self.error_msg)
         raise AlgorithmException("train exception")
 
     def predict(self, sample):
@@ -93,9 +90,6 @@ class RaisingAlgorithmExceptionMock(BaseAlgorithmMock):
     def save(self, path):
         super().save(path)
         raise AlgorithmException('path exception')
-
-    def set_status_updater(self, updater):
-        self.su = updater
 
 
 TEST_ALG_DICT = {
