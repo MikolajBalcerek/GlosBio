@@ -7,13 +7,16 @@ stop:
 remove:
 	docker-compose down
 
-build-image-all: build-image-api build-image-webapp
+build-images: build-image-api build-image-webapp
 
 build-image-api:
 	docker-compose build api
 
 build-image-webapp:
 	docker-compose build webapp
+
+build-webapp:
+	docker-compose run webapp /opt/node_modules/.bin/react-scripts build
 
 logs:
 	docker-compose logs --follow
