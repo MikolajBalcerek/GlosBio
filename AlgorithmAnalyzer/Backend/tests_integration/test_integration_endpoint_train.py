@@ -2,7 +2,6 @@ import glob
 import unittest
 import json
 import abc
-from time import sleep
 from pathlib import Path
 from io import BytesIO
 
@@ -27,14 +26,9 @@ class BaseAbstractIntegrationTestsClass(unittest.TestCase, abc.ABC):
         cls.app = app
         cls.app.config.from_object('config.TestingConfig')
         cls.sm = cls.app.config['SAMPLE_MANAGER']
-        cls.jsp = cls.app.config['JOB_STATUS_PROVIDER']
         cls.db_name = cls.app.config['DATABASE_NAME']
-        cls.jobs_db = cls.app.config['JOBS_DATABASE']
         cls.db_url = cls.sm.db_url
         cls.client = cls.app.test_client()
-
-        cls.jsp._database.drop_collection('jobs')
-        cls.jsp._jobs = cls.jsp._database.jobs
 
     @classmethod
     def tearDownClass(cls):
@@ -749,13 +743,10 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
             for param in params.keys()
         }
         data = {'parameters': some_params}
-        r = self.client.post(
-            f'/algorithms/train/{name}',
-            data=json.dumps(data),
-            content_type='application/json'
-        )
-        sleep(.1)
-        return r
+        return self.client.post(f'/algorithms/train/{name}',
+                                data=json.dumps(data),
+                                content_type='application/json'
+                                )
 
     def test_get_algorithms_names(self):
         self.assertEqual(
@@ -813,7 +804,9 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
         for name in self.alg_list[:-1]:
             r = self._train_algorithm(name)
             self.assertEqual(r.status_code, status.HTTP_200_OK)
-            self.assertIn(b'job_id', r.data)
+            self.assertEqual(r.data, b'Training ended.',
+                             'Wrong message returned.'
+                             )
 
     def test_train_algorithm_bad_name(self):
         name = "______thereisnosuchalgname______"
@@ -907,11 +900,9 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
                          )
 
     def test_predict_algorithm(self):
-        username = self.TEST_USERNAMES[1]
+        username = self.TEST_USERNAMES[0]
         for name in self.valid_algs:
-            resp = self._train_algorithm(name)
-            # a dirty trick to let the background task finish
-            sleep(1)
+            self._train_algorithm(name)
             with open(self.TEST_AUDIO_PATH_TRZYNASCIE, 'rb') as f:
                 data = {'file': f}
                 r = self.client.post(f'/algorithms/test/{username}/{name}', data=data)
@@ -1001,7 +992,10 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
 
     def test_train_algorithm_raising_algorithmexception(self):
         r = self._train_algorithm(self.exception_raiser)
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(r.data, b"There was an exception within the algorithm: train exception",
+                         'Wrong message returned.'
+                         )
 
     def test_predict_algorithm_raising_algorithmexception(self):
 
@@ -1017,69 +1011,3 @@ class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
         self.assertEqual(r.data, b"There was an exception within the algorithm: load exception",
                          'Wrong message returned.'
                          )
-
-
-class TestJobsEndpoints(BaseAbstractIntegrationTestsClass):
-
-    def test_get_all_running_jobs(self):
-        r = self.client.get('/jobs')
-        self.assertEqual(r.data, b'[]')
-        jid = self.jsp.create_job_status(data={'d': 'somedata'})
-        self.assertIsNotNone(jid)
-        r = self.client.get('/jobs')
-        self.assertEqual(len(r.json), 1)
-        self.assertEqual(
-            r.json[0],
-            {
-                "progress": 0,
-                "error": None,
-                "data": {"d": "somedata"},
-                "job_id": jid
-            }
-        )
-        self.jsp.delete_job_status(jid)
-
-    def test_get_job_status_endpoint_incorrect_id(self):
-        jid = "some_nonexisting_job_id"
-        res = self.client.get(f'/jobs/{jid}')
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_delete_job_status_endpoint_incorrect_id(self):
-        jid = "some_nonexisting_job_id"
-        res = self.client.delete(f'/jobs/{jid}')
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_get_job_status_endpoint(self):
-        jid = self.jsp.create_job_status(data={'d': 'somedata'})
-        res = self.client.get(f'/jobs/{jid}')
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        print(res.json)
-        self.assertEqual(
-            res.json,
-            {
-                'finished': False, 'progress': 0,
-                'error': None, 'data': {'d': 'somedata'}
-            }
-        )
-        self.jsp.delete_job_status(jid)
-
-    def test_get_job_status_endpoint_on_finished_deletes(self):
-        jid = self.jsp.create_job_status(data={'d': 'somedata'})
-        self.jsp.update_job_status(jid, progress=1, finished=True)
-        res = self.client.get(f'/jobs/{jid}')
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            res.json,
-            {
-                'finished': True, 'progress': 1,
-                'error': None, 'data': {'d': 'somedata'}
-            }
-        )
-        res = self.client.get(f'/jobs/{jid}')
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_delete_job_status_endpoint(self):
-        jid = self.jsp.create_job_status(data={'d': 'somedata'})
-        self.client.delete(f'/jobs/{jid}')
-        res = self.client.get(f'/jobs/{jid}')
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
