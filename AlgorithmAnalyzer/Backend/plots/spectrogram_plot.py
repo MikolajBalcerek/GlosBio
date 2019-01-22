@@ -26,7 +26,7 @@ def _plot_spectrogram_from_bytes(audio_bytes: bytes) -> plt.Figure:
 
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
-    plt.title("Spectrogram2")
+    plt.title("Spectrogram")
     figure = plt.gcf()
     return figure
 
