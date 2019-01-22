@@ -17,18 +17,17 @@ def _plot_spectrogram_from_bytes(audio_bytes: bytes) -> plt.Figure:
     :return: plt.Figure containing the spectogram
     """
     (rate, signal) = wav.read(audio_bytes)
-
+    plt.clf()
     with catch_warnings():
         simplefilter("ignore")
         # TODO: gives a RuntimeWarning: divide by zero encountered in log10
         #  Z = 10. * np.log10(spec)
         plt.specgram(signal, Fs=rate)
 
-    plt.autoscale()
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
     plt.title("Spectrogram")
-    figure = plt.figure(plt.get_fignums()[0], aspect='auto')
+    figure = plt.gcf()
     return figure
 
 
