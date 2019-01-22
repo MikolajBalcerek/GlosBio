@@ -1,8 +1,8 @@
 from io import BytesIO
+from warnings import catch_warnings, simplefilter
 
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
-from scipy import signal
 
 from plots.save_plot import save_matplotlib_figure
 
@@ -17,7 +17,13 @@ def _plot_spectrogram_from_bytes(audio_bytes: bytes) -> plt.Figure:
     :return: plt.Figure containing the spectogram
     """
     (rate, signal) = wav.read(audio_bytes)
-    plt.specgram(signal, Fs=rate)
+
+    with catch_warnings():
+        simplefilter("ignore")
+        # TODO: gives a RuntimeWarning: divide by zero encountered in log10
+        #  Z = 10. * np.log10(spec)
+        plt.specgram(signal, Fs=rate)
+
     plt.autoscale()
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')

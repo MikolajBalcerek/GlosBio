@@ -148,16 +148,25 @@ def train_algorithm(name):
 
     alg_manager = app.config['ALGORITHM_MANAGER'](name)
 
+    data = {'algorithm': name, 'parameters': params}
+
+    job_status = app.config['JOB_STATUS_PROVIDER'].job_with_data_is_running(data)
+    if job_status:
+        return {'job_id': job_status, 'message': 'There is allready such job.'}, status.HTTP_200_OK
+
     samples, labels = app.config['SAMPLE_MANAGER'].get_all_samples(
         purpose='train',
         multilabel=alg_manager.multilabel,
         sample_type='wav'
     )
+
+    job_id = app.config['JOB_STATUS_PROVIDER'].create_job_status(data=data)
+
     try:
-        app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params)
+        app.config['ALGORITHM_MANAGER'](name).train(samples, labels, params, job_id)
     except AlgorithmException as e:
         return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
-    return "Training ended.", status.HTTP_200_OK
+    return {'job_id': job_id, 'message': "Job started successfully."}, status.HTTP_200_OK
 
 
 @app.route('/algorithms/test/<string:user_name>/<string:algorithm_name>', methods=['POST'])
@@ -192,6 +201,7 @@ def predict_algorithm(user_name, algorithm_name):
     try:
         prediction, meta = alg_manager.predict(user_name, file)
     except AlgorithmException as e:
+            print(str(e))
             return f"There was an exception within the algorithm: {str(e)}", status.HTTP_503_SERVICE_UNAVAILABLE
     except NotTrainedException as e:
             return str(e), 422
@@ -206,6 +216,59 @@ def predict_algorithm(user_name, algorithm_name):
         else:
             prediction = meta['Predicted user'] == user_name
     return {"prediction": prediction, 'meta': meta}, status.HTTP_200_OK
+
+
+@app.route("/jobs", methods=["GET"])
+def get_all_running_jobs():
+    """
+    Return all jobs with field finisked: False.
+    Returns:
+        [list of {
+            "job_id": job_id,
+            "error": error,
+            "data": {
+                # some data, for example
+                "algorithm": name_of_algorithm,
+                "parameters": algorithm_parameters
+            }
+        }]
+    """
+    return \
+        app.config["JOB_STATUS_PROVIDER"].get_all_running_jobs()
+
+
+@app.route("/jobs/<string:jid>", methods=["GET", "DELETE"])
+def job_status_endpoint(jid: str):
+    """
+    GET status of job with id <string:jid>. The status is:
+        {
+            'finished': true/false,
+            'progress': between 0 and 1,
+            'error': error message if job failed,
+            'data': {
+                'algorithm': the name of the algorithm,
+                'parameters': it's parameters dict, of form
+                    { 'param name': param value }
+            }
+        }
+    If the job is finished, deletes it's status entry.
+    """
+    if request.method == 'DELETE':
+        try:
+            app.config['JOB_STATUS_PROVIDER'].delete_job_status(jid)
+            return "Job deleted.", status.HTTP_200_OK
+        except Exception as e:
+            print(str(e))
+            return "There is no job with this job_id.", status.HTTP_404_NOT_FOUND
+    else:
+        job_status = app.config['JOB_STATUS_PROVIDER'].read_job_status(jid)
+        if job_status is None:
+            return "There is no job with this job_id.", status.HTTP_404_NOT_FOUND
+
+        if job_status['finished']:
+            app.config['JOB_STATUS_PROVIDER'].delete_job_status(jid)
+
+        return job_status, status.HTTP_200_OK
 
 
 @app.route('/algorithms/test_all/<string:algorithm_name>', methods=['POST', 'GET'])
@@ -335,7 +398,7 @@ def handle_get_file(sampletype, username, samplename):
             return "", status.HTTP_204_NO_CONTENT
         except ValueError as e:
             return [str(e)], status.HTTP_400_BAD_REQUEST
-            
+
     # check for proper sample set type
     if sampletype not in app.config['ALLOWED_SAMPLE_TYPES']:
         return [f"Unexpected sample type '{sampletype}' requested. Expected one of: {app.config['ALLOWED_SAMPLE_TYPES']}"], \

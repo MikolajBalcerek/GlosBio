@@ -100,7 +100,14 @@ class Train extends Component {
         axios.post(api_config.usePath + `/algorithms/train/${this.state.algorithm}`, {
             parameters: this.state.parameter_values
         }).then(res => {
+<<<<<<< HEAD
             this.handleClickVariant(res.data.message, 'success')
+=======
+            this.setState({
+                status: res.data.job_id
+            })
+            console.log(res)
+>>>>>>> 4838e9dd6207094e7da1d5ddc77d254fc7540354
         }).catch(err => {
             this.handleClickVariant(err, 'error')
 
