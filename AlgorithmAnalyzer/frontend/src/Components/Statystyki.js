@@ -25,6 +25,7 @@ export default class Statystyki extends Component {
                 style={{
                     paddingLeft: 30, 
                     paddingRight: 30,
+                    height: 500,
                     backgroundColor: 'rgba(0, 0, 0, .6)'
                 }}>
 
