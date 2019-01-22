@@ -24,13 +24,18 @@ export default class WykresyKolowe extends Component {
     state= {
         value: 0,
         activeIndex: 0,
-        type: 'train'
+        type: 'train',
+        exvalue: 0
     }
 
     handleChange = (event, value) => {
         this.setState({ value });
       };
-
+      eshandleChange=(e, v) =>{
+          this.setState({
+              exvalue: v
+          })
+      }
       onPieEnter(data, index) {
         this.setState({
           activeIndex: index
@@ -95,7 +100,7 @@ export default class WykresyKolowe extends Component {
                     textColor="primary"
                     scrollable
                     scrollButtons="auto"
-                    style={{backgroundColor: 'black', marginBottom: 10}}
+                    style={{backgroundColor: 'black'}}
                     >
                         <Tab label='Użytkownicy' />
                         {
@@ -109,7 +114,8 @@ export default class WykresyKolowe extends Component {
                         backgroundColor: 'black',
                         display: 'flex',
                         justifyContent: 'center',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        height: 470
                         }}>
                         <FormControl component="fieldset">
                                 <FormLabel component="legend">Wybierz typ nagrania:</FormLabel>
@@ -122,16 +128,29 @@ export default class WykresyKolowe extends Component {
                                     <FormControlLabel value="test" control={<Radio />} label="Test" />
                                 </RadioGroup>
                         </FormControl>
-                        <PieChart width={350} height={300}>
+                        <div>
+                        <Tabs
+                            value={this.state.exvalue}
+                            onChange={this.eshandleChange}
+                            indicatorColor="primary"
+                            textColor="primary"
+                            scrollable
+                            scrollButtons="auto"
+                            style={{backgroundColor: 'black', marginBottom: 10, width: 600}}
+                            >
+                                <Tab label='Wykres słupkowy' />
+                                <Tab label='Wykres kołowy' />
+                            </Tabs>
+                            {this.state.exvalue === 1 &&<PieChart width={1000} height={350}>
                             <Pie 
                                 dataKey='value'
                                 activeIndex={this.state.activeIndex}
                                 activeShape={renderActiveShape} 
                                 data={this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount} 
-                                cx={160} 
+                                cx={460} 
                                 cy={150} 
-                                innerRadius={60}
-                                outerRadius={80} 
+                                innerRadius={80}
+                                outerRadius={100} 
                                 fill="rgb(100,100,100)"
                                 onMouseEnter={this.onPieEnter.bind(this)}
                                 >
@@ -139,22 +158,25 @@ export default class WykresyKolowe extends Component {
                                     this.props.userSoundsTrainCount.map((entry, index) => <Cell fill={colors[index%4]}/>)
                                 }
                                 </Pie>
-                        </PieChart>
-                        <BarChart width={500} height={300} data={this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount}
-                                margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                        </PieChart>}
+                        {this.state.exvalue === 0 &&
+                        <div style={{width: 1000,height: 380, overflowX: 'auto'}}>
+                        <BarChart width={this.state.type === 'train'? this.props.userSoundsTrainCount.length*100: this.props.userSoundsTestCount.length*80} height={350} data={this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount}
+                                margin={{top: 5, right: 30, left: 20, bottom: 100}}>
                             <CartesianGrid strokeDasharray="3 3"/>
-                            <XAxis dataKey="name" style={{ fontFamily: 'Roboto, sans-serif' }}/>
+                            <XAxis dataKey="name" style={{ fontFamily: 'Roboto, sans-serif', height: 50 }} angle={-45} textAnchor="end" interval={0} />
                             <YAxis />
                             <Tooltip/>
                             <Legend />
                             <Bar dataKey="value">
                             {
                                 (this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount).map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={colors[index%4]}/>
+                                <Cell key={`cell-${index}`} fill={colors[index%4]} width={80}/>
                                 ))
                             }
                             </Bar>
-                        </BarChart>
+                        </BarChart></div>}
+                        </div>
                     </div>
                     }
                     {
@@ -165,16 +187,29 @@ export default class WykresyKolowe extends Component {
                                 display: 'flex',
                                 justifyContent: 'center'
                                 }}>
-                                <PieChart width={650} height={300}>
+                                <div>
+                                <Tabs
+                                    value={this.state.exvalue}
+                                    onChange={this.eshandleChange}
+                                    indicatorColor="primary"
+                                    textColor="primary"
+                                    scrollable
+                                    scrollButtons="auto"
+                                    style={{backgroundColor: 'black', marginBottom: 10, width: 600}}
+                                    >
+                                        <Tab label='Wykres słupkowy' />
+                                        <Tab label='Wykres kołowy' />
+                                    </Tabs>
+                                {this.state.exvalue === 1 &&<PieChart width={1000} height={350}>
                                     <Pie 
                                         dataKey='value'
                                         activeIndex={this.state.activeIndex}
                                         activeShape={renderActiveShape} 
                                         data={tag.values} 
-                                        cx={320} 
+                                        cx={480} 
                                         cy={150} 
-                                        innerRadius={60}
-                                        outerRadius={80} 
+                                        innerRadius={80}
+                                        outerRadius={100} 
                                         fill="rgb(100,100,100)"
                                         onMouseEnter={this.onPieEnter.bind(this)}
                                         >
@@ -182,11 +217,11 @@ export default class WykresyKolowe extends Component {
                                             tag.values.map((entry, index) => <Cell fill={colors[index%4]}/>)
                                         }
                                         </Pie>
-                                </PieChart>
-                                <BarChart width={600} height={300} data={tag.values}
-                                        margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                                </PieChart>}
+                                {this.state.exvalue === 0 &&<div style={{width: 1000, overflow: 'auto', height: 380}}><BarChart width={100+tag.values.length*100} height={350} data={tag.values}
+                                        margin={{top: 5, right: 30, left: 20, bottom: 100}}>
                                     <CartesianGrid strokeDasharray="3 3"/>
-                                    <XAxis dataKey="name" style={{ fontFamily: 'Roboto, sans-serif' }}/>
+                                    <XAxis dataKey="name" style={{ fontFamily: 'Roboto, sans-serif' }} angle={-45} textAnchor="end"/>
                                     <YAxis/>
                                     <Tooltip/>
                                     <Legend />
@@ -197,7 +232,8 @@ export default class WykresyKolowe extends Component {
                                         ))
                                     }
                                     </Bar>
-                                </BarChart>
+                                </BarChart></div>}
+                                </div>
                             </div>
                         )
                     }
