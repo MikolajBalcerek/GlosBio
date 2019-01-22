@@ -36,6 +36,7 @@ def _plot_mfcc_color_boxes_from_bytes(audio_bytes: bytes) -> plt.Figure:
     :param audio_path: str full path to audio file
     :return: plt.Figure containing the MFCC colored boxes plot
     """
+    plt.clf()
     (rate, sig) = wav.read(audio_bytes)
     mfcc_features_lines = mfcc(sig, rate, nfft=1250)
     figure, axis = plt.subplots()
