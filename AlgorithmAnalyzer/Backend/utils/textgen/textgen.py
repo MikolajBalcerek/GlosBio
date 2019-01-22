@@ -3,17 +3,17 @@ import markovify
 
 
 class TextGenerator:
-    def __init__(self):
-        path = os.path.join(os.path.dirname(__file__), "corpus1.txt")
-        with open(path) as f:
+    def __init__(self, filename):
+        path = os.path.join(os.path.dirname(__file__), f"data/{filename}")
+        with open(path, encoding='utf-8') as f:
             text = f.read()
         self.chain = markovify.Text(text).chain
 
     def generate_words(self, n: int) -> str:
-        '''
+        """
         generate string with n words
         :params n: int - no. words to generate
-        '''
+        """
         out = []
         count = 0
         while len(out) < n:

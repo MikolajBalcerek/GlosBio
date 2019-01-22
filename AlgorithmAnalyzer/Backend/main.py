@@ -12,13 +12,10 @@ from algorithms.algorithm_manager import NotTrainedException
 from algorithms.base_algorithm import AlgorithmException
 from sample_manager.SampleManager import SampleManager, UsernameException, DatabaseException
 from utils import convert_audio
-from utils.textgen import textgen
 
 app = FlaskAPI(__name__)
 
 CORS(app)
-
-text_generator = textgen.TextGenerator()
 
 # TODO: Would be nice to reword endpoints to follow username -> type instead of
 #  type -> username for consistency to how currently SampleManager stores them
@@ -613,7 +610,13 @@ def handle_tags_summary():
 @app.route("/text", methods=['GET'])
 def handle_text_endpoint():
     """
-    will return generated text
+    optional query param:
+    {
+        "words": <no_words> (defaul value: 40)
+    }
+    
+    will return generated <no_words> words
+    oryginally used as helper during sample recording
     """
     query_param = request.args.get('words')
     if query_param:
@@ -624,7 +627,7 @@ def handle_text_endpoint():
     else:
         param = 40
     try:
-        words_list = text_generator.generate_words(param)
+        words_list = app.config["TEXT_GENERATOR"].generate_words(param)
         return [' '.join(words_list)], status.HTTP_200_OK
     except ValueError as e:
         print(str(e))
