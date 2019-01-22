@@ -1,6 +1,10 @@
 import wave
 import numpy as np
 
+import scipy.io.wavfile as wav
+
+from .filters import fir_bandpass
+
 
 def fast_wav_read(file, chunk_size=64):
     file = wave.open(file, 'rb')
@@ -69,3 +73,23 @@ def read_samples(samples, labels, normalized_length=0, verbose=False):
     if verbose:
         print(']\n', flush=True)
     return np.array(X), np.array(y)
+
+
+def filter_sample_for_human_voice(sample, fs):
+    return fir_bandpass(sample, fs, 300, 3000, 50)
+
+
+def scipy_read_samples(raw_samples):
+    samples, rates = [], []
+    for sample in raw_samples:
+        try:
+            fs, smpl = wav.read(sample)
+            smpl = filter_sample_for_human_voice(smpl, fs)
+            samples.append(smpl)
+            rates.append(fs)
+        except Exception as e:
+            print(
+                '\n file could not have been loaded'
+                ' because of an exception: ' + str(e)
+            )
+    return samples, rates
