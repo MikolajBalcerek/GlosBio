@@ -607,6 +607,32 @@ def handle_tags_summary():
     return summary, status.HTTP_200_OK
 
 
+@app.route("/text", methods=['GET'])
+def handle_text_endpoint():
+    """
+    optional query param:
+    {
+        "words": <no_words> (default value: 40)
+    }
+    
+    will return generated <no_words> words
+    originally used as helper during sample recording
+    """
+    query_param = request.args.get('words')
+    if query_param:
+        try:
+            param = int(query_param)
+        except ValueError:
+            return ["'word' param should be a number"], status.HTTP_400_BAD_REQUEST
+    else:
+        param = 40
+    try:
+        words_list = app.config["TEXT_GENERATOR"].generate_words(param)
+        return [' '.join(words_list)], status.HTTP_200_OK
+    except ValueError as e:
+        print(str(e))
+        return ["Could not generate text"], status.HTTP_503_SERVICE_UNAVAILABLE
+
 
 if __name__ == "__main__":
     app.config.from_object('config.DevelopmentConfig')
