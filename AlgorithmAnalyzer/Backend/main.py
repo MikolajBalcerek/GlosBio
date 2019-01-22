@@ -622,7 +622,7 @@ def handle_text_endpoint():
         except ValueError:
             return ["'word' param should be a number"], status.HTTP_400_BAD_REQUEST
     else:
-        param = 30
+        param = 40
     try:
         words_list = text_generator.generate_words(param)
         return [' '.join(words_list)], status.HTTP_200_OK
