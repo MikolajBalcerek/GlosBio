@@ -701,6 +701,21 @@ class NoDbTests(BaseAbstractIntegrationTestsClass):
         self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE,
                          f"wrong status code, expected 503, got {r.status_code}")
 
+    def test_text_endpoint(self):
+        r = self.client.get('/text')
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+        self.assertTrue(r.data, "Got empty response body but expected some text")
+
+        r = self.client.get('/text', query_string={'words': 100})
+        self.assertEqual(r.status_code, status.HTTP_200_OK,
+                         f"wrong status code, expected 200, got {r.status_code}")
+        self.assertEqual(len(r.json[0].split(' ')), 100)
+
+        r = self.client.get('/text', query_string={'words': 'kek'})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST,
+                         f"wrong status code, expected 400, got {r.status_code}")
+
 
 class AlgorithmsTests(BaseAbstractIntegrationTestsClass):
     @classmethod

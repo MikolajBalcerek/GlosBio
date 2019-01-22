@@ -2,6 +2,7 @@ from algorithms.algorithm_manager import algorithm_manager_factory
 from algorithms.tests.mocks import TEST_ALG_DICT
 from algorithms.algorithms import ALG_DICT
 from sample_manager.SampleManager import SampleManager
+from utils.textgen import textgen
 
 # this file provides configs for Backend Flask's app (db settings, global singletons)
 # Configs can be loaded like this: app.config.from_object('config.YourConfig')
@@ -56,6 +57,9 @@ class BaseConfig(object):
     # sample manager
     SAMPLE_MANAGER = SampleManager(f"{DATABASE_URL}:{DATABASE_PORT}", DATABASE_NAME)
     ALGORITHM_MANAGER = algorithm_manager_factory(ALG_DICT, '__base_algorithm_manager')
+
+    # text generator
+    TEXT_GENERATOR = textgen.TextGenerator('corpus.txt')
 
 
 class ProductionConfig(BaseConfig):
