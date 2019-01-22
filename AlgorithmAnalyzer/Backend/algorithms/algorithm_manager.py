@@ -1,10 +1,14 @@
-import os
 import hashlib
+from multiprocessing import Pool
+import os
 from pathlib import Path
 from typing import List, Tuple, Dict
 
+from algorithms.background import background_task
+from algorithms.base_algorithm import AlgorithmException
 
-def algorithm_manager_factory(alg_dict, name):
+
+def algorithm_manager_factory(alg_dict, status_updater_factory, name):
     """
     Returns new class deriving after AlgorithmManager.
     :param alg_dict: the new manager will use algorithms from this dict
@@ -16,6 +20,7 @@ def algorithm_manager_factory(alg_dict, name):
         {}
     )
     new_class.alg_dict = alg_dict
+    new_class.status_updater_factory = status_updater_factory
     return new_class
 
 
@@ -41,11 +46,13 @@ class AlgorithmManager:
     """
 
     alg_dict = None
+    status_updater_factory = None
 
     def __init__(self, algorithm_name):
         self.models = {}
         self.algorithm_name = algorithm_name
         self.algorithm = self.alg_dict[algorithm_name]
+        self.pool = Pool(processes=4)
 
     @property
     def multilabel(self):
@@ -103,19 +110,30 @@ class AlgorithmManager:
             parameters[name] = param_dict[name]['type'](parameters[name])
         return parameters
 
-    def _train_models(self, samples: dict, labels: dict, parameters: dict = None):
+    @background_task
+    def _train_models(self, samples: dict, labels: dict, parameters: dict, job_id: str):
         """
         Trains a model for each user for a given algorithm,
         and then saves the model to `saved_models` directory
         """
-        usernames = list(labels.keys())
-        parameters = self._update_parameters(parameters)
-        for username in usernames:
-            model = self.algorithm(parameters=parameters)
-            if samples[username]:
-                model.train(samples[username], labels[username])
-                self.models[username] = model
-        self._save_models()
+        try:
+            status_updater = self.status_updater_factory(job_id=job_id)
+            usernames = list(labels.keys())
+            parameters = self._update_parameters(parameters)
+            for i, username in enumerate(usernames):
+                model = self.algorithm(parameters=parameters)
+                if samples[username]:
+                    model.train(samples[username], labels[username])
+                    self.models[username] = model
+                status_updater.update(progress=i/max(len(usernames), 1.))
+            self._save_models()
+        except AlgorithmException as e:
+            status_updater.update(
+                progress=0, finished=True,
+                error=f"There was an error with the algorithm: {str(e)}"
+            )
+        else:
+            status_updater.update(finished=True, progress=1)
 
     def _save_models(self):
         """
@@ -135,7 +153,6 @@ class AlgorithmManager:
         using model's __init__ method with path kwarg.
         :param user: the name of the user for wich the model should be loaded
         """
-        # TODO(mikra): take care of models load returning errors!!!
         md5 = hashlib.md5(user.encode('utf-8'))
         base_path = f'./algorithms/saved_models/{self.algorithm_name}/{md5.hexdigest()}'
         if not os.path.isdir(base_path):
@@ -150,14 +167,25 @@ class AlgorithmManager:
         for user in users:
             self._load_model(user)
 
-    def _train_multilabel_model(self, samples: list, labels: list, parameters: dict):
+    @background_task
+    def _train_multilabel_model(self, samples: list, labels: list, parameters: dict, job_id: str):
         """
         Trains one multilabeled model for all users.
         """
-        parameters = self._update_parameters(parameters)
-        self.model = self.algorithm(parameters=parameters)
-        self.model.train(samples, labels)
-        self._save_multilabel_model()
+        try:
+            parameters = self._update_parameters(parameters)
+            self.model = self.algorithm(parameters=parameters)
+            self.updater = self.status_updater_factory(job_id=job_id)
+            self.model.set_status_updater(self.updater)
+            self.model.train(samples, labels)
+            self._save_multilabel_model()
+        except AlgorithmException as e:
+            self.updater.update(
+                finished=True, progress=0,
+                error=f"There was a problem with algorithm: {str(e)}"
+            )
+        else:
+            self.updater.update(finished=True, progress=1)
 
     def _save_multilabel_model(self):
         """
@@ -196,7 +224,7 @@ class AlgorithmManager:
             self._load_model(user)
             return self.models[user].predict(file)
 
-    def train(self, samples, labels, parameters):
+    def train(self, samples, labels, parameters, job_id):
         """
         Trains the model(s) depending on algorithm being multilabel,
         then saves it (them).
@@ -213,12 +241,13 @@ class AlgorithmManager:
                     {'parameter_name': 'value'},
         where both names and values should agree with get_parameters.
         """
-        # TODO(mikra): add SocketIO and/or Redis communication
-        # TODO(mikra): after ^ make it a background task
         if self.algorithm.multilabel:
-            self._train_multilabel_model(samples, labels, parameters)
+            return self._train_multilabel_model(
+                                        samples, labels, parameters, job_id
+                                        )
         else:
-            self._train_models(samples, labels, parameters)
+            return self._train_models(samples, labels, parameters, job_id)
+
 
     def _test_models(self, samples, labels, users):
         """

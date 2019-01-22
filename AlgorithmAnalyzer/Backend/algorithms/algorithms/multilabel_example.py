@@ -29,8 +29,13 @@ class MultilabelExample(Algorithm):
         pass
 
     def save(self, path):
-        with open(path, 'w') as file:
-            file.write(str(self.parameters['num_classes']))
+        try:
+            with open(path, 'w') as file:
+                file.write(str(self.parameters['num_classes']))
+        except Exception:
+            self.updater.update(error="Couldn't save the model.")
+            return
+        self.updater.update(1., finished=True)
 
     def _load(self, path):
         with open(path, 'r') as f:
@@ -40,3 +45,6 @@ class MultilabelExample(Algorithm):
 
     def predict(self, data):
         return random.randint(0, self.parameters['num_classes']), {}
+
+    def set_status_updater(self, updater):
+        self.updater = updater
