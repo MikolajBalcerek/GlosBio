@@ -8,12 +8,17 @@ from algorithms.algorithm_manager import (
 )
 from algorithms.base_algorithm import AlgorithmException
 from algorithms.tests.mocks import TEST_ALG_DICT, AlgorithmMock1
+from config import TestingConfig
 
 
 class TestAlgorithmManager(unittest.TestCase):
 
     def setUp(self):
-        self.am = algorithm_manager_factory(TEST_ALG_DICT, '__test__alg__manager')
+        self.am = algorithm_manager_factory(
+            TEST_ALG_DICT, TestingConfig.JOB_STATUS_UPDATER_FACTORY,
+            '__test__alg__manager'
+        )
+        self.jsp = TestingConfig.JOB_STATUS_PROVIDER
         self.alg_dict = TEST_ALG_DICT
         self.full_alg_list = list(TEST_ALG_DICT.keys())
         # they differ by mock throwing exceptions
@@ -82,9 +87,11 @@ class TestAlgorithmManager(unittest.TestCase):
 
     def test_train_models(self):
         am = self.am('first_mock')
-        am._train_models(
-            self.user_samples, self.user_labels, self.params1
+        jid = self.jsp.create_job_status()
+        thread = am._train_models(
+            self.user_samples, self.user_labels, self.params1, jid
         )
+        thread.join()
         self.assertEqual(am.models.keys(), self.user_labels.keys())
         for usr, mdl in am.models.items():
             self.assertTrue(mdl.called_train)
@@ -125,9 +132,11 @@ class TestAlgorithmManager(unittest.TestCase):
 
     def test_load_model(self):
         am = self.am('first_mock')
-        am._train_models(
-            self.user_samples, self.user_labels, self.params1
+        jid = self.jsp.create_job_status()
+        thread = am._train_models(
+            self.user_samples, self.user_labels, self.params1, jid
         )
+        thread.join()
         # creating new instance to clear everything
         am = self.am('first_mock')
         for u in ['user1', 'user2']:
@@ -141,9 +150,11 @@ class TestAlgorithmManager(unittest.TestCase):
 
     def test_train_multilabel_model(self):
         am = self.am('second_mock')
-        am._train_multilabel_model(
-            self.samples, self.labels, self.params2
+        jid = self.jsp.create_job_status()
+        thread = am._train_multilabel_model(
+            self.samples, self.labels, self.params2, jid
         )
+        thread.join()
         self.assertTrue(hasattr(am, 'model'))
         self.assertTrue(am.model.called_train)
         self.assertTrue(am.model.called_save)
@@ -162,9 +173,11 @@ class TestAlgorithmManager(unittest.TestCase):
 
     def test_load_multilabel_model(self):
         am = self.am('second_mock')
-        am._train_multilabel_model(
-            self.samples, self.labels, self.params2
+        jid = self.jsp.create_job_status()
+        thread = am._train_multilabel_model(
+            self.samples, self.labels, self.params2, jid
         )
+        thread.join()
         # creating new instance to clear everything
         am = self.am('second_mock')
         self.assertFalse(hasattr(am, 'model'))
@@ -192,40 +205,45 @@ class TestAlgorithmManager(unittest.TestCase):
 
     def test_predict_for_multilabel(self):
         am = self.am('second_mock')
-        am._train_multilabel_model(
-            self.samples, self.labels, self.params2
+        jid = self.jsp.create_job_status()
+        thread = am._train_multilabel_model(
+            self.samples, self.labels, self.params2, jid
         )
+        thread.join()
         user, sample = 'user1', 'whatever'
         res = am.predict(user, sample)
         self.assertEqual(res, (0, {"something": 0}))
 
     def test_predict_for_binary_label(self):
         am = self.am('first_mock')
-        am._train_models(
-            self.user_samples, self.user_labels, self.params1
+        jid = self.jsp.create_job_status()
+        thread = am._train_models(
+            self.user_samples, self.user_labels, self.params1, jid
         )
+        thread.join()
         user, sample = 'user1', 'whatever'
         res = am.predict(user, sample)
         self.assertEqual(res, (False, {"something": "Somethong"}))
 
     def test_train_for_multilabel_model(self):
         am = self.am('second_mock')
-        am.train(
-            self.samples, self.labels, self.params2
+        jid = self.jsp.create_job_status()
+        thread = am.train(
+            self.samples, self.labels, self.params2, jid
         )
-        self.assertTrue(hasattr(am, 'model'))
-        self.assertTrue(am.model.called_train)
-        self.assertTrue(am.model.called_save)
-        self.assertFalse(am.model.called_load)
+        thread.join()
         self.assertTrue(
             Path('./algorithms/saved_models/second_mock').exists()
         )
 
     def test_train_for_binary_model(self):
         am = self.am('first_mock')
-        am.train(
-            self.user_samples, self.user_labels, self.params1
+        jid = self.jsp.create_job_status()
+        thread = am.train(
+            self.user_samples, self.user_labels, self.params1, jid
         )
+        self.assertNotEqual(am.models.keys(), self.user_labels.keys())
+        thread.join()
         self.assertEqual(am.models.keys(), self.user_labels.keys())
         for usr, mdl in am.models.items():
             self.assertTrue(mdl.called_train)
@@ -241,9 +259,11 @@ class TestAlgorithmManager(unittest.TestCase):
         am = self.am('first_mock')
         all_users = list(self.user_samples.keys())
         for users in (all_users, all_users[:-1],):
-            am.train(
-                self.user_samples, self.user_labels, self.params1
+            jid = self.jsp.create_job_status()
+            thread = am.train(
+                self.user_samples, self.user_labels, self.params1, jid
             )
+            thread.join()
             res = am._test_models(
                 self.user_samples, self.user_labels, users
             )
@@ -258,9 +278,11 @@ class TestAlgorithmManager(unittest.TestCase):
         am = self.am('second_mock')
         users = ['u0', 'u1', 'u2']
         user_numbers = list(range(len(users)))
-        am.train(
-            self.samples, self.labels, self.params2
+        jid = self.jsp.create_job_status()
+        thread = am._train_multilabel_model(
+            self.samples, self.labels, self.params2, jid
         )
+        thread.join()
         res = am._test_multilabel_model(
             self.samples, self.labels, users, user_numbers
         )
@@ -274,9 +296,11 @@ class TestAlgorithmManager(unittest.TestCase):
         am = self.am('second_mock')
         users = ['u1', 'u2']
         user_numbers = [1, 2]
-        am.train(
-            self.samples, self.labels, self.params2
+        jid = self.jsp.create_job_status()
+        thread = am._train_multilabel_model(
+            self.samples, self.labels, self.params2, jid
         )
+        thread.join()
         res = am._test_multilabel_model(
             self.samples, self.labels, users, user_numbers
         )
@@ -305,9 +329,11 @@ class TestAlgorithmManager(unittest.TestCase):
         am = self.am('first_mock')
         all_users = list(self.user_samples.keys())
         for users in (all_users, all_users[:-1],):
-            am.train(
-                self.user_samples, self.user_labels, self.params1
+            jid = self.jsp.create_job_status()
+            thread = am.train(
+                self.user_samples, self.user_labels, self.params1, jid
             )
+            thread.join()
             res = am.test(
                 self.user_samples, self.user_labels, users, range(len(users))
             )
@@ -322,9 +348,11 @@ class TestAlgorithmManager(unittest.TestCase):
         am = self.am('second_mock')
         users = ['u0', 'u1', 'u2']
         user_numbers = list(range(len(users)))
-        am.train(
-            self.samples, self.labels, self.params2
+        jid = self.jsp.create_job_status()
+        thread = am._train_multilabel_model(
+            self.samples, self.labels, self.params2, jid
         )
+        thread.join()
         res = am._test_multilabel_model(
             self.samples, self.labels, users, user_numbers
         )
@@ -336,9 +364,15 @@ class TestAlgorithmManager(unittest.TestCase):
 
     def test_train_with_raise_mock(self):
         am = self.am(self.raise_alg)
-        with self.assertRaises(AlgorithmException) as ctx:
-            am.train(self.user_samples, self.user_labels, {})
-        self.assertEqual(str(ctx.exception), 'train exception')
+        jid = self.jsp.create_job_status()
+        thread = am.train(self.user_samples, self.user_labels, {}, jid)
+        thread.join()
+        status = self.jsp.read_job_status(jid)
+        self.assertIn('error', status)
+        self.assertEqual(
+            status['error'],
+            "There was a problem with algorithm: train exception"
+        )
 
     def test_load_with_raise_mock(self):
         am = self.am(self.raise_alg)

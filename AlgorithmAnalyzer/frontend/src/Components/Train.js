@@ -101,7 +101,7 @@ class Train extends Component {
             parameters: this.state.parameter_values
         }).then(res => {
             this.setState({
-                status: res.data
+                status: res.data.job_id
             })
             console.log(res)
         }).catch(err => {
