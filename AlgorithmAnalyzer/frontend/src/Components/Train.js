@@ -106,24 +106,7 @@ class Train extends Component {
 
         })
     };
-    getJobs(){
-        var self = this;
-        axios
-            .get(api_config.usePath + `/jobs`)
-            .then(function(response) {
-                let params = response.data.parameters;
-                let param_vals = {}
-                Object.keys(params).map((key, i) => {
-                    param_vals[key] = params[key].values[0];
-                    return params[key]; // return is needed to omit worning with map
-                });
-				self.setState({parameters: params, parameter_values: param_vals});
-                console.log(self.state.parameters);
-            })
-            .catch(function(error) {
-                console.log(error);
-			})
-    }
+    
     renderParameter  = name => {
         console.log(name);
         let params = this.state.parameters[name];
@@ -197,7 +180,7 @@ class Train extends Component {
                         {this.state.algorithm !== "" && Object.keys(this.state.parameters).length !== 0 && (
                             <div>
                                 <div style={{display: 'flex'}}>
-                                    <div style={{width: '50%'}}>
+                                    <div style={{width: '100%'}}>
                                         <Typography variant="title" style={{color: "#fff"}} gutterBottom>
                                             Parametry algorytmu
                                         </Typography>
@@ -211,41 +194,6 @@ class Train extends Component {
                                             </TableHead>
                                             <TableBody>
                                                 {Object.keys(this.state.parameters).map( this.renderParameter )}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                    <div style={{width: '50%'}}>
-                                        <Typography variant="title" style={{color: "#fff"}} gutterBottom>
-                                                Statusy modeli
-                                        </Typography>
-                                        <Table style={{width: '100%'}}>
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Nazwa algorytmu</TableCell>
-                                                    <TableCell>Status</TableCell>
-                                                    <TableCell>Przerwij</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {this.state.modelTable.map(model=>
-                                                    <TableRow>
-                                                        <TableCell>
-                                                            {model.name}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <LinearProgress color="secondary" variant="determinate" value={model.progress} />{model.progress*100+'%'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <IconButton 
-                                                                aria-label="Usuń" 
-                                                                style={{backgroundColor: '#550000'}}
-                                                                >
-                                                                <DeleteIcon />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                
-                                                    )}
                                             </TableBody>
                                         </Table>
                                     </div>

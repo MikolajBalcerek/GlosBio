@@ -56,9 +56,17 @@ class Recorder extends Component {
       }
 
     generujTekst(){
-        this.setState({
-            generowanyTekst: 'Nikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycjiikt nie spodziewa się hiszpańskiej inkwizycji'
-        })
+        var self = this
+        axios
+            .get(api_config.usePath+'/jfsao',{} ,{ 'Authorization': api_config.apiKey })
+            .then(function(response) {
+                self.setState({
+                    generowanyTekst: response
+                })
+            })
+            .catch(function(error) {
+                console.log(error);
+			})
     }
 
     onPressButtonRecord() {
