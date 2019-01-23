@@ -161,7 +161,7 @@ export default class WykresyKolowe extends Component {
                         </PieChart>}
                         {this.state.exvalue === 0 &&
                         <div style={{width: 1000,height: 380, overflowX: 'auto'}}>
-                        <BarChart width={this.state.type === 'train'? this.props.userSoundsTrainCount.length*100: this.props.userSoundsTestCount.length*80} height={350} data={this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount}
+                        <BarChart width={100+this.state.type === 'train'? this.props.userSoundsTrainCount.length*100: this.props.userSoundsTestCount.length*100} height={350} data={this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount}
                                 margin={{top: 5, right: 30, left: 20, bottom: 100}}>
                             <CartesianGrid strokeDasharray="3 3"/>
                             <XAxis dataKey="name" style={{ fontFamily: 'Roboto, sans-serif', height: 50 }} angle={-45} textAnchor="end" interval={0} />
@@ -171,7 +171,7 @@ export default class WykresyKolowe extends Component {
                             <Bar dataKey="value">
                             {
                                 (this.state.type === 'train'? this.props.userSoundsTrainCount: this.props.userSoundsTestCount).map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={colors[index%4]} width={80}/>
+                                <Cell key={`cell-${index}`} fill={colors[index%4]} width={60}/>
                                 ))
                             }
                             </Bar>

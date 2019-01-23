@@ -7,17 +7,7 @@ import Stop from "@material-ui/icons/Stop";
 import { ReactMic } from "react-mic";
 
 export default class RecordModal extends Component{
-    componentDidMount(){
-        var self = this
-        document.addEventListener('keydown', (event)=> {
-            if (event.keyCode === 32 || event.keyCode === 13){
-                console.log('lel', self.props.isRecording)
-                self.props.isRecording
-                ? this.props.onPressButtonStop()
-                : this.props.onPressButtonRecord()
-            }
-          });
-    }
+ 
     render(){
         return(
           <Dialog 
