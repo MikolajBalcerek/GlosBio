@@ -94,6 +94,18 @@ def get_algorithm_description(name):
     return description if description else "", status.HTTP_200_OK
 
 
+@app.route('/algorithms/type/<string:name>', methods=['GET'])
+def algorithm_type(name):
+    """
+    Returns true if algorithm with <string:name> is multilabel and false otherwise.
+    """
+    valid_names = app.config['ALGORITHM_MANAGER'].get_algorithms()
+    if name not in valid_names:
+        return f'Bad algorithm name. Valid are {valid_names}.', status.HTTP_400_BAD_REQUEST
+
+    return app.config['ALGORITHM_MANAGER'](name).multilabel, status.HTTP_200_OK
+
+
 @app.route('/algorithms/parameters/<string:name>', methods=['GET'])
 def get_algorithm_parameters(name):
     """
