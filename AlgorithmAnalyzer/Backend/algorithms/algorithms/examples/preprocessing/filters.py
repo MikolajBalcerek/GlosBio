@@ -178,7 +178,7 @@ def fir_highpass(signal, sample_rate, cut_off, transition_band,
     """
     rel_cut_off = 1. * cut_off / sample_rate
     rel_transition_band = 1. * transition_band / sample_rate
-    N = window_size if window_size else fir_window_size(rel_transition_band)
+    N = window_size or fir_window_size(rel_transition_band)
     return np.convolve(signal, fir_hpf_coeffs(window_func, rel_cut_off, N))
 
 
