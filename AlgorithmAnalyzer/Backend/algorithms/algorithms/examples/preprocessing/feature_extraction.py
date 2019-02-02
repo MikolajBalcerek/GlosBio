@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.fftpack import dct
-import matplotlib.pyplot as plt
 
 from .filters import preemphasis, get_window_func
 from .preprocessing import normalize_signal_length
@@ -13,14 +12,21 @@ def _get_nfft(window_len):
     return nfft
 
 
-def frame_signal(signal, window_len, step_len, num_steps, window_func):
+def frame_signal(
+    signal, window_len: int, step_len: int, num_steps: int
+):
     padding_len = num_steps * step_len + window_len
     signal = normalize_signal_length(signal, padding_len)
     # make len(signal) whole multiple of window_len
     indices = np.tile(np.arange(0, window_len), (num_steps, 1)) + \
         np.tile(np.arange(0, num_steps * step_len, step_len), (window_len, 1)).T
     indices = np.array(indices, np.int32)
-    frames = signal[indices.astype(np.int32, copy=False)]
+    return signal[indices.astype(np.int32, copy=False)]
+
+
+def apply_window_func(
+    frames, window_len: int, window_func: str = 'hamming'
+):
     window = get_window_func(window_func)(window_len)
     windows = np.tile(window, (len(frames), 1)).astype(frames.dtype)
     return frames * windows
@@ -40,26 +46,26 @@ def get_mel_filters(num_filters, sample_rate, nfft=512, low_freq=0, high_freq=No
     high_mel = hz_to_mel(high_freq)
     mel_points = np.linspace(low_mel, high_mel, num_filters + 2)
     vertices = np.floor((nfft + 1) * mel_to_hz(mel_points) / sample_rate)
-    # vertives of triangular mel filters
-
+    # vertices of triangular mel filters
     filters = np.zeros((num_filters, int(np.floor(nfft / 2 + 1))))
     for mid in range(1, num_filters + 1):
         l, c, r = int(vertices[mid - 1]), int(vertices[mid]), int(vertices[mid + 1])
         # l, c, r - left, center, right vertieces
 
         # filters[mid - 1, :] is a triangular mel filter with vertices l, c, r
-        for k in range(l, c):
-            filters[mid - 1, k] = (k - vertices[mid - 1]) / (vertices[mid] - vertices[mid - 1])
-        for k in range(c, r):
-            filters[mid - 1, k] = (vertices[mid + 1] - k) / (vertices[mid + 1] - vertices[mid])
-
+        for t in range(l, c):
+            filters[mid - 1, t] = \
+                (t - vertices[mid - 1]) / (vertices[mid] - vertices[mid - 1])
+        for t in range(c, r):
+            filters[mid - 1, t] = \
+                (vertices[mid + 1] - t) / (vertices[mid + 1] - vertices[mid])
     return filters
 
 
 def get_power_spectrum(signal, window_length=None, nfft=512):
     nfft = _get_nfft(window_length) if window_length else nfft
-    spec = np.absolute(np.fft.rfft(signal, nfft))
-    return ((1. / nfft) * ((spec) ** 2))
+    abs_spec = np.absolute(np.fft.rfft(signal, nfft))
+    return abs_spec ** 2 * (1. / nfft)
 
 
 def apply_sine_lifter(matrix, lifter_length=22):
@@ -71,8 +77,9 @@ def apply_sine_lifter(matrix, lifter_length=22):
 
 def get_mfccs(
     signal, rate, num_vectors=13, num_filters=26, padding_length=None,
-    normalize_filter_banks=True, normalize_mfccs=True, apply_preemhasis=True, apply_lifter=True,
-    window_length=.02, window_overlap=.01, window_func='hamming'
+    normalize_filter_banks=True, normalize_mfccs=True,
+    apply_preemhasis=True, apply_lifter=True, only_fbank_energies=False,
+    window_length=.025, window_overlap=.01, window_func='hamming'
 ):
     padding_len = rate * padding_length if padding_length else len(signal)
     window_len = round(window_length * rate)
@@ -82,17 +89,18 @@ def get_mfccs(
     if apply_preemhasis:
         signal = preemphasis(signal)
 
-    frames = frame_signal(signal, window_len, step_len, num_steps, window_func)
+    frames = frame_signal(signal, window_len, step_len, num_steps)
+    frames = apply_window_func(frames, window_len, window_func)
 
     nfft = _get_nfft(window_len)
     pow_specs = get_power_spectrum(frames, nfft=nfft)
-
     mel_filters = get_mel_filters(num_filters, rate, nfft=nfft)
-
     filtered = np.dot(pow_specs, mel_filters.T)
-    filtered = np.where(filtered == 0, np.finfo(float).eps, filtered)
-    log_filtered = 20 * np.log10(filtered)
+    if only_fbank_energies:
+        return filtered
 
+    filtered = np.where(filtered == 0, np.finfo(float).eps, filtered)
+    log_filtered = np.log(filtered)
     if normalize_filter_banks:
         log_filtered -= (np.mean(log_filtered, axis=0) + 10**-8)
 
@@ -105,6 +113,7 @@ def get_mfccs(
 
 
 def _plot_mel_filters(sample_rate, num_filters=13, nfft=512):
+    import matplotlib.pyplot as plt
     filters = get_mel_filters(
         num_filters, sample_rate, nfft=nfft, num_filters=num_filters
     )
