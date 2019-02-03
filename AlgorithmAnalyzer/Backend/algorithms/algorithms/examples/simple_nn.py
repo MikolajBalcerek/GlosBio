@@ -5,7 +5,7 @@ from tensorflow.python.keras.backend import clear_session
 from tensorflow import reset_default_graph, get_default_graph
 import numpy as np
 
-from algorithms.algorithms.preprocessing import read_samples, read_sample
+from .preprocessing.preprocessing import read_samples, read_sample
 from algorithms.base_algorithm import Algorithm, AlgorithmException
 
 
